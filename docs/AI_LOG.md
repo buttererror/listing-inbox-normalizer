@@ -411,3 +411,11 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Important user instruction** — “Implement task 01.1 phase 1”
 - **Outcome** — Added the shared input schema and inferred type in Messages, preserving the four strings and stripping extra keys. Added offline tests for required fields, types, empty values and timestamp validation.
 - **Verification** — The focused suite passed all 9 tests; typecheck and build passed. The schema is not yet wired into ingestion; remaining Phase 01 tasks and exit checks are pending.
+
+## Phase 01 result contracts — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, task specification, brief, implementation and test results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement next task”
+- **Outcome** — Added public listing, message success and typed failure schemas with the approved error codes. Buyer requests and irrelevant messages require empty listing arrays.
+- **Verification** — The focused suite passed all 5 tests; typecheck and build passed. Processing and the remaining Phase 01 tasks remain pending.

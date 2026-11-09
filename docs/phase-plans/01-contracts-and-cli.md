@@ -1,6 +1,6 @@
 # 01 — Contracts, policies, and CLI harness
 
-**Status** — In progress. D-014 approves the phase grouping and D-012 governs the first listing contracts. Task 01.1 and its focused check are complete; subsequent tasks remain planned.
+**Status** — In progress. D-014 approves the phase grouping and D-012 governs the first listing contracts. Tasks 01.1 and 01.2 and their focused checks are complete; subsequent tasks remain planned.
 
 Establish the shared processor contract and an offline CLI harness. The CLI accepts a local JSONL file with one or several messages. Use an injected processor in tests. Phase 02 will exercise extraction through the same boundary.
 
@@ -34,6 +34,8 @@ Complete each testing task before starting the next implementation task. Record 
 | **01.5 — Wire the CLI command** | Connect `process <input.jsonl>` to local file reading and the shared Nest application-context boundary. Use the controlled processor through the test boundary. Production uses the typed unavailable failure while the extraction route is unconfigured. | **01.5T** — Exercise the command with temporary JSONL files and the controlled processor. Check argument and file-read failures on stderr, exit 1, and application-context shutdown. Confirm the CLI runs without an HTTP listener. |
 
 **01.1 / 01.1T — 2026-11-09:** Implemented the shared Zod input schema in Messages. `corepack pnpm test -- --runTestsByPath test/raw-message.schema.spec.ts` passed (9 tests), covering the specified cases and UTC timestamps; `corepack pnpm run typecheck` and `corepack pnpm run build` passed. The schema is not yet connected to a CLI or HTTP processor. Remaining tasks and phase exit checks are pending.
+
+**01.2 / 01.2T — 2026-11-09:** Added runtime success, listing and failure schemas and inferred types. `corepack pnpm exec jest --runInBand --runTestsByPath test/message-result.schema.spec.ts` passed (5 tests); `corepack pnpm run typecheck` and `corepack pnpm run build` passed. The schemas are not yet connected to processing. Remaining tasks and phase exit checks are pending.
 
 ## Task briefs and test cases
 
