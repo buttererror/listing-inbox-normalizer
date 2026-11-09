@@ -1,6 +1,6 @@
 # 02 — Extraction through CLI
 
-**Status** — In progress. Task 02.1 and its focused test are complete. Remaining tasks and phase exit checks are pending.
+**Status** — In progress. Tasks 02.1–02.2 and their focused tests are complete. Remaining tasks and phase exit checks are pending.
 
 Verify classification, extraction and normalization for one supported sale listing per message through the CLI. Use the [approved contracts](01-contracts-and-cli.md#approved-contract-and-policy-choices) and an offline test gateway. Both the one-line and multi-line fixtures use the same JSONL input shape.
 
@@ -24,6 +24,8 @@ Complete each focused testing task before starting dependent work, as required b
 | **02.6 — Verify the shared processor through CLI** | Compose Extraction and Listings behind the shared processor with a gateway supplied by tests. Serialize the public result through the existing CLI with `duplicate_of: null`. | **02.6T** — Run one-message and multi-message JSONL fixtures, including a failed extraction followed by a valid message. |
 
 **02.1 / 02.1T — 2026-11-09:** Added the extraction service and a JSON Schema derived from the existing Zod contract. `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction.service.spec.ts` passed 5 tests; typecheck and build passed. The production processor is not yet wired to the service. Verbatim and field-specific grounding are tasks 02.2 and 02.3. The draft-7 schema's compatibility with the eventual provider remains to be verified during qualification.
+
+**02.2 / 02.2T — 2026-11-09:** Extraction now checks every structurally valid assertion against the original source and retains rejected assertions with `quote_not_in_source`. `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction-evidence.spec.ts test/extraction.service.spec.ts` passed 8 tests; typecheck and build passed. Field meaning, review reasons and processor integration remain pending.
 
 ### 02.1T — Gateway and response validation
 

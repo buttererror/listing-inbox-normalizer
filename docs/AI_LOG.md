@@ -462,3 +462,13 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Important user instruction** — “Implement task **02.1&#xA0;**&#x20;” (as received).
 - **Outcome** — Added an extraction service that submits the original text, domain instructions and a draft-7 JSON Schema derived from the Zod contract to an injected gateway. It returns a typed invalid-extraction failure for malformed or unsupported output.
 - **Verification** — The focused suite passed 5 tests; typecheck and build passed. Provider compatibility, source grounding and production processor integration remain pending.
+
+## Phase 02 verbatim evidence — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, approved contract, implementation and focused test results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement task **02.2&#xA0;**&#x20;” (as received).
+- **Outcome** — Extraction retains exact source quotes and records rejected assertions with a reason. It compares the original strings without normalizing digits and retains repeated assertions.
+- **Verification** — The evidence and extraction suites passed 8 tests; typecheck and build passed. Field meaning, readable review reasons and processor integration remain pending.
+- **Follow-up instruction** — “Should we utilize this validation to separate its concern?”
+- **Follow-up outcome** — Moved verbatim matching into a focused function in Extraction. The service delegates to it after parsing the gateway response. Both focused suites (8 tests) and typecheck passed again.

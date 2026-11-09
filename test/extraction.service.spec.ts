@@ -13,7 +13,7 @@ describe('ExtractionService', () => {
     const execute = jest.fn<ReturnType<LlmGateway['execute']>, Parameters<LlmGateway['execute']>>().mockResolvedValue(output);
     const service = new ExtractionService({ execute });
 
-    expect(await service.extract(message)).toEqual({ ok: true, result: output });
+    expect(await service.extract(message)).toEqual({ ok: true, result: output, rejectedEvidence: [] });
     expect(execute).toHaveBeenCalledTimes(1);
     const request = execute.mock.calls[0][0];
     expect(request.sourceText).toBe(message.text);

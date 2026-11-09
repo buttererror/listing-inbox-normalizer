@@ -3,6 +3,9 @@ import { LlmGateway } from '../llm-gateway/llm-request';
 import { ProcessingFailure } from '../messages/message-result.schema';
 import { RawMessage } from '../messages/raw-message.schema';
 import { ExtractionResult, extractionResultSchema } from './extraction-result.schema';
+import { RejectedEvidence, verifyVerbatimEvidence } from './verify-verbatim-evidence';
+
+export type { RejectedEvidence } from './verify-verbatim-evidence';
 
 const instructions = [
   'Identify one property offered for sale in the source message.',
@@ -13,7 +16,7 @@ const instructions = [
 ].join(' ');
 
 export type ExtractionOutcome =
-  | { ok: true; result: ExtractionResult }
+  | { ok: true; result: ExtractionResult; rejectedEvidence: RejectedEvidence[] }
   | { ok: false; failure: ProcessingFailure };
 
 export class ExtractionService {
@@ -35,6 +38,15 @@ export class ExtractionService {
         },
       };
     }
-    return { ok: true, result: parsed.data };
+    const { accepted, rejectedEvidence } = verifyVerbatimEvidence(
+      message.text,
+      parsed.data.candidates[0].assertions,
+    );
+
+    return {
+      ok: true,
+      result: { classification: parsed.data.classification, candidates: [{ assertions: accepted }] },
+      rejectedEvidence,
+    };
   }
 }
