@@ -35,5 +35,13 @@ export const gatewayExtractionResponseSchema = z.strictObject({
   candidates: z.array(gatewayCandidateSchema).length(1),
 });
 
+// Providers with strict JSON Schema require every object property to be required.
+export const gatewayWireResponseSchema = z.strictObject({
+  classification: z.literal('listing'),
+  candidates: z.array(z.strictObject({
+    assertions: z.array(gatewayAssertionSchema.extend({ context_quote: z.string().nullable() })),
+  })).length(1),
+});
+
 export type GatewayExtractionResponse = z.infer<typeof gatewayExtractionResponseSchema>;
 export type GatewayAssertion = GatewayExtractionResponse['candidates'][0]['assertions'][number];

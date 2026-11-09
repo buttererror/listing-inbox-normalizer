@@ -4,7 +4,7 @@ The [assessment brief](task-brief.md) defines requirements. The [policy referenc
 
 ## Implemented baseline
 
-NestJS starts an HTTP application or a CLI application context. `GET /health` reports liveness. Zod validates configuration and inputs. The [verified single-sale CLI baseline](phase-plans/02-extraction-through-cli.md) uses a mocked gateway, quote-based assertions, evidence checks, and Listings normalization and resolution. The Gemini gateway is configured through the provider-independent interface. A missing key returns `provider_unavailable`. Prisma is configured for SQLite and CommonJS generation. Domain persistence and HTTP listing routes are planned.
+NestJS starts an HTTP application or a CLI application context. `GET /health` reports liveness. Zod validates configuration and inputs. The [verified single-sale CLI baseline](phase-plans/02-extraction-through-cli.md) uses a mocked gateway, quote-based assertions, evidence checks, and Listings normalization and resolution. The LLM Gateway selects Gemini, Anthropic, or OpenAI through the provider-independent interface and loads Vercel AI SDK providers with native dynamic imports from the CommonJS application. A missing key returns `provider_unavailable`. Prisma is configured for SQLite and CommonJS generation. Domain persistence and HTTP listing routes are planned.
 
 ## Module boundaries
 

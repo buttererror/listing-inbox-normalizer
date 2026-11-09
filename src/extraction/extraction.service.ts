@@ -1,11 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { LLM_GATEWAY, LlmGateway, ProviderError } from '../llm-gateway/llm-request';
+import { LLM_GATEWAY, ProviderError } from '../llm-gateway/llm-request';
+import type { LlmGateway } from '../llm-gateway/llm-request';
 import { ProcessingFailure } from '../messages/message-result.schema';
 import { RawMessage } from '../messages/raw-message.schema';
 import {
   ExtractionResult,
   gatewayExtractionResponseSchema,
+  gatewayWireResponseSchema,
 } from './extraction-result.schema';
 import {
   RejectedEvidence,
@@ -42,7 +44,7 @@ export class ExtractionService {
       output = await this.gateway.execute({
         instructions,
         sourceText: message.text,
-        responseSchema: z.toJSONSchema(gatewayExtractionResponseSchema, { target: 'draft-7' }),
+        responseSchema: z.toJSONSchema(gatewayWireResponseSchema, { target: 'draft-7' }),
       });
     } catch (err: unknown) {
       if (err instanceof ProviderError) {

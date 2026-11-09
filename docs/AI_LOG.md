@@ -676,3 +676,11 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Important prompt** — “What about this handoff solution?” The supplied handoff says, “Start by inspecting the current `GeminiGateway`, `LlmGateway` contract, and extraction response schema. Identify compatibility risks before replacing the implementation.”
 - **Outcome** — Recorded the shared Chat Completions gateway as proposed in [D-025](DECISIONS.md#d-025-evaluate-a-shared-chat-completions-gateway). OpenAI's strict schema rules require fields that are currently optional, such as `context_quote`, to be represented explicitly on the wire.
 - **Verification and limits** — Sent the current unmodified Extraction schema and the existing synthetic fixture to Gemini 3.6 Flash's OpenAI-compatible endpoint using direct HTTPS. It returned HTTP 200, finish reason `stop`, zero tool calls, and a valid `listing` result with four source-checked assertions. This probe did not exercise the proposed SDK or verify the OpenAI, Claude, or local endpoints.
+
+## Replaced ES module attempt with CommonJS AI SDK gateway — 2026-11-10
+
+- **Evidence status** — Evidence checked against source and command output.
+- **Human review** — Not requested.
+- **Important prompts** — “Revert back and complete the implementation of vercel ai sdk. Make a detailed plan”; “Implement the plan”.
+- **Outcome** — Restored CommonJS and extensionless local imports. Replaced the handwritten Gemini transport with a single Vercel AI SDK 7 gateway that dynamically imports the selected Gemini, Anthropic, or OpenAI package. The provider selected by `LLM_PROVIDER` receives `LLM_API_KEY`. OpenAI uses the SDK's Chat Completions model for strict JSON Schema. Removed the handwritten Gemini adapter.
+- **Verification and limits** — Typecheck and build passed. The complete offline suite passed 125 tests across 15 suites. Offline tests checked all three configured provider paths, authentication, model selection, structured schemas, no tools, malformed output, provider failures, timeouts, and missing configuration. The built Gemini CLI fixture returned a sale listing with `price.amount: 3200000`. `start:dev` reached Nest startup. Anthropic and OpenAI live qualification, representative quality, cost, latency, and usage remain for Phase 03.

@@ -44,6 +44,22 @@ describe('ExtractionService', () => {
         },
       },
     });
+    expect(request.responseSchema).toMatchObject({
+      properties: {
+        candidates: {
+          items: {
+            properties: {
+              assertions: {
+                items: {
+                  required: expect.arrayContaining(['context_quote']),
+                  properties: { context_quote: { type: expect.arrayContaining(['string', 'null']) } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 
   it.each([

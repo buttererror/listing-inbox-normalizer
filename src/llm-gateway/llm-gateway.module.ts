@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { loadConfig } from '../config/env';
-import { GeminiGateway } from './gemini.gateway';
-import { LLM_GATEWAY, LlmGateway, ProviderError } from './llm-request';
+import type { AppConfig } from '../config/env';
+import { AiSdkGateway } from './ai-sdk.gateway';
+import { LLM_GATEWAY, ProviderError } from './llm-request';
+import type { LlmGateway } from './llm-request';
 
 export const unconfiguredGateway: LlmGateway = {
   async execute() {
@@ -9,19 +11,39 @@ export const unconfiguredGateway: LlmGateway = {
   },
 };
 
+export async function createLlmGateway(config: AppConfig = loadConfig()): Promise<LlmGateway> {
+  if (config.LLM_PROVIDER === 'gemini' && config.LLM_API_KEY) {
+    return AiSdkGateway.create({
+      provider: 'gemini',
+      apiKey: config.LLM_API_KEY,
+      model: config.LLM_MODEL ?? 'gemini-3.6-flash',
+      timeoutMs: config.LLM_TIMEOUT_MS,
+    });
+  }
+  if (config.LLM_PROVIDER === 'anthropic' && config.LLM_API_KEY && config.LLM_MODEL) {
+    return AiSdkGateway.create({
+      provider: 'anthropic',
+      apiKey: config.LLM_API_KEY,
+      model: config.LLM_MODEL,
+      timeoutMs: config.LLM_TIMEOUT_MS,
+    });
+  }
+  if (config.LLM_PROVIDER === 'openai' && config.LLM_API_KEY && config.LLM_MODEL) {
+    return AiSdkGateway.create({
+      provider: 'openai',
+      apiKey: config.LLM_API_KEY,
+      model: config.LLM_MODEL,
+      timeoutMs: config.LLM_TIMEOUT_MS,
+    });
+  }
+  return unconfiguredGateway;
+}
+
 @Module({
   providers: [
     {
       provide: LLM_GATEWAY,
-      useFactory: () => {
-        const config = loadConfig();
-        if (config.LLM_PROVIDER !== 'gemini' || !config.GEMINI_API_KEY) return unconfiguredGateway;
-        return new GeminiGateway({
-          apiKey: config.GEMINI_API_KEY,
-          model: config.LLM_MODEL,
-          timeoutMs: 45000,
-        });
-      },
+      useFactory: createLlmGateway,
     },
   ],
   exports: [LLM_GATEWAY],

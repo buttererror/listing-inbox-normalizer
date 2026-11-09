@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { createCliContext, runCli } from '../src/cli';
 
-describe('Gemini CLI wiring', () => {
+describe('AI SDK Gemini CLI wiring', () => {
   const originalFetch = global.fetch;
   const originalEnvironment = { ...process.env };
 
@@ -13,23 +13,20 @@ describe('Gemini CLI wiring', () => {
   it('sends the configured CLI message through the gateway and returns a listing', async () => {
     process.env.LLM_PROVIDER = 'gemini';
     process.env.LLM_MODEL = 'test-model';
-    process.env.GEMINI_API_KEY = 'test-key';
+    process.env.LLM_API_KEY = 'test-key';
     const extraction = {
       classification: 'listing',
       candidates: [{
         assertions: [
-          { field: 'purpose', quote: 'sale', verdict: 'supported' },
-          { field: 'property_type', quote: 'Villa', verdict: 'supported' },
-          { field: 'price', quote: 'Asking 3.2M SAR', verdict: 'supported' },
+          { field: 'purpose', quote: 'sale', verdict: 'supported', context_quote: null },
+          { field: 'property_type', quote: 'Villa', verdict: 'supported', context_quote: null },
+          { field: 'price', quote: 'Asking 3.2M SAR', verdict: 'supported', context_quote: null },
         ],
       }],
     };
-    const fetchMock = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(extraction) }] } }],
-      }),
-    });
+    const fetchMock = jest.fn().mockResolvedValue(new Response(JSON.stringify({
+      candidates: [{ finishReason: 'STOP', content: { role: 'model', parts: [{ text: JSON.stringify(extraction) }] } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
     global.fetch = fetchMock as typeof fetch;
     let stdout = '';
     let stderr = '';
@@ -48,7 +45,11 @@ describe('Gemini CLI wiring', () => {
       listings: [{ property_type: 'villa', price: { amount: 3200000, currency: 'SAR', period: 'total' } }],
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const request = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const request = JSON.parse(String(init.body));
+    expect(url).toContain('/models/test-model:generateContent');
     expect(request.tools).toBeUndefined();
+    expect(request.systemInstruction.parts[0].text).toContain('Identify one property');
+    expect(request.contents[0].parts[0].text).toContain('Asking 3.2M SAR');
   });
 });

@@ -89,15 +89,15 @@ describe('process command', () => {
 
   it('runs the production entry point with an unavailable provider failure', async () => {
     await writeFile(path, JSON.stringify(message));
-    const originalKey = process.env.GEMINI_API_KEY;
+    const originalKey = process.env.LLM_API_KEY;
     const originalProvider = process.env.LLM_PROVIDER;
     process.env.LLM_PROVIDER = 'gemini';
-    process.env.GEMINI_API_KEY = '';
+    process.env.LLM_API_KEY = '';
     try {
       expect(await runCli(['process', path], { ...dependencies(), createContext: createCliContext })).toBe(1);
     } finally {
-      if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
-      else process.env.GEMINI_API_KEY = originalKey;
+      if (originalKey === undefined) delete process.env.LLM_API_KEY;
+      else process.env.LLM_API_KEY = originalKey;
       if (originalProvider === undefined) delete process.env.LLM_PROVIDER;
       else process.env.LLM_PROVIDER = originalProvider;
     }

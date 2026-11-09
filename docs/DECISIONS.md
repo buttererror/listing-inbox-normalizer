@@ -11,11 +11,11 @@ This evidence is a user-supplied summary, not an exported GPT transcript. Origin
 
 ## Open policy checkpoints
 
-[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). D-019 and D-020 settle the v2 treatment of project announcements, multi-offer evidence, price and currency eligibility, and field applicability within the current scope. The table distinguishes these dispositions from the remaining checkpoints. D-024 selects the direct tool-less Gemini API for 02.0. OPEN-08 applies to any workflow that executes tools on untrusted input.
+[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). D-019 and D-020 settle the v2 treatment of project announcements, multi-offer evidence, price and currency eligibility, and field applicability within the current scope. The table distinguishes these dispositions from the remaining checkpoints. D-024 selects Gemini as the first tool-less provider, and D-026 records its shared SDK transport. OPEN-08 applies to any workflow that executes tools on untrusted input.
 
 | ID | Question | Review checkpoint |
 | --- | --- | --- |
-| OPEN-01 | D-024 uses the existing typed provider failure and timeout contract for Gemini. | Review any expanded production retry policy before use. |
+| OPEN-01 | D-026 uses the existing typed provider failure and timeout contract for configured providers. | Review any expanded production retry policy before use. |
 | OPEN-02 | Area comparison for property identity beyond the approved projection | Before deduplication |
 | OPEN-03 | D-019 classifies project announcements and excludes unit ranges and starting prices from independent offers. Project-specific fields are deferred. | Revisit if project-specific output enters scope |
 | OPEN-04 | D-019 and D-020 settle association, price, currency, and inference policy for v2. | Verify the approved rules in Phase 02. Review future inference before use. |
@@ -125,8 +125,8 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Status** — Accepted on 2026-11-09.
 - **Context** — Task 02.0 needs a live CLI provider. The user requires a tool-less model call for untrusted messages. The installed `agy` CLI exposed model tool declarations and its documented flags did not establish a tool-free mode.
 - **Options and tradeoffs** — The Antigravity Python SDK offers tool filtering but introduces a Python dependency and may require separate credentials. A direct Gemini model API call permits a request without configured tools and uses an API key. Further `agy` investigation preserves the installed CLI but has an uncertain outcome.
-- **Decision and rationale** — Use the Gemini API with no tools configured through the provider-independent gateway. Node's existing HTTP support avoids an additional package. Map provider failures and timeouts to the existing typed errors and validate responses in Extraction.
-- **Consequences** — Supersedes D-023's Antigravity provider choice for 02.0. Claude and other providers require separate adapters, credentials, model configuration, and schema translation. Gemini 3.6 Flash is the default after a successful synthetic CLI run. The user can choose a model through `LLM_MODEL`.
+- **Decision and rationale** — Use the Gemini API with no tools configured through the provider-independent gateway. Map provider failures and timeouts to the existing typed errors and validate responses in Extraction. D-026 later selected the shared SDK transport.
+- **Consequences** — Supersedes D-023's Antigravity provider choice for 02.0. Gemini 3.6 Flash is the default after a successful synthetic CLI run. D-026 adds configurable Anthropic and OpenAI provider packages, credentials, model configuration, and schema handling.
 - **Validation** — Check the HTTP request and schema translation with offline mocks, verify malformed responses and provider failures, then run the synthetic CLI fixture with the configured key. Review independent quality evaluation in Phase 03.
 - **Review checkpoint** — OPEN-01 uses the existing typed failure contract for this integration. OPEN-08 is resolved for the direct model request without tools. Any workflow that allows tool execution with untrusted content requires a separate verified-isolation decision.
 - **Approval evidence** — “For Dwelleo, broker messages are untrusted data passed to a tool-less LLM extraction call”; user chose “Gemini API with no tools configured”.
@@ -445,3 +445,13 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Status:** Needs clarification; not counted toward the three required incidents.
 - **Evidence:** The supplied handoff summarizes that the earlier assistant initially favored rules and regex and the user emphasized generalization. It is a second-hand summary, not the original exchange.
 - **Missing evidence:** Original prompt/context and what specifically was incorrect or changed. A reasonable disagreement alone is not a mistake. Request the user's account only if needed to assess this candidate; do not reconstruct the missing transcript.
+
+### D-026: Use AI SDK 7 from the CommonJS application
+
+- **Status** — Accepted. Supersedes the proposed D-025 implementation approach and replaces the earlier ES module migration choice in this decision.
+- **Context** — The unified gateway needs multiple providers. AI SDK 7 and its provider packages are ESM while the established NestJS application uses CommonJS and extensionless imports.
+- **Options and tradeoffs** — A project-wide ES module migration changes every relative import and test configuration. Native dynamic imports load the selected ESM SDK package at the gateway boundary while preserving the established application module format.
+- **Decision and rationale** — Use AI SDK 7 with native dynamic imports from the CommonJS LLM Gateway. Load the SDK and selected provider sequentially. Keep all application source and local imports in CommonJS form.
+- **Consequences** — Gateway construction is asynchronous. Automated tests use Node's VM-module support when exercising the ESM SDK. `LLM_API_KEY` supplies the credential for the provider selected by `LLM_PROVIDER`. Provider schemas and tool-free requests require provider-specific verification. Claude and OpenAI require live qualification.
+- **Validation and checkpoint** — Verify offline request boundaries and the real Gemini CLI before removing the earlier adapter. The offline suite and live Gemini fixture passed on 2026-11-10.
+- **Approval evidence** — “Revert back and complete the implementation of vercel ai sdk. Make a detailed plan” and “Implement the plan”.
