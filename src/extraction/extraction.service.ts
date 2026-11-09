@@ -1,5 +1,6 @@
+import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { LlmGateway } from '../llm-gateway/llm-request';
+import { LLM_GATEWAY, LlmGateway, ProviderError } from '../llm-gateway/llm-request';
 import { ProcessingFailure } from '../messages/message-result.schema';
 import { RawMessage } from '../messages/raw-message.schema';
 import {
@@ -31,15 +32,45 @@ export type ExtractionOutcome =
   | { ok: true; result: ExtractionResult; rejectedEvidence: RejectedEvidence[] }
   | { ok: false; failure: ProcessingFailure };
 
+@Injectable()
 export class ExtractionService {
-  constructor(private readonly gateway: LlmGateway) {}
+  constructor(@Inject(LLM_GATEWAY) private readonly gateway: LlmGateway) {}
 
   async extract(message: RawMessage): Promise<ExtractionOutcome> {
-    const output = await this.gateway.execute({
-      instructions,
-      sourceText: message.text,
-      responseSchema: z.toJSONSchema(gatewayExtractionResponseSchema, { target: 'draft-7' }),
-    });
+    let output: unknown;
+    try {
+      output = await this.gateway.execute({
+        instructions,
+        sourceText: message.text,
+        responseSchema: z.toJSONSchema(gatewayExtractionResponseSchema, { target: 'draft-7' }),
+      });
+    } catch (err: unknown) {
+      if (err instanceof ProviderError) {
+        return {
+          ok: false,
+          failure: {
+            message_id: message.id,
+            error: { code: err.code, message: err.message },
+          },
+        };
+      }
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        const code = (err as { code: unknown }).code;
+        if (code === 'provider_unavailable' || code === 'provider_timeout') {
+          return {
+            ok: false,
+            failure: {
+              message_id: message.id,
+              error: {
+                code,
+                message: (err as { message?: string }).message ?? 'Provider error',
+              },
+            },
+          };
+        }
+      }
+      throw err;
+    }
     const parsed = gatewayExtractionResponseSchema.safeParse(output);
     if (!parsed.success) {
       return {

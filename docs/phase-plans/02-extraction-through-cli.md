@@ -1,6 +1,6 @@
 # 02 — Extraction through CLI
 
-**Status** — In progress. Tasks 02.1–02.5 are complete. Task 02.6 (shared processor CLI integration) is next. Phase exit checks are pending.
+**Status** — Complete. Tasks 02.1–02.6 are complete. Exit checks passed.
 
 Verify classification, extraction and normalization for one supported sale listing per message through the CLI. Use the [approved contracts](01-contracts-and-cli.md#approved-contract-and-policy-choices) and an offline test gateway. Both the one-line and multi-line fixtures use the same JSONL input shape.
 
@@ -32,6 +32,8 @@ Complete each focused testing task before starting dependent work, as required b
 **02.4 / 02.4T — 2026-11-09:** Added Listings normalizer for supported assertions with original evidence, findings and distinct competing values. Area selection prioritizes built-up area for built properties and land area for land. `corepack pnpm exec jest --runInBand --runTestsByPath test/listings-normalization.spec.ts` passed 17 tests; typecheck and build passed.
 
 **02.5 / 02.5T — 2026-11-09:** Added listing field resolution and review derivation in Listings (`resolveListing` and `ListingsService`), corrected under E-009 to keep verified asking prices alongside rejected deposits and leave area null when conflicting property types change selection. Resolved supported values, left missing, unsupported or conflicting applicable fields null, omitted bedrooms and bathrooms for land without review reasons, and derived readable review reasons and `needs_review = review_reasons.length > 0`. `corepack pnpm exec jest --runInBand --runTestsByPath test/listings-resolution.spec.ts` passed 11 tests; full offline suite (99 tests across 11 suites), typecheck and build passed. Processor integration remains task 02.6.
+
+**02.6 / 02.6T — 2026-11-09:** Composed Extraction and Listings behind `ListingMessageProcessor` and wired it to `MESSAGE_PROCESSOR` in `MessagesModule`. Updated `LlmGatewayModule` and `ExtractionModule` to provide and inject `LLM_GATEWAY`, returning `provider_unavailable` when unconfigured. Serialized public listing results through the CLI with `duplicate_of: null`. Focused integration and processor suites (`test/cli-integration.spec.ts` and `test/listing-message-processor.spec.ts`) passed 7 tests verifying one-message Arabic sale with review reasons, two independent sales in input order, invalid extraction envelope with continuation and exit 1, invalid JSONL continuation, and processor delegation. Full offline suite (115 tests across 13 suites), typecheck, build, and built CLI invocation passed cleanly. Phase exit checks passed.
 
 ### 02.1T — Gateway and response validation
 
@@ -103,9 +105,7 @@ Broader coverage in Phase 04 should exercise `85,000/yr` and recurring prices wi
 
 ## Exit check
 
-**02.5 follow-up — 2026-11-09:** Under D-018, explicit uncertainty generates a review reason alongside supported values. Area kind is omitted for conflicting values or differing projections, and unresolved property type no longer makes absent room counts required. The focused resolver suite passed 15 tests. Typecheck and build passed. Price-period comparison remains part of later rental support.
-
-The offline CLI path demonstrates grounded and normalized listing results and readable reasons for unsupported values. Run the offline suite, type check, and build. Record the results and update affected success criteria. Persistence, replay, HTTP parity and live qualification have [separate acceptance checks](../roadmap.md#phase-03-carryover-checks). Verification evidence is pending.
+**Phase 02 exit check — 2026-11-09:** Verified the offline CLI path with grounded, normalized listing results and readable reasons for unsupported values. The full offline test suite passed 115 tests across 13 test suites (`corepack pnpm test`); `corepack pnpm run typecheck` and `corepack pnpm run build` passed cleanly; compiled CLI invocation (`node dist/cli.js process <fixture>`) verified clean stdout and appropriate exit codes. Successfully advanced SC-01, SC-06, SC-07, SC-08, SC-09, SC-11, SC-13, and PC-01. Persistence, replay, HTTP parity and live qualification carry forward to Phase 03.
 
 **02.4 / 02.4T independent work — 2026-11-09:** Added a Listings normalizer for supported assertion fixtures, with original evidence, findings and distinct competing values. Area selection returns the applicable priority group for later conflict resolution. `corepack pnpm exec jest --runInBand --runTestsByPath test/listings-normalization.spec.ts` passed 11 tests; typecheck and build passed. Integration and the mixed-outcome boundary test remain pending 02.3T. The current extraction checks may accept a quote whose needed qualifier is only in context; the handoff must address this before integration. Location normalization and field conflict resolution remain pending.
 

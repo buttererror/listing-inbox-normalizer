@@ -1,17 +1,16 @@
 import { Module } from '@nestjs/common';
-import { MESSAGE_PROCESSOR, MessageProcessor } from './message-processor';
-
-const unavailableProcessor: MessageProcessor = {
-  async process(message) {
-    return {
-      message_id: message.id,
-      error: { code: 'provider_unavailable', message: 'Extraction is not configured' },
-    };
-  },
-};
+import { MESSAGE_PROCESSOR } from './message-processor';
+import { ListingMessageProcessor } from './listing-message-processor';
+import { ExtractionModule } from '../extraction/extraction.module';
+import { ListingsModule } from '../listings/listings.module';
 
 @Module({
-  providers: [{ provide: MESSAGE_PROCESSOR, useValue: unavailableProcessor }],
-  exports: [MESSAGE_PROCESSOR],
+  imports: [ExtractionModule, ListingsModule],
+  providers: [
+    ListingMessageProcessor,
+    { provide: MESSAGE_PROCESSOR, useExisting: ListingMessageProcessor },
+  ],
+  exports: [MESSAGE_PROCESSOR, ListingMessageProcessor],
 })
 export class MessagesModule {}
+

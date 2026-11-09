@@ -1,6 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { createApplicationContext } from './bootstrap';
+import { ExtractionService } from './extraction/extraction.service';
+import { ListingsService } from './listings/listings.service';
+import { LlmGateway } from './llm-gateway/llm-request';
 import { runJsonl } from './messages/jsonl-runner';
+import { ListingMessageProcessor } from './messages/listing-message-processor';
 import { MESSAGE_PROCESSOR, MessageProcessor } from './messages/message-processor';
 
 type CliContext = {
@@ -48,10 +52,13 @@ export async function runCli(args: string[], dependencies: CliDependencies): Pro
   return exitCode;
 }
 
-export async function createCliContext(): Promise<CliContext> {
+export async function createCliContext(options?: { gateway?: LlmGateway }): Promise<CliContext> {
   const app = await createApplicationContext({ logger: false });
+  const processor = options?.gateway
+    ? new ListingMessageProcessor(new ExtractionService(options.gateway), app.get(ListingsService))
+    : app.get<MessageProcessor>(MESSAGE_PROCESSOR);
   return {
-    getProcessor: () => app.get<MessageProcessor>(MESSAGE_PROCESSOR),
+    getProcessor: () => processor,
     close: () => app.close(),
   };
 }

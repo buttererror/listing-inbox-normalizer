@@ -587,3 +587,12 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome** — Recorded D-018 and updated uncertainty reasons, area metadata and room applicability.
 - **Verification** — The focused resolver suite passed 15 tests. Typecheck and build passed.
 - **Limitations** — The D-017 handoff and CLI integration remain pending. Price-period comparison carries forward to rental support.
+
+## Phase 02 CLI integration (Task 02.6) — 2026-11-09
+
+- **Evidence status** — Evidence checked against user prompt, phase plan, contracts, implementation and test results.
+- **Human review** — Not requested for this routine implementation entry.
+- **Important user prompt** — “implement task 02.6”
+- **Outcome** — Composed `ExtractionService` and `ListingsService` behind `ListingMessageProcessor` in `MessagesModule`. Wired `LLM_GATEWAY` token and unconfigured fallback gateway in `LlmGatewayModule`, propagating `provider_unavailable` when unconfigured. Serialized public listing results through the CLI with `duplicate_of: null`. Created focused integration and processor tests (`test/cli-integration.spec.ts` and `test/listing-message-processor.spec.ts`) covering single Arabic sale with review reasons, two independent sales in input order, continuation after malformed extraction envelope with exit 1, continuation after invalid JSONL line, and processor unit delegation.
+- **Verification** — Focused tests passed 7 tests; full offline test suite passed 115 tests across 13 test suites (`corepack pnpm test`); `corepack pnpm run typecheck` and `corepack pnpm run build` passed cleanly; compiled CLI invocation (`node dist/cli.js process <fixture>`) verified clean stdout and exit codes.
+- **Limitations** — Offline checks use test-supplied gateways. Persistence, replay, HTTP parity and live provider qualification carry forward to Phase 03.
