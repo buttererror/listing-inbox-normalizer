@@ -596,3 +596,44 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome** — Composed `ExtractionService` and `ListingsService` behind `ListingMessageProcessor` in `MessagesModule`. Wired `LLM_GATEWAY` token and unconfigured fallback gateway in `LlmGatewayModule`, propagating `provider_unavailable` when unconfigured. Serialized public listing results through the CLI with `duplicate_of: null`. Created focused integration and processor tests (`test/cli-integration.spec.ts` and `test/listing-message-processor.spec.ts`) covering single Arabic sale with review reasons, two independent sales in input order, continuation after malformed extraction envelope with exit 1, continuation after invalid JSONL line, and processor unit delegation.
 - **Verification** — Focused tests passed 7 tests; full offline test suite passed 115 tests across 13 test suites (`corepack pnpm test`); `corepack pnpm run typecheck` and `corepack pnpm run build` passed cleanly; compiled CLI invocation (`node dist/cli.js process <fixture>`) verified clean stdout and exit codes.
 - **Limitations** — Offline checks use test-supplied gateways. Persistence, replay, HTTP parity and live provider qualification carry forward to Phase 03.
+
+## V2 plan and roadmap — 2026-11-09
+
+- **Evidence status** — Evidence checked against the supplied handoffs, user messages, repository documents, and working-tree diff.
+- **Human review** — Not requested. The user directly clarified the scope.
+- **Objective** — Review the redesigned processing boundary and update the planning documents.
+- **Important prompts** — “These are the architecture and plan changes Let's review and be ready for implementation”; “I would exchange phase 4 with phase 3 to test as soon as we can. Should we also update plan.md as v2 and keep the existing one? report before updating the plan”; “Update the plan”; “You are only updating the document not implementing, correct?”
+- **Outcome** — Added plan v2, the revised Phase 02 tracker and processing policy. Recorded the accepted contract and resolution choices, and placed synthetic provider evaluation before persistence and formal qualification. Preserved the original plan and verified single-sale phase record.
+- **Human intervention** — The user supplied the finalized mixed-classification policy, requested in-call evidence-to-value verification and chose independent candidate validation. After “PLEASE IMPLEMENT THIS PLAN” began a source edit, the user clarified documentation-only scope. The source edits were restored.
+- **Verification and limitations** — Checked the working tree against HEAD for source, tests, Prisma, configuration and original-plan changes. The v2 behavior and provider measurements remain planned.
+- **Related decisions and incident** — [D-019–D-021](DECISIONS.md#v2-decisions), [E-010](DECISIONS.md#e-010-source-edits-during-the-v2-documentation-update).
+
+## V2 documentation correction and provider sequence — 2026-11-09
+
+- **Evidence status** — Evidence checked against both architecture handoffs, the Draft v1 policy reference, user messages, and the repository diff.
+- **Human review** — Not requested. The user directly specified the missing detail and corrected the phase sequence.
+- **Objective** — Restore the complete policy reference, document the ordered pipeline contracts, and turn plan v2 into an actionable delivery plan.
+- **Important prompts** — “You didn't add all the policies provided to you as a reference.” “plan v2 is not a plan”. “Here's a handoff. Don't stick to the path mentioned, use the appropriate path. Revise the created and modified files.” “I said that we replace the order of two phases not to add a smoke test because I wanted integrate the live provider as soon as possible”. “Also use the architecture I sent you to be a reference and don't drop anything”.
+- **Outcome** — Restored the 61 policy IDs and examples. Expanded the architecture around all seven runtime stages and the separate evaluator, including association as the third of nine ordered LLM steps. Expanded the v2 delivery plan and moved the revised Phase 02 tracker into the phase-plan directory.
+- **Human intervention** — The user identified omissions and specified live CLI provider integration before SQLite and HTTP. D-022 records the corrected qualification gate.
+- **Verification and limits** — Compared policy IDs and ordered stage coverage to the supplied handoffs, checked new local links and whitespace, and verified that the original plan, brief, historical Phase 02 record, and application files match HEAD. This was a documentation correction. Phase 02 implementation and live provider verification remain planned.
+- **Related records** — [D-022](DECISIONS.md#d-022-integrate-the-live-provider-before-sqlite-and-http), [E-011](DECISIONS.md#e-011-the-initial-v2-documentation-condensed-the-handoffs).
+
+- **Phase tracker follow-up** — The user asked “Why are you using different terms than the architecture to describe the phase?” Aligned the tracker and v2 phase summary with the architecture's stage names. Verified all seven names and the stage links, and made the Listings handoff and public result validation explicit.
+
+## Phase 02 coverage audit — 2026-11-09
+
+- **Evidence status** — Evidence checked against the architecture, processing policy, original CLI contract, roadmap, and working-tree diff.
+- **Human review** — Not requested.
+- **Important prompt** — “Verify that the phase doesn't miss anything”.
+- **Outcome** — Made normalization, numeric rejection, resolution and review policy coverage, CLI failure behavior, and the Phase 03 evaluation handoff explicit in the tracker. Corrected architecture boundaries that read as imperatives.
+- **Verification and limits** — Checked stage links, the six task rows, the nine model responsibilities, and the documentation diff. The revised phase remains planned. See [E-012](DECISIONS.md#e-012-architecture-boundary-bullets-read-as-instructions).
+
+## Handoff reconciliation — 2026-11-09
+
+- **Evidence status** — Evidence checked against the original architecture and Draft v1 policies, the later pipeline handoff, and the user's in-chat decisions.
+- **Human review** — Not requested.
+- **Important prompt** — “Check if we missed anything from the handoffs from the beginning of this chats”.
+- **Outcome** — Restored explicit prompt coverage and bounded findings, documented how grounded semantic findings survive validation, and made the incremental refactor, README measurement deliverable, and deduplication evaluation explicit. Aligned OPEN-03–05 with the approved v2 policies.
+- **Verification and limits** — Checked all 61 policy IDs, all runtime stages and the evaluator, the ordered model steps, changed links, and the documentation-only diff. Phase 02 remains planned and live provider evidence belongs to Phase 03.
+- **Related decisions** — [D-019–D-022](DECISIONS.md#v2-decisions).

@@ -3,7 +3,8 @@
 The [roadmap](../roadmap.md) orders the phases. Each phase records its own tasks, governing [decisions](../DECISIONS.md), [success criteria](../success-criteria.md), and verification evidence.
 
 - [01 — Contracts, policies, and CLI harness](01-contracts-and-cli.md)
-- [02 — Extraction through CLI](02-extraction-through-cli.md)
+- [02 — Extraction through CLI baseline](02-extraction-through-cli.md)
+- [02 revision — Message processing through CLI](02-message-processing.md)
 
 Later phases are roadmap candidates. Refine their tasks after reviewing Phase 02 evidence.
 

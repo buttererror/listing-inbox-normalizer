@@ -16,9 +16,11 @@ Requires Node.js 24 and pnpm 10.28.2 (via Corepack). Install dependencies with `
 
 `GET /health` returns `{"status":"ok"}` and reports liveness only. Application startup does not call a model. Environment variables select a future provider and are validated at startup.
 
-The [implementation plan](PLAN.md) is finalized. It preserves the original planning baseline and records the phase-and-task delivery structure in a dated amendment.
+The [v2 plan](PLAN-v2.md) describes the planned message-processing refactor and delivery sequence. The [original plan](PLAN.md) preserves the pre-implementation baseline.
 
-The [Antigravity smoke test](docs/AI_LOG.md#antigravity-provider-experiment) records observed latency and usage for a synthetic call. Representative per-message cost and application latency remain unmeasured. Phase 01 and Phase 02 are verified; Phase 03 will address persistence, HTTP endpoints, and provider qualification.
+In the [planned pipeline](docs/architecture.md), the model proposes typed values and source evidence in one request. The application validates candidates, resolves fields, derives review reasons, and returns a shared CLI or HTTP result. Stored-property matching runs before review once Phase 05 is in place.
+
+Phase 01 and the single-sale CLI baseline are verified. The Phase 02 revision is planned. Phase 03 integrates and qualifies Antigravity through the CLI and measures it on independent cases. Phase 04 adds SQLite, HTTP, and approval. The [earlier Antigravity smoke test](docs/AI_LOG.md#antigravity-provider-experiment) records one synthetic call. Representative cost and latency remain unmeasured.
 
 The pnpm lockfile pins a Multer override for a production dependency advisory. The production dependency audit passed after the override; the full development dependency audit reported seven low-severity advisories at setup time.
 

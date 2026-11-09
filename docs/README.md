@@ -1,11 +1,13 @@
 # Documentation
 
-- [Root plan](../PLAN.md) — original baseline and finalized phase-and-task amendment.
+- [Current delivery plan v2](../PLAN-v2.md)
+- [Original plan](../PLAN.md) — pre-implementation baseline and dated amendments.
 - [Success criteria and coverage](success-criteria.md)
 - [Original assessment snapshot](task-brief.md)
-- [Architecture and implementation status](architecture.md)
+- [Architecture, stage contracts, and implementation status](architecture.md)
 - [Development roadmap](roadmap.md)
 - [Phase plans](phase-plans/README.md)
+- [Processing and resolution policy](processing-resolution-policy.md)
 - [Decision register](DECISIONS.md)
 - [Key agent sessions](AI_LOG.md)
 - [Commit convention](commits.md)

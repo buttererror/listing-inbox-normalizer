@@ -11,17 +11,17 @@ This evidence is a user-supplied summary, not an exported GPT transcript. Origin
 
 ## Open policy checkpoints
 
-[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). The table records remaining policy work outside that scope. OPEN-08 governs live provider qualification after the offline checks in Phase 03.
+[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). D-019 and D-020 settle the v2 treatment of project announcements, multi-offer evidence, price and currency eligibility, and field applicability within the current scope. The table distinguishes these dispositions from the remaining checkpoints. D-022 assigns live CLI integration and provider qualification to Phase 03 after the offline Phase 02 exit. OPEN-08 governs execution isolation before untrusted input.
 
 | ID | Question | Review checkpoint |
 | --- | --- | --- |
-| OPEN-01 | Production provider failure handling beyond the approved transport error contract | Before enabling live ingestion in Phase 03 |
+| OPEN-01 | Production provider failure handling beyond the approved transport error contract | Before enabling live CLI ingestion in Phase 03 |
 | OPEN-02 | Area comparison for property identity beyond the approved projection | Before deduplication |
-| OPEN-03 | Project ranges and starting prices | Before extraction schema |
-| OPEN-04 | Evidence association across multiple listings and broader price, currency and inference rules | Before Phase 02 extraction and normalization |
-| OPEN-05 | Applicable fields for projects and other cases beyond single sale listings | Before expanding review coverage |
+| OPEN-03 | D-019 classifies project announcements and excludes unit ranges and starting prices from independent offers. Project-specific fields are deferred. | Revisit if project-specific output enters scope |
+| OPEN-04 | D-019 and D-020 settle association, price, currency, and inference policy for v2. | Verify the approved rules in Phase 02. Review future inference before use. |
+| OPEN-05 | D-020 settles applicable fields for v2 listings. Project announcements have no listing-level review unless an independent offer is extracted. | Verify the approved rules in 02.5. Revisit if review scope expands. |
 | OPEN-06 | Duplicate confidence thresholds | Before deduplication |
-| OPEN-07 | Approval transition and persisted review state | Before Phase 03 approval implementation |
+| OPEN-07 | Approval transition and persisted review state | Before Phase 04 approval implementation |
 | OPEN-08 | Provider execution isolation | Before untrusted live input |
 
 ## Decision format
@@ -66,6 +66,49 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Review checkpoint** — Approve the handoff and Phase 02 scope before implementing the proposed revisions or wiring task 02.6 to the revised contract. Revisit rental and currency policy before broader coverage.
 - **Approval evidence** — User instruction “PLEASE IMPLEMENT THIS PLAN” for “Evidence-backed normalization and architecture update” on 2026-11-09.
 - **References** — [Brief](task-brief.md#functional-requirements), [Phase 02 proposal](phase-plans/02-extraction-through-cli.md#proposed-revision-before-026), [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks).
+
+## V2 decisions
+
+### D-019: Use typed extraction proposals and mixed intent
+
+- **Status** — Accepted on 2026-11-09.
+- **Context** — Quote-only assertions and phrase parsing limit multilingual and multi-offer coverage.
+- **Options and tradeoffs** — Extend the phrase parser, accept typed values on quote existence alone, or combine typed proposals with independent mechanical checks. The third approach catches reliably detectable mismatches while leaving language interpretation to the model.
+- **Decision and rationale** — Use one model request for classification, extraction, normalization, and evidence-to-value self-checking. Use the nine ordered responsibilities in the architecture, with association before extraction. Replace broad wording rules with typed proposals and narrow mechanical validation. Validate the envelope first and retain per-offer candidate rejections. Extend the brief's minimum successful result with `mixed` and `detected_classes` to retain substantive intents alongside genuine offers.
+- **Consequences** — Replaces the per-assertion verdict and quote-to-value handoffs of D-016 and D-017. Public listing fields and failure envelopes retain their shapes. Consumers with exhaustive handling of the four original classes or exact success-shape validation must accept `mixed` and `detected_classes`. An exact quote and model self-check cannot establish semantic correctness.
+- **Validation and checkpoint** — Verify contract, source association, partial failures and CLI behavior in Phase 02. Evaluate semantic accuracy independently in Phase 03.
+- **Approval evidence** — User supplied “Dwelleo — Final Classification Policies”, the evidence-to-value handoff and the two-level validation choice, then requested the v2 plan update.
+
+### D-020: Apply conservative field selection and separate automated review
+
+- **Status** — Accepted on 2026-11-09.
+- **Context** — Multiple proposals can conflict, be materially uncertain, or have different roles or applicability.
+- **Options and tradeoffs** — Keep the best supported value with a warning, or clear fields whose selected value could materially change. Clearing values reduces unsupported finalization and increases review.
+- **Decision and rationale** — Clear material uncertainty and linked arithmetic mismatches. Compare full asking-price tuples and require explicit SAR evidence. Retain the draft room and area policies. Derive readable reasons in a separate reviewer.
+- **Consequences** — Amends D-018's keep-and-flag rule for material uncertainty. Preserve conflicting, rejected, and nonselected evidence. A harmless rejected assertion does not invalidate a supported value.
+- **Validation and checkpoint** — Verify room applicability, area projection, conflicts, price roles and arithmetic in 02.5.
+- **Approval evidence** — User selected “Null and flag”, “Require SAR evidence”, and “Use the draft rules”, then requested the v2 plan update.
+
+### D-021: Test the provider early and qualify after offline ingestion
+
+- **Status** — Superseded by D-022 for provider sequencing. The separate v2 plan and remaining phase ownership carry forward.
+- **Context** — Phase 02 now absorbs broader message coverage. Model feedback is useful while the prompt and contract are still easy to change.
+- **Options and tradeoffs** — Evaluate only after storage and HTTP, move formal qualification earlier, or run standalone synthetic experiments early while preserving the offline qualification gate.
+- **Decision and rationale** — Put early synthetic evaluation in Phase 03, SQLite, HTTP, approval and formal qualification in Phase 04, and deduplication in Phase 05. Capture the architecture change in a separate root PLAN-v2.md and preserve the baseline.
+- **Consequences** — Updates phase ownership under D-014. D-011 still governs formal qualification and live ingestion. The evaluator is separate from product traffic.
+- **Validation and checkpoint** — Confirm Phase 02 contract checks before a standalone smoke test and the offline Phase 04 exit checks before formal qualification. Resolve OPEN-07 before implementing approval and OPEN-06 before implementing deduplication.
+- **Approval evidence** — “I would exchange phase 4 with phase 3 to test as soon as we can.” User then said “Update the plan” after the report distinguishing early testing from qualification.
+
+### D-022: Integrate the live provider before SQLite and HTTP
+
+- **Status** — Accepted on 2026-11-09.
+- **Context** — Phase 02 now covers the full offline CLI processing path. The user wants a working live CLI as soon as that path is ready.
+- **Options and tradeoffs** — Keep live integration after SQLite and HTTP, run a standalone experiment first, or integrate and qualify the provider against the verified CLI before storage work. The CLI-first sequence provides earlier end-to-end feedback and leaves transport and storage parity for the following phase.
+- **Decision and rationale** — Phase 03 integrates and qualifies Antigravity through the existing gateway and CLI. Phase 04 adds SQLite, HTTP, and approval. This supersedes the ordering provisions of D-011, D-014, and D-021 that placed qualification after HTTP and SQLite. Retain offline application tests and the OPEN-08 isolation gate.
+- **Consequences** — The live CLI can operate before domain persistence. The evaluator remains separate from runtime. Phase 04 verifies persistence and HTTP integration offline.
+- **Validation and checkpoint** — After the Phase 02 exit, verify the configured provider through the CLI. Resolve OPEN-01 and OPEN-08 before untrusted input. Measure extraction quality, latency, usage, and available cost on independent cases.
+- **Approval evidence** — “I said that we replace the order of two phases not to add a smoke test because I wanted integrate the live provider as soon as possible”.
+
 
 ## Accepted
 
@@ -158,7 +201,7 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ### D-011: Verify the listing flow offline before qualifying Antigravity
 
-- **Status** — Accepted on 2026-11-09.
+- **Status** — Accepted on 2026-11-09. D-022 supersedes the requirement to complete HTTP and SQLite before qualification. Offline CLI verification and the execution isolation checkpoint carry forward.
 - **Context** — The first listing flow needs shared CLI and HTTP processing and SQLite persistence. Antigravity has returned a synthetic result, while isolation and evaluator setup still need qualification.
 - **Alternatives** — Require Antigravity in the first slice, which would combine provider qualification with domain verification, or verify the full listing flow with an injected gateway first and qualify the live provider in a second slice.
 - **Decision and rationale** — Use the offline listing slice first. Its behavior tests can run without provider credentials, and the second slice can isolate provider failures from ingestion and persistence failures.
@@ -166,7 +209,7 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Validation** — Check CLI/HTTP behavior and persisted results offline, then verify real provider restrictions and evaluator setup using synthetic input before enabling untrusted live input.
 - **Review checkpoint** — Review the first slice's exact contracts before implementing it and the provider qualification plan before the second slice.
 - **Approval evidence** — “Verify the full CLI/HTTP and SQLite flow offline first, then qualify Antigravity in a second slice”.
-- **References** — [Phase 03 carryover checks](roadmap.md#phase-03-carryover-checks) and [D-014](#d-014-organize-delivery-as-phases-and-tasks).
+- **References** — [Current live provider integration](roadmap.md#phase-03-live-provider-integration) and [D-014](#d-014-organize-delivery-as-phases-and-tasks).
 
 ### D-012: Approve the first listing scope and contracts
 
@@ -195,7 +238,7 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Context** — The first listing slice combined several independently verifiable outcomes. The user requested contracts and CLI first, then extraction through CLI, with later tasks refined from evidence.
 - **Alternatives and tradeoffs** — Keep the slice hierarchy, which separates an end-to-end outcome from its tasks, or use phase records to hold both. The phase structure gives each early checkpoint one owner and reduces navigation.
 - **Decision and rationale** — Use plan, roadmap, phases, and tasks. Detail Phases 01 and 02. Keep Phases 03–06 as candidates. Pair each task with focused verification under D-013 and use exit checks in place of time allocations.
-- **Consequences** — Supersedes the slice grouping in D-009, D-011, and D-012. The approved contracts and offline provider gate retain their scope and evidence. Phase 03 owns persistence, HTTP parity, and later provider qualification.
+- **Consequences** — Supersedes the slice grouping in D-009, D-011, and D-012. The approved contracts and offline provider gate retain their scope and evidence. The original Phase 03 assignment was persistence, HTTP parity, and later provider qualification. D-022 records the revised sequence.
 - **Validation and review checkpoint** — Check links, preserved contract rules, and ownership of the former slice checks. Review Phase 02 evidence before detailing the next phase.
 - **Approval evidence** — User instruction “PLEASE IMPLEMENT THIS PLAN” for “Finalize the phase-and-task delivery plan”.
 
@@ -343,6 +386,27 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Verification and limits:** Added two regression tests to `test/listings-resolution.spec.ts`. All 11 resolution tests pass; offline test suite passed 99 tests across 11 suites; typecheck and build passed.
 - **Evidence:** [Session log](AI_LOG.md#phase-02-resolution-fixes--2026-11-09), [resolver](../src/listings/resolve-listing.ts) and [tests](../test/listings-resolution.spec.ts).
 - **Human review:** Requested for attribution and error confirmation.
+
+### E-010: Source edits during the v2 documentation update
+
+- **Incorrect action** — Began editing Phase 02 source after interpreting “PLEASE IMPLEMENT THIS PLAN” as code authorization in the context of the plan update.
+- **Caught by** — The user clarified the scope with “You are only updating the document not implementing, correct?”
+- **Correction and verification** — Restored the source edits and confirmed the working-tree changes are documentation only. The revised Phase 02 tracker remains Planned.
+- **Evidence** — [V2 planning session](AI_LOG.md#v2-plan-and-roadmap--2026-11-09).
+
+### E-011: The initial v2 documentation condensed the handoffs
+
+- **Incorrect action** — Reduced the policy catalog to a summary, replaced the architecture with a short overview, and wrote a plan that omitted delivery details.
+- **Caught by** — The user identified the missing policies and architecture and said “plan v2 is not a plan”. The user supplied explicit ordered stage responsibilities and later corrected the interpretation of the Phase 03 and 04 swap.
+- **Correction and verification** — Rebuilt the documents from the handoffs, checked the policy IDs and ordered stage coverage, and recorded the live-provider-first phase order in D-022.
+- **Evidence** — [Documentation correction session](AI_LOG.md#v2-documentation-correction-and-provider-sequence--2026-11-09).
+
+### E-012: Architecture boundary bullets read as instructions
+
+- **Incorrect action** — Replaced the handoff's prohibition headings with “Boundary constraints” while retaining imperative bullets such as “Invent missing information”.
+- **Caught by** — Codex during the Phase 02 coverage audit requested by the user.
+- **Correction and verification** — Rewrote all six boundary lists to state permitted behavior and stage ownership. Compared them against the handoff and checked the documentation diff.
+- **Evidence** — [Phase 02 coverage audit](AI_LOG.md#phase-02-coverage-audit--2026-11-09).
 
 ### Unconfirmed candidate: Earlier GPT extraction strategy challenge
 
