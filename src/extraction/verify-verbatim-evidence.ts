@@ -1,10 +1,12 @@
-import type { ExtractionResult } from './extraction-result.schema';
+import type { ExtractionAssertion } from './extraction-result.schema';
+import type { RejectedReason } from './verify-source-integrity';
 
-type Assertion = ExtractionResult['candidates'][0]['assertions'][number];
+export type Assertion = ExtractionAssertion;
+export type { RejectedReason };
 
 export type RejectedEvidence = {
   assertion: Assertion;
-  reason: 'quote_not_in_source';
+  reason: RejectedReason;
 };
 
 export function verifyVerbatimEvidence(source: string, assertions: readonly Assertion[]) {
