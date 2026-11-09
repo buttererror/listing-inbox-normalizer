@@ -174,7 +174,34 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Validation and review checkpoint** — Check links, preserved contract rules, and ownership of the former slice checks. Review Phase 02 evidence before detailing the next phase.
 - **Approval evidence** — User instruction “PLEASE IMPLEMENT THIS PLAN” for “Finalize the phase-and-task delivery plan”.
 
+### D-016: Verify meaning in one model call with mechanical source integrity checks
+
+- **Status** — Accepted on 2026-11-09.
+- **Context** — Deterministic keyword/cue patterns and regex lists in application code do not generalize across languages and phrasing. The user requested using the same model call to propose evidence and assess whether it supports the claimed field, eliminating field cue patterns from application code while keeping source integrity verification mechanical.
+- **Options and tradeoffs** —
+  1. Multi-call verification: Separate extraction and verification model calls increase latency and cost.
+  2. Application-side keyword patterns (D-015): Hardcoded cue lists lack linguistic generalization and context coverage.
+  3. Single-call extraction with model self-assessment and mechanical checks (chosen): The model returns field, quote, verdict, and optional context_quote. Application code enforces mechanical integrity (exact source presence, context containment, token boundaries without clipping numbers/words, and occurrence disambiguation). Tradeoff: The model assesses its own extraction in one call; `supported` is a model judgment backed by source-checked evidence. Accuracy on unseen messages remains a live qualification criterion.
+- **Decision and rationale** — Define a private gateway response schema for extraction and assessment with `{ field, quote, verdict, context_quote }`. Instruct the model to quote the shortest contiguous passage with value and qualifiers, assess support against the source, distinguish occurrences, and return `uncertain` for ambiguous or negated text. Replace pattern-based context checks with mechanical checks for exact quotes, unclipped tokens (including decimal/thousands separators), and occurrence disambiguation. Forward only supported assertions passing mechanical checks in `{ field, quote }` handoff to 02.4. Retain contradicted, uncertain, and mechanically rejected assertions as findings with reasons.
+- **Consequences** — Application code contains no keyword lists for field meaning or phrase changes. The handoff to normalization (02.4) remains unchanged as `{ field, quote }`. Accuracy on unseen messages remains a live qualification criterion.
+- **Validation** — Focused offline tests check exactly one gateway call, schema validation, invented quotes or context, clipped tokens (including grouped and decimal numbers), repeated occurrences, and mixed verdicts (Arabic and English: فيلا للبيع, 5 BR claimed as bathrooms, Asking 3.2M SAR with trailing per year). Live provider qualification measures decision accuracy on unseen messages.
+- **Review checkpoint** — Review live model accuracy and false-acceptance rate during Phase 03 provider qualification.
+- **Approval evidence** — User instruction: “Agent implementation plan — Revise 02.3 to verify meaning in one model call”.
+- **References** — [Phase 02](phase-plans/02-extraction-through-cli.md), [AI log](AI_LOG.md).
+
 ## Superseded
+
+### D-015: Use one extraction call with contextual evidence checks
+
+- **Status** — Superseded by D-016 on 2026-11-09.
+- **Context** — Whole-quote patterns rejected valid expressions and missed trailing qualifiers. The user considered a second semantic verification call and supplied a contextual verification handoff.
+- **Options and tradeoffs** — A second model call can independently assess field meaning but adds latency and cost. One extraction call plus local checks avoids the second call but has limited language and context coverage.
+- **Decision and rationale** — Request complete evidence in 02.1, check verbatim in 02.2, and apply contextual field checks in 02.3. Preserve supported, contradicted and uncertain outcomes; normalize only supported evidence in 02.4.
+- **Consequences** — Superseded by D-016, which moves meaning assessment into the extraction model call and replaces code cue lists with mechanical source integrity checks.
+- **Validation** — Focused offline tests exercised multilingual, conflicting, negated and qualified evidence.
+- **Review checkpoint** — Superseded before dependent normalization in 02.4.
+- **Approval evidence** — User instruction “PLEASE IMPLEMENT THIS PLAN”, titled “Phase 02.3 — Contextual evidence checks with one LLM call”.
+- **References** — [Phase 02](phase-plans/02-extraction-through-cli.md), [session log](AI_LOG.md#phase-02-contextual-evidence-revision--2026-11-09).
 
 ### D-002: Original npm choice
 
@@ -187,7 +214,7 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ## Agent error records
 
-The brief requires at least three genuine examples in this register before submission. One documentation correction is recorded below; further incidents must come from observed work. Do not treat environment restrictions or disagreements alone as errors.
+The brief requires at least three genuine examples in this register before submission. Do not treat environment restrictions or disagreements alone as errors.
 
 ### Error-record format
 
@@ -220,6 +247,59 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Correction:** Supplied the processor method's return and parameter types separately.
 - **Verification:** The focused suite passed all six tests after correction. See the [session log](AI_LOG.md#phase-01-jsonl-runner--2026-11-09) and [test](../test/jsonl-runner.spec.ts).
 - **Human review:** Not requested. This was a transient test compilation error.
+
+### E-004: Whole-quote patterns rejected supported evidence
+
+- **Incorrect action:** The initial 02.3 verifier required rigid whole-quote patterns and rejected `فيلا للبيع` for both property type and purpose.
+- **Caught by:** User raised the generalization concern: “Didn't we say that we are going to make the solution general, not focused only on the 10 examples?” The agent reproduced the example during follow-up.
+- **Correction and verification:** Replaced whole-quote patterns with targeted checks initially; subsequently under D-016, eliminated all application keyword cue lists and delegated semantic assessment to the extraction model call, backed by mechanical source integrity verification. A focused regression accepts the phrase for both fields. See [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks), [session log](AI_LOG.md#phase-02-revise-023-meaning-in-one-model-call--2026-11-09) and [tests](../test/extraction-field-meaning.spec.ts).
+- **Human review:** Requested for the attribution; user confirmation is not recorded.
+
+### E-005: A trailing price qualifier was missed
+
+- **Incorrect action:** The initial verifier accepted `Asking 3.2M SAR` from a statement ending `per year` as a sale price.
+- **Caught by:** Agent inspection and reproduction during follow-up to the user's generalization concern.
+- **Correction and verification:** The initial revised checker considered trailing context via regex cues. Under D-016, instructions require the model to assess the full passage against non-total price terms and provide `context_quote`, while application code verifies source integrity mechanically. A focused regression rejects this example with `field_contradicted`. See [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks), [session log](AI_LOG.md#phase-02-revise-023-meaning-in-one-model-call--2026-11-09) and [tests](../test/extraction-field-meaning.spec.ts).
+- **Human review:** Attribution review requested; no confirmation is recorded.
+
+### E-006: Normalizer rejected common supported formats
+
+- **Incorrect action:** The initial 02.4 normalizer rejected attached units such as `3BR` and `380m2`, and rejected a negotiable asking price even though the brief includes these forms.
+- **Caught by:** Agent inspection prompted by the user's question “Does the normalization follow the [task-brief.md](docs/task-brief.md)?” The user requested the comparison; the available conversation does not show the user identifying the individual defects.
+- **Correction:** Allowed attached room and area units and accepted negotiable asking prices while retaining their original evidence.
+- **Verification and limits:** The focused normalization suite passed 17 tests including these cases, and typecheck and build passed. This does not establish coverage of all wording or the end-to-end CLI.
+- **Evidence:** [Session log](AI_LOG.md#phase-02-normalization-follow-up--2026-11-09), [normalizer](../src/listings/normalize-supported-assertions.ts) and [tests](../test/listings-normalization.spec.ts).
+- **Human review:** Not requested.
+
+### E-007: A per-area rate could become a total price
+
+- **Incorrect action:** The initial normalizer could accept `2,500 SAR/sqm` as a total asking price when supplied as a supported price assertion.
+- **Caught by:** Agent inspection during the brief comparison requested by the user. The user did not identify this particular example in the available conversation.
+- **Correction:** Added rejection of tested per-area rate expressions in the normalizer, retaining a finding instead of a total price.
+- **Verification and limits:** The focused suite passed 17 tests, including complete `SAR/sqm` and `SAR per m2` quotes. A quote clipped before the rate qualifier still requires protection at the Extraction handoff; integration remains pending 02.3T.
+- **Evidence:** [Session log](AI_LOG.md#phase-02-normalization-follow-up--2026-11-09), [normalizer](../src/listings/normalize-supported-assertions.ts) and [tests](../test/listings-normalization.spec.ts).
+- **Human review:** Not requested.
+
+### E-008: Mechanical verifier permitted false acceptances on context mismatch, trimmed context, and signed numbers
+
+- **Incorrect action:** The initial mechanical verifier under D-016 had gaps in source integrity enforcement:
+  1. Context containment was checked only when multiple unclipped occurrences remained, allowing a supported assertion whose context pointed to a clipped match (e.g. `Deposit: 150,000 SAR`) to erroneously pass on an unclipped match elsewhere in the text (e.g. `asking price: 50,000 SAR`).
+  2. `context_quote` was trimmed before source presence checks, allowing invented leading/trailing whitespace and treating whitespace-only quotes as absent instead of non-verbatim.
+  3. Numeric token boundaries excluded signs (`+`, `-`, `\u2212`), allowing quotes that cut off leading signs from numbers.
+  4. Attached compound rate units (`SAR/sqm`) were unprotected from cuts before `/`.
+- **Caught by:** User in follow-up review ([P1] and [P2] review items).
+- **Detection:** User review identified:
+  > “[P1] Tie the context quote to the occurrence that passes the token check — verify-source-integrity.ts (line 123) ... For Deposit: 150,000 SAR; asking price: 50,000 SAR, a supported assertion quoting 50,000 SAR with context Deposit: 150,000 SAR passes. The verifier discards the clipped match inside 150,000 but then accepts the other match, which lies outside the supplied context. Check containment whenever the model supplies context.
+  > [P2] Check context verbatim before using it as evidence — verify-source-integrity.ts (line 92) ... The verifier trims context_quote before checking source presence. A context quote with invented leading or trailing whitespace can therefore pass, and a whitespace-only quote is treated as absent. D-016 requires any supplied context quote to be verbatim.
+  > [P2] Include signs in numeric token boundaries — verify-source-integrity.ts (line 35) ... A quote of 50,000 SAR from -50,000 SAR passes the mechanical check because - is neither alphanumeric nor a recognized numeric separator. If the model marks the quote supported, the handoff changes the sign of the amount. Add signed-number cases to the clipping tests.”
+- **Correction:**
+  1. Updated `verifySourceIntegrity` to restrict candidate occurrences to those lying within `context_quote` whenever context is supplied, ensuring that if the occurrence inside context is clipped or invalid, the assertion cannot match outside occurrences.
+  2. Evaluated `context_quote` verbatim without trimming; any whitespace mismatch, empty, or whitespace-only context is rejected with `context_not_in_source`.
+  3. Added signs (`+`, `-`, `\u2212`) to `isClippedToken` boundaries to reject quotes cutting off leading signs.
+  4. Added compound unit boundary checks for `/` (e.g. `SAR/sqm`) to reject quotes clipped before rate suffixes.
+- **Verification and limits:** Focused suite in `test/extraction-field-meaning.spec.ts` expanded with 8 new regression tests covering all four issues. 34 focused extraction tests and all 88 test suite tests passed; typecheck and build passed.
+- **Evidence:** [Session log](AI_LOG.md#phase-02-mechanical-verification-fixes--2026-11-09), [verifier](../src/extraction/verify-source-integrity.ts) and [tests](../test/extraction-field-meaning.spec.ts).
+- **Human review:** Requested for attribution and error record confirmation.
 
 ### Unconfirmed candidate: Earlier GPT extraction strategy challenge
 
