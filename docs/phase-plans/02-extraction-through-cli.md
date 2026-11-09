@@ -1,6 +1,6 @@
 # 02 — Extraction through CLI
 
-**Status** — In progress. Tasks 02.1–02.3 are complete under D-016. Task 02.4 normalization is next. Remaining tasks and phase exit checks are pending.
+**Status** — In progress. Tasks 02.1–02.5 are complete. Task 02.6 (shared processor CLI integration) is next. Phase exit checks are pending.
 
 Verify classification, extraction and normalization for one supported sale listing per message through the CLI. Use the [approved contracts](01-contracts-and-cli.md#approved-contract-and-policy-choices) and an offline test gateway. Both the one-line and multi-line fixtures use the same JSONL input shape.
 
@@ -28,6 +28,10 @@ Complete each focused testing task before starting dependent work, as required b
 **02.2 / 02.2T — 2026-11-09:** Extraction now checks every structurally valid assertion against the original source and retains rejected assertions with `quote_not_in_source`. `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction-evidence.spec.ts test/extraction.service.spec.ts` passed 8 tests; typecheck and build passed. Field meaning, review reasons and processor integration remain pending.
 
 **02.3 / 02.3T — 2026-11-09:** Initial pattern-based verifier passed 14 tests, but whole-quote patterns rejected valid phrasing and missed trailing qualifiers. Under D-016 (superseding D-015), 02.3 was revised to verify meaning in one model call with mechanical checks, further strengthened under E-008 to enforce strict context containment, untrimmed context matching, signed numbers, and compound rate units. `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction-field-meaning.spec.ts test/extraction-evidence.spec.ts test/extraction.service.spec.ts` passed 34 tests; full test suite (88 tests), typecheck and build passed. Application code contains no keyword lists for field meaning. Accuracy on unseen messages remains a live qualification criterion. Normalization, review reasons and integration remain pending.
+
+**02.4 / 02.4T — 2026-11-09:** Added Listings normalizer for supported assertions with original evidence, findings and distinct competing values. Area selection prioritizes built-up area for built properties and land area for land. `corepack pnpm exec jest --runInBand --runTestsByPath test/listings-normalization.spec.ts` passed 17 tests; typecheck and build passed.
+
+**02.5 / 02.5T — 2026-11-09:** Added listing field resolution and review derivation in Listings (`resolveListing` and `ListingsService`), corrected under E-009 to keep verified asking prices alongside rejected deposits and leave area null when conflicting property types change selection. Resolved supported values, left missing, unsupported or conflicting applicable fields null, omitted bedrooms and bathrooms for land without review reasons, and derived readable review reasons and `needs_review = review_reasons.length > 0`. `corepack pnpm exec jest --runInBand --runTestsByPath test/listings-resolution.spec.ts` passed 11 tests; full offline suite (99 tests across 11 suites), typecheck and build passed. Processor integration remains task 02.6.
 
 ### 02.1T — Gateway and response validation
 
@@ -82,7 +86,24 @@ Complete each focused testing task before starting dependent work, as required b
 | Two independent sales | A file contains the Arabic sale and an independent English villa sale with a different asking price. The test gateway returns distinct source quotes for each message. | Stdout contains exactly two JSON success records in input order, each with its own facts and review reasons. Exit `0`. |
 | Invalid extraction followed by valid sale | The gateway returns a malformed response for the first message and valid evidence for the second. | Stdout contains an `invalid_extraction` record with the first ID followed by the second success. There are no diagnostic lines on stdout. Exit `1`. |
 
+## Proposed revision before 02.6
+
+[D-017](../DECISIONS.md#d-017-carry-evidence-backed-field-interpretations-into-normalization) was approved on 2026-11-09. The existing task records document the earlier implementation. Advance SC-08, SC-09, SC-11 and SC-13 with these revisions, then SC-01 through CLI integration.
+
+**Revision progress — 2026-11-09:** The existing price normalizer now handles `SAR 3.2M` and rejects negative prices and tested recurring and per-area rates. The architecture records the approved handoff as in progress. The focused normalization suite passed 22 tests and typecheck passed. The revised extraction handoff, grounded location handling, processor and CLI integration, full suite and build remain pending.
+
+| Order | Proposed work | Focused verification |
+| --- | --- | --- |
+| 1 | Revise 02.3. Define a strict field-specific interpretation in Extraction's gateway schema. For supported assertions, carry the proposed field meaning and literal value and qualifier spans inside the verified assertion. For price, carry a raw signed amount token, scale and currency evidence where present, and the price role and period. Preserve optional context, source occurrence checks, and rejected assertions. Keep the gateway generic. | One model call per input. Reject malformed interpretations, fabricated tokens, spans outside the matching occurrence, clipped signs or rate units, and mismatched or ambiguous evidence. Verify that an invalid assertion leaves independently grounded assertions usable and that an invalid envelope returns `invalid_extraction`. |
+| 2 | Revise 02.4. Convert grounded tokens to domain values in Listings. Accept prefix and suffix SAR, Arabic-Indic digits, grouped numbers and magnitude suffixes. Validate signs, finite results and explicit rate or period markers against the proposed interpretation. Use the grounded location text when its field is established by the model. Preserve the no-inference rules for locations and sender contacts. | Verify `SAR 3.2M`, `3,200,000 SAR`, `٩٥٠ ألف ريال`, Saudi mobiles and explicit locations from the brief. Check that `−50,000 SAR`, `50,000 SAR/yr` and per-area rates never become valid sale totals, including when the mock model labels them as total. |
+| 3 | Verify 02.5 against the revised handoff. Preserve evidence and qualifiers, resolve distinct supported facts, and derive review reasons for unsupported or conflicting fields. | A rejected deposit or rate can coexist with a verified total. Conflicting verified totals leave price null. A missing total leaves amount and period null with a readable reason. Recheck inapplicable land fields and area resolution when the category is unresolved. |
+| 4 | Complete 02.6 through the shared processor and CLI with an offline gateway. | Process original English and Arabic sale fixtures from the brief and independent variants. Check public output, JSONL ordering, clean stdout and continuation after an invalid envelope. Run the full offline suite, typecheck and build. Record dated evidence against the affected criteria. |
+
+Broader coverage in Phase 04 should exercise `85,000/yr` and recurring prices with explicit currency, after review of OPEN-04. The supplied land example's per-area rate is separate evidence from the stated total. Do not calculate a substitute total or assume currency for a separate amount without an approved policy.
+
 ## Exit check
+
+**02.5 follow-up — 2026-11-09:** Under D-018, explicit uncertainty generates a review reason alongside supported values. Area kind is omitted for conflicting values or differing projections, and unresolved property type no longer makes absent room counts required. The focused resolver suite passed 15 tests. Typecheck and build passed. Price-period comparison remains part of later rental support.
 
 The offline CLI path demonstrates grounded and normalized listing results and readable reasons for unsupported values. Run the offline suite, type check, and build. Record the results and update affected success criteria. Persistence, replay, HTTP parity and live qualification have [separate acceptance checks](../roadmap.md#phase-03-carryover-checks). Verification evidence is pending.
 

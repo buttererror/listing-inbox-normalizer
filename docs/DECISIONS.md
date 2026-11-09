@@ -42,6 +42,31 @@ References: Related brief requirements, decisions, logs, and code where availabl
 Supersedes / superseded by: Relevant ID, if applicable.
 ```
 
+## Proposed and recently approved
+
+### D-018: Resolve uncertain evidence and field applicability
+
+- **Status** — Accepted on 2026-11-09.
+- **Context** — The resolver must preserve uncertain evidence alongside supported values and distinguish unresolved area kinds and property applicability.
+- **Options and tradeoffs** — Ignore uncertain competing evidence, compare its meaning mechanically, or flag explicit uncertainty for review. The latter can produce extra review but avoids assuming semantic equivalence.
+- **Decision and rationale** — Keep supported values and flag explicit field uncertainty. Ignore definitive rejection or generic normalization findings when another value is supported. For unresolved property types retain supported room counts without missing-count flags. Preserve a common area number across projections but omit its kind when kinds differ.
+- **Consequences** — Human review may include uncertainty that ultimately agrees with a supported value. Period comparisons await rental support.
+- **Validation** — Focused resolver tests, typecheck and build.
+- **Review checkpoint** — Revisit uncertainty comparison with the D-017 handoff and rental policy.
+- **Approval evidence** — User instruction “PLEASE IMPLEMENT THIS PLAN” for “Phase 02.5 resolver corrections”.
+
+### D-017: Carry evidence-backed field interpretations into normalization
+
+- **Status** — Accepted on 2026-11-09. Implementation is in progress.
+- **Context** — The current handoff carries a field and quote. Listings then uses wording patterns to recover meaning. Review reproduced three gaps: a negative price became positive, a yearly rate became a sale total, and a valid currency-first price was dropped. The colon requirement also excludes grounded locations in the supplied messages.
+- **Options and tradeoffs** — Patch the current patterns, which is fast for individual cases but leaves meaning split across the prompt and parser. Let the model return final values, which simplifies the parser but makes arithmetic and source fidelity harder to check. Carry typed interpretations and verbatim value and qualifier spans, which adds schema and validation work while retaining deterministic conversion.
+- **Recommendation and rationale** — Use typed interpretations from the existing single extraction call. Preserve D-016's verdict and source checks. Require a supported interpretation's value and any qualifier spans to belong to the same verified assertion occurrence. Extraction checks interpretation shape and evidence. Listings converts numeric tokens, currencies and units, validates signs and known incompatible qualifiers, and resolves competing values. Accept an explicitly identified location's source text without requiring a colon. Keep supported and rejected evidence for review.
+- **Consequences** — Revise D-016's internal handoff if approved. The public result shape is compatible. Phase 02 remains a single-sale flow with explicit SAR required for a numeric price. The internal interpretation can distinguish total, recurring, per-area, deposit and other non-total price evidence. Review rental normalization and currency-less prices separately under OPEN-04 before enabling them. A source match and a model verdict still leave semantic accuracy to be measured.
+- **Validation** — Run the proposed Phase 02 task checks with an offline gateway, including wrong model values, forged or mismatched evidence, clipped signs or periods, invalid totals, common sale formats and locations from the brief. After offline CLI, HTTP and SQLite checks, evaluate unseen examples separately during provider qualification.
+- **Review checkpoint** — Approve the handoff and Phase 02 scope before implementing the proposed revisions or wiring task 02.6 to the revised contract. Revisit rental and currency policy before broader coverage.
+- **Approval evidence** — User instruction “PLEASE IMPLEMENT THIS PLAN” for “Evidence-backed normalization and architecture update” on 2026-11-09.
+- **References** — [Brief](task-brief.md#functional-requirements), [Phase 02 proposal](phase-plans/02-extraction-through-cli.md#proposed-revision-before-026), [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks).
+
 ## Accepted
 
 ### D-001: Keep the current stack
@@ -300,6 +325,24 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Verification and limits:** Focused suite in `test/extraction-field-meaning.spec.ts` expanded with 8 new regression tests covering all four issues. 34 focused extraction tests and all 88 test suite tests passed; typecheck and build passed.
 - **Evidence:** [Session log](AI_LOG.md#phase-02-mechanical-verification-fixes--2026-11-09), [verifier](../src/extraction/verify-source-integrity.ts) and [tests](../test/extraction-field-meaning.spec.ts).
 - **Human review:** Requested for attribution and error record confirmation.
+
+### E-009: Listing resolver nullified verified asking price on rejected deposit and defaulted category on conflicting property types
+
+- **Incorrect action:**
+  1. The listing resolver checked `!hasFindingOrRejection('price')` when resolving price, causing a supported, unambiguous `3.2M SAR` asking price to become `null` with `price_conflict` when Extraction also retained a rejected deposit quote (`Deposit: 50,000 SAR`). The deposit supplied no competing asking price.
+  2. When property-type assertions conflicted (e.g. `villa` and `land`), the resolver defaulted `propertyCategory` to `'built'`, applying built-property area priority (`380 sqm built-up`) over land area (`450 sqm`) instead of leaving the area `null` with a review reason when the unresolved category changes the selection.
+- **Caught by:** User in follow-up review ([P2] items).
+- **Detection:** User review prompt:
+  > “[P2] Keep the verified asking price when a deposit is rejected — resolve-listing.ts (line 164)
+  > A verified 3.2M SAR asking price becomes null and receives price_conflict if Extraction also rejects deposit 50,000 SAR as price evidence. The deposit supplies no competing asking price. Keep the verified amount and retain the rejected assertion in the evidence.
+  > [P2] Resolve the area only when the property category supports the selection — resolve-listing.ts (line 137)
+  > When supported property-type assertions say both villa and land, the resolver correctly leaves property_type null but applies the built-property area priority. With 380 sqm built-up and 450 sqm land, it publishes 380 even though the unresolved type determines which area applies. Leave the area null with a review reason when the category changes the selection.”
+- **Correction:**
+  1. Allowed unambiguous verified asking prices in `resolveListing` to be kept regardless of rejected assertions or findings for price; the rejected assertion remains preserved in `evidence.rejectedEvidence`.
+  2. When `property_type` is unresolved (e.g. conflicting property types), compared the area selection under `'land'` and `'built'`. If the category changes the selected value, left `area_sqm = null` and added `area_sqm_conflict` to `review_reasons`.
+- **Verification and limits:** Added two regression tests to `test/listings-resolution.spec.ts`. All 11 resolution tests pass; offline test suite passed 99 tests across 11 suites; typecheck and build passed.
+- **Evidence:** [Session log](AI_LOG.md#phase-02-resolution-fixes--2026-11-09), [resolver](../src/listings/resolve-listing.ts) and [tests](../test/listings-resolution.spec.ts).
+- **Human review:** Requested for attribution and error confirmation.
 
 ### Unconfirmed candidate: Earlier GPT extraction strategy challenge
 
