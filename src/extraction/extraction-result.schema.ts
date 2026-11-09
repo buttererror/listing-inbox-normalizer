@@ -12,7 +12,7 @@ const candidateSchema = z.strictObject({
 
 export const extractionResultSchema = z.strictObject({
   classification: z.literal('listing'),
-  candidates: z.tuple([candidateSchema]),
+  candidates: z.array(candidateSchema).length(1),
 });
 
 export type ExtractionResult = z.infer<typeof extractionResultSchema>;
@@ -32,7 +32,7 @@ const gatewayCandidateSchema = z.strictObject({
 
 export const gatewayExtractionResponseSchema = z.strictObject({
   classification: z.literal('listing'),
-  candidates: z.tuple([gatewayCandidateSchema]),
+  candidates: z.array(gatewayCandidateSchema).length(1),
 });
 
 export type GatewayExtractionResponse = z.infer<typeof gatewayExtractionResponseSchema>;

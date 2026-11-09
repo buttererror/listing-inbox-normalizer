@@ -11,18 +11,18 @@ This evidence is a user-supplied summary, not an exported GPT transcript. Origin
 
 ## Open policy checkpoints
 
-[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). D-019 and D-020 settle the v2 treatment of project announcements, multi-offer evidence, price and currency eligibility, and field applicability within the current scope. The table distinguishes these dispositions from the remaining checkpoints. D-023 assigns live CLI integration and provider qualification to 02.0 against the verified offline CLI baseline. OPEN-08 governs execution isolation before untrusted input.
+[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). D-019 and D-020 settle the v2 treatment of project announcements, multi-offer evidence, price and currency eligibility, and field applicability within the current scope. The table distinguishes these dispositions from the remaining checkpoints. D-024 selects the direct tool-less Gemini API for 02.0. OPEN-08 applies to any workflow that executes tools on untrusted input.
 
 | ID | Question | Review checkpoint |
 | --- | --- | --- |
-| OPEN-01 | Production provider failure handling beyond the approved transport error contract | In 02.0 before enabling live CLI ingestion |
+| OPEN-01 | D-024 uses the existing typed provider failure and timeout contract for Gemini. | Review any expanded production retry policy before use. |
 | OPEN-02 | Area comparison for property identity beyond the approved projection | Before deduplication |
 | OPEN-03 | D-019 classifies project announcements and excludes unit ranges and starting prices from independent offers. Project-specific fields are deferred. | Revisit if project-specific output enters scope |
 | OPEN-04 | D-019 and D-020 settle association, price, currency, and inference policy for v2. | Verify the approved rules in Phase 02. Review future inference before use. |
 | OPEN-05 | D-020 settles applicable fields for v2 listings. Project announcements have no listing-level review unless an independent offer is extracted. | Verify the approved rules in 02.5. Revisit if review scope expands. |
 | OPEN-06 | Duplicate confidence thresholds | Before deduplication |
 | OPEN-07 | Approval transition and persisted review state | Before Phase 04 approval implementation |
-| OPEN-08 | Provider execution isolation | Before untrusted live input |
+| OPEN-08 | D-024 selects a direct tool-less model call. Workflows executing tools on untrusted input require verified isolation. | Before enabling tool execution on untrusted input |
 
 ## Decision format
 
@@ -112,13 +112,35 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ### D-023: Integrate the live CLI provider at the start of Phase 02
 
-- **Status** — Accepted on 2026-11-09.
+- **Status** — Accepted on 2026-11-09. D-024 supersedes the Antigravity provider choice while retaining the task order and offline/live checks.
 - **Context** — Phase 02 tasks need to be manually testable through the live CLI as they land. The single-sale CLI already has an offline verified baseline.
 - **Options and tradeoffs** — Integrate after Phase 02 as in D-022, which keeps provider setup off the refactor path, or integrate first, which lets the user exercise each incremental change but requires a runnable shared CLI path after each task.
 - **Decision and rationale** — Add 02.0 to integrate and qualify Antigravity through the existing gateway and baseline CLI. Pair each subsequent task with an offline focused check and a separate manual live CLI check. Keep broader independent provider evaluation in Phase 03.
 - **Consequences** — Supersedes the Phase 03 provider setup in D-022. Retain offline automated tests, the existing gateway boundary, and the OPEN-01 and OPEN-08 gates before untrusted input.
 - **Validation and checkpoint** — Verify a configured live CLI result in 02.0 and use task-specific fixtures throughout Phase 02. Record actual observations separately from mock results. Review the full independent evaluation in Phase 03.
 - **Approval evidence** — “Let's setup the live provider so that I can test every task with the cli in phase 2 going forward”. The follow-up “Don't implement adjust the plan phase” limits this session to documentation.
+
+### D-024: Use the Gemini API for tool-less extraction
+
+- **Status** — Accepted on 2026-11-09.
+- **Context** — Task 02.0 needs a live CLI provider. The user requires a tool-less model call for untrusted messages. The installed `agy` CLI exposed model tool declarations and its documented flags did not establish a tool-free mode.
+- **Options and tradeoffs** — The Antigravity Python SDK offers tool filtering but introduces a Python dependency and may require separate credentials. A direct Gemini model API call permits a request without configured tools and uses an API key. Further `agy` investigation preserves the installed CLI but has an uncertain outcome.
+- **Decision and rationale** — Use the Gemini API with no tools configured through the provider-independent gateway. Node's existing HTTP support avoids an additional package. Map provider failures and timeouts to the existing typed errors and validate responses in Extraction.
+- **Consequences** — Supersedes D-023's Antigravity provider choice for 02.0. Claude and other providers require separate adapters, credentials, model configuration, and schema translation. Gemini 3.6 Flash is the default after a successful synthetic CLI run. The user can choose a model through `LLM_MODEL`.
+- **Validation** — Check the HTTP request and schema translation with offline mocks, verify malformed responses and provider failures, then run the synthetic CLI fixture with the configured key. Review independent quality evaluation in Phase 03.
+- **Review checkpoint** — OPEN-01 uses the existing typed failure contract for this integration. OPEN-08 is resolved for the direct model request without tools. Any workflow that allows tool execution with untrusted content requires a separate verified-isolation decision.
+- **Approval evidence** — “For Dwelleo, broker messages are untrusted data passed to a tool-less LLM extraction call”; user chose “Gemini API with no tools configured”.
+- **References** — [Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output), [provider-independent gateway](../src/llm-gateway/llm-request.ts), and [Phase 02 tracker](phase-plans/02-message-processing.md).
+
+### D-025: Evaluate a shared Chat Completions gateway
+
+- **Status** — Proposed.
+- **Context** — The unified gateway handoff proposes a single OpenAI-compatible client for Gemini, OpenAI, Claude, and compatible local endpoints.
+- **Options and tradeoffs** — Keep the verified native Gemini path and add adapters as needed, adopt a multi-provider SDK with provider packages, or use the official OpenAI SDK with a configurable Chat Completions endpoint. The last option shares transport code and depends on the selected endpoint's structured output support.
+- **Recommendation and rationale** — Use a configurable Chat Completions gateway for verified provider and model combinations. Request strict structured JSON without tools, disable SDK retries, and keep the existing Zod and source-evidence checks. Treat required nullable fields as an explicit wire-schema decision. A synthetic Gemini 3.6 Flash request accepted the current schema unchanged through the compatibility endpoint.
+- **Consequences** — The SDK adds a runtime dependency and provider configuration moves to a shared endpoint, credential, model, and timeout. Current gateway callers keep the same interface. Usage and latency belong in diagnostic metadata outside the public listing response.
+- **Validation and checkpoint** — Verify configuration, schema compatibility, error mapping, and the single call offline. Before replacing the native Gemini path, run a live synthetic CLI comparison with the configured SDK. Qualify each additional provider and model before documenting it as supported.
+- **Approval evidence** — Pending. The user requested review of the proposed handoff.
 
 ## Accepted
 

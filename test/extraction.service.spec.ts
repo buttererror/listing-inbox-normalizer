@@ -34,6 +34,16 @@ describe('ExtractionService', () => {
       properties: { classification: { const: 'listing' } },
       additionalProperties: false,
     });
+    expect(request.responseSchema).toMatchObject({
+      properties: {
+        candidates: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 1,
+          items: { type: 'object' },
+        },
+      },
+    });
   });
 
   it.each([

@@ -4,7 +4,7 @@ The [assessment brief](task-brief.md) defines requirements. The [policy referenc
 
 ## Implemented baseline
 
-NestJS starts an HTTP application or a CLI application context. `GET /health` reports liveness. Zod validates configuration and inputs. The [verified single-sale CLI baseline](phase-plans/02-extraction-through-cli.md) uses a mocked gateway, quote-based assertions, evidence checks, and Listings normalization and resolution. The unconfigured gateway returns `provider_unavailable`. Prisma is configured for SQLite and CommonJS generation. Domain persistence and HTTP listing routes are planned.
+NestJS starts an HTTP application or a CLI application context. `GET /health` reports liveness. Zod validates configuration and inputs. The [verified single-sale CLI baseline](phase-plans/02-extraction-through-cli.md) uses a mocked gateway, quote-based assertions, evidence checks, and Listings normalization and resolution. The Gemini gateway is configured through the provider-independent interface. A missing key returns `provider_unavailable`. Prisma is configured for SQLite and CommonJS generation. Domain persistence and HTTP listing routes are planned.
 
 ## Module boundaries
 
@@ -449,7 +449,7 @@ The approved `mixed` classification is an intentional extension to the brief's f
 
 The automated test suite must run offline without an API key.
 
-Phase 02 integrates Antigravity through the verified CLI baseline first, then pairs offline gateway-mock verification with a manual live CLI check for each task. Phase 03 uses an independent evaluator to measure real model behavior across a broader corpus. Phase 04 verifies SQLite and HTTP integration with offline fixtures. Quality evaluation stays outside runtime.
+Phase 02 integrates a tool-less Gemini API call through the verified CLI baseline first, then pairs offline gateway-mock verification with a manual live CLI check for each task. Phase 03 uses an independent evaluator to measure real model behavior across a broader corpus. Phase 04 verifies SQLite and HTTP integration with offline fixtures. Quality evaluation stays outside runtime.
 
 ---
 

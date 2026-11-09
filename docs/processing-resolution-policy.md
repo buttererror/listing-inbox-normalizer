@@ -2,7 +2,7 @@
 
 **Status** — Complete v2 reference, based on the supplied Draft v1 and subsequent user decisions.
 
-The [assessment brief](task-brief.md) defines requirements. The [architecture](architecture.md) defines stage contracts. See [D-019–D-023](DECISIONS.md#v2-decisions) for decision history.
+The [assessment brief](task-brief.md) defines requirements. The [architecture](architecture.md) defines stage contracts. See [D-019–D-024](DECISIONS.md#v2-decisions) for decision history.
 
 ## 0. Core principles
 

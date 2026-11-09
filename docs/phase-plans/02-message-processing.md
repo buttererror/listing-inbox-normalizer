@@ -1,12 +1,12 @@
 # Phase 02 revision — Message processing through CLI
 
-Status — Planned. See the [verified single-sale baseline](02-extraction-through-cli.md) and the [v2 decisions](../DECISIONS.md#v2-decisions). [D-023](../DECISIONS.md#d-023-integrate-the-live-cli-provider-at-the-start-of-phase-02) puts live CLI setup first.
+Status — In progress. Task 02.0 is complete. See the [verified single-sale baseline](02-extraction-through-cli.md) and the [v2 decisions](../DECISIONS.md#v2-decisions). [D-023](../DECISIONS.md#d-023-integrate-the-live-cli-provider-at-the-start-of-phase-02) puts live CLI setup first.
 
 The task numbers describe implementation order. Stage numbers and names follow the [runtime architecture](../architecture.md). Phase 02 reuses **Stage 0 — Input Validation** and verifies it through the CLI. **Stage 4 — Deduplication** enters in Phase 05. Phase 02 implements the result assembly portion of **Stage 6 — Result Assembly & Persistence**. Persistence enters in Phase 04.
 
 | Task | Architecture stage | Owner | Deliverable and focused check |
 | --- | --- | --- | --- |
-| 02.0 | Stage 1 — LLM Classification & Extraction | LLM Gateway | Integrate Antigravity through the existing gateway and CLI against the verified single-sale baseline. 02.0T covers adapter behavior offline. The live CLI check verifies configured end-to-end processing. |
+| 02.0 | Stage 1 — LLM Classification & Extraction | LLM Gateway | Completed 2026-11-09. The tool-less Gemini gateway is wired through the existing CLI. Offline adapter, extraction, and CLI checks passed, and the live synthetic fixture produced a listing. |
 | 02.1 | [Stage 1 — LLM Classification & Extraction](../architecture.md#stage-1--llm-classification--extraction) | Extraction through the generic LLM Gateway | Define the typed extraction envelope and one-call prompt. 02.1T verifies the classification matrix, offer grouping, and all nine steps in order. |
 | 02.2 | [Stage 2 — Mechanical Validation](../architecture.md#stage-2--mechanical-validation) | Extraction | Check source evidence and evidence integrity. 02.2T verifies exact, clipped, repeated, fabricated, shared, and wrong-offer evidence. |
 | 02.3 | Stage 1 — LLM Classification & Extraction and Stage 2 — Mechanical Validation | Extraction | Replace legacy model verdict routing with typed candidates and structured findings. 02.3T verifies the handoff and the model's in-call evidence-to-value check. |
@@ -22,7 +22,7 @@ After 02.0, wire each changed stage into the shared CLI flow as part of its task
 
 ## Acceptance cases
 
-- **02.0 / 02.0T — Stage 1.** Reuse the verified offline single-sale CLI path and existing gateway interface. Verify adapter request handling, structured responses, and typed provider failures offline. Verify the executable, authentication, and a structured result through the real CLI using a controlled synthetic sale fixture. Resolve OPEN-01 and verify the isolation required by OPEN-08 before processing untrusted input. Surface an unmet provider gate as a blocker and review any replacement separately.
+- **02.0 / 02.0T — Stage 1.** Reuse the verified offline single-sale CLI path and existing gateway interface. Verify adapter request handling, structured responses, and typed provider failures offline. Verify authentication, a tool-free request, and a structured result through the real CLI using a controlled synthetic sale fixture. Apply the tool-less boundary in D-024. Workflows executing tools on untrusted input require verified isolation. Surface an unmet provider gate as a blocker and review any replacement separately.
 
 - **02.1 / 02.1T — Stage 1.** Verify the gateway receives the untouched source text, a schema derived from Zod, and the [nine instructions in execution order](../architecture.md#stage-1--llm-classification--extraction), including association between segmentation and extraction. Check the full [classification matrix](../processing-resolution-policy.md#classification-policy), base classes in source order, no duplicate detected classes, ignored incidental greetings, and multiple offers within one class. Exercise candidate types for every extractable public field, including sale and rent, qualified prices, area kinds, and normalized Saudi phones.
 - **02.2 / 02.2T — Stage 2.** Keep exact evidence within its grounded offer passage or explicitly shared with the applicable offers. Check shared evidence across multiple offers, reject wrong-offer, fabricated, clipped, and ambiguous repeated quotes, and keep usable offers when another offer cannot be grounded. Fail extraction when the response claims offers and none can be grounded.
@@ -38,7 +38,7 @@ Run the configured CLI against a small, independently labeled JSONL fixture afte
 
 | Task | Live CLI observation |
 | --- | --- |
-| 02.0 | A controlled sale message returns a contract-compliant result through Antigravity. |
+| 02.0 | A controlled sale message returns a contract-compliant result through Gemini. |
 | 02.1 | A supported sale exercises the typed extraction envelope and nine-step prompt. Inspect classification, offer grouping, and candidates at the Extraction handoff. |
 | 02.2 | A multi-offer fixture with shared information exercises the source-evidence checks. Inspect accepted and rejected evidence for each offer. |
 | 02.3 | An Arabic or mixed-language message exercises normalization and the in-call evidence-to-value check. Inspect typed values and any semantic findings. |
@@ -53,3 +53,13 @@ Record live observations separately from the offline checks. Use gateway mocks t
 Pass each offline focused check before its dependent task and record its live CLI check separately. At close-out, run the full offline suite, typecheck, and build. Compare existing single-sale behavior against the verified baseline. Record commands, results, and dated evidence for SC-01, SC-06–09, SC-11–13, PC-01, and PC-02 within the offline CLI boundary.
 
 Author a compact set of independently labeled Arabic, English, and mixed-language cases with expected intents, offer associations, field values, and review outcomes. Use these cases for the Phase 02 live checks and the broader independent evaluation in Phase 03. CLI and HTTP parity through SQLite follows in Phase 04. Stored-property matching cases follow in Phase 05. Mark the revision verified after its exit checks pass.
+
+## 02.0 progress — 2026-11-09
+
+The installed `agy` 1.5.3 authenticated and returned structured synthetic output. The original one-element Zod tuple emitted a draft-7 tuple schema rejected by the provider. The extraction schema now uses an equivalent array constrained to one element, and the provider accepted it. A synthetic CLI run with an explicitly injected experimental gateway returned a sale listing with `price.amount: 3200000` and review reasons for missing fields. This is an experiment, not a configured production entry point.
+
+Offline gateway and extraction boundary checks passed 20 tests across three suites. Typecheck and build passed. The fake subprocess tests required execution outside the workspace sandbox to capture child output.
+
+The `agy` schema error exposed model tool declarations. The CLI help provides no documented tool-free switch. The user requires a tool-less extraction call and specified that untrusted tool execution requires verified isolation. The experimental gateway was not wired into the production processor and was removed. This historical checkpoint was resolved by D-024, which selects the direct Gemini API without configured tools.
+
+**02.0 / 02.0T — 2026-11-09:** The user selected the Gemini API without tools. The configured shared CLI uses the provider-independent gateway and direct HTTPS. Gemini 3.6 Flash returned a contract-compliant result for `test/fixtures/one-message.jsonl` with `price.amount: 3200000`. Gemini 3.8 Flash timed out at 45 seconds. The resulting review flags preserve baseline limitations, including the unsupported city parser. The full offline suite passed 123 tests across 15 suites, typecheck and build passed, and the actual built CLI passed with the default model. Provider usage, cost, and representative latency remain for Phase 03.

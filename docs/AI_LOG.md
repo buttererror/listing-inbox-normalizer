@@ -646,3 +646,33 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome** — Added planned task 02.0 for Antigravity integration against the verified baseline. Added a separate manual live CLI check for each Phase 02 task and retained broader independent evaluation in Phase 03.
 - **Verification and limits** — Checked the phase references, task coverage, and documentation diff. Provider setup and all revised Phase 02 checks remain planned.
 - **Related decision** — [D-023](DECISIONS.md#d-023-integrate-the-live-cli-provider-at-the-start-of-phase-02).
+
+## Phase 02.0 provider investigation — 2026-11-09
+
+- **Evidence status** — Evidence checked against the session commands, source changes, test output, and user clarification.
+- **Human review** — Not requested.
+- **Objective** — Implement task 2.0 and check the baseline CLI against the live provider.
+- **Important prompts** — “Implement task 2.0”; “For Dwelleo, broker messages are untrusted data passed to a tool-less LLM extraction call, not executable instructions. Enforce this boundary through the gateway, structured output validation, and source-evidence checks. Do not depend on Antigravity's plan mode or unverified sandbox guarantees for security. If any workflow requires executing tools or commands based on untrusted content, require verified isolation. Avoid introducing unnecessary sandbox infrastructure into the normal extraction pipeline.”
+- **Outcome** — Added an experimental, unbound gateway and changed equivalent one-element extraction schemas from tuple to length-constrained array because the provider rejected draft-7 tuple items. The actual CLI runner produced a sale result for the existing synthetic JSONL fixture when supplied the experimental gateway explicitly.
+- **Verification** — Offline gateway, extraction, and boundary suites passed 20 tests. Typecheck and build passed. The synthetic live run returned `price.amount: 3200000`. A preliminary schema request failed with provider error 400 referencing model tool declarations. The documented CLI options did not establish a tool-free mode.
+- **Limitations** — Antigravity CLI's sandbox and plan modes do not establish the user-requested tool-less boundary. The gateway is unbound and the configured production CLI still reports `provider_unavailable`. OPEN-08 and provider selection need resolution before untrusted input. The synthetic experiment required access to the provider's existing profile and local socket.
+- **Related decisions** — [D-023](DECISIONS.md#d-023-integrate-the-live-cli-provider-at-the-start-of-phase-02), OPEN-01 and OPEN-08.
+
+## Phase 02.0 Gemini gateway — 2026-11-09
+
+- **Evidence status** — Evidence checked against user selection, source, command results, and the synthetic fixture.
+- **Human review** — Not requested.
+- **Objective** — Complete 02.0 with a tool-less live provider and retain a provider-independent gateway.
+- **Important prompts** — “Implement task 2.0”; “Gemini API with no tools configured”; “I added but we need to make the solution general for claude or any llm. What do other llms require?”
+- **Outcome** — D-024 records the selected direct Gemini API. Added a gateway using Node's HTTP client, the existing provider-independent request, JSON Schema translation, bounded execution, and typed failures. Wired it through the application module when a Gemini key is configured. The experimental agent CLI adapter was removed. The existing Zod tuple is now an equivalent length-one array so generated schemas have a single item schema.
+- **Verification** — Full offline suite passed 123 tests across 15 suites. Typecheck and build passed. The built default CLI processed `test/fixtures/one-message.jsonl` with Gemini 3.6 Flash, returning a sale villa and `price.amount: 3200000`. The direct API request contained no configured tools.
+- **Limitations** — Gemini 3.8 Flash timed out at 45 seconds in the synthetic run. The current baseline returned `city_unsupported` for Riyadh because of existing Listings parsing. Claude and other providers need their own adapters and credentials. Cost, token usage, and representative extraction quality remain to be measured.
+- **Related decision** — [D-024](DECISIONS.md#d-024-use-the-gemini-api-for-tool-less-extraction).
+
+## Unified gateway handoff review — 2026-11-09
+
+- **Evidence status** — Evidence checked against the supplied handoff, the existing gateway and extraction schema, provider documentation, and a synthetic request.
+- **Human review** — Not requested.
+- **Important prompt** — “What about this handoff solution?” The supplied handoff says, “Start by inspecting the current `GeminiGateway`, `LlmGateway` contract, and extraction response schema. Identify compatibility risks before replacing the implementation.”
+- **Outcome** — Recorded the shared Chat Completions gateway as proposed in [D-025](DECISIONS.md#d-025-evaluate-a-shared-chat-completions-gateway). OpenAI's strict schema rules require fields that are currently optional, such as `context_quote`, to be represented explicitly on the wire.
+- **Verification and limits** — Sent the current unmodified Extraction schema and the existing synthetic fixture to Gemini 3.6 Flash's OpenAI-compatible endpoint using direct HTTPS. It returned HTTP 200, finish reason `stop`, zero tool calls, and a valid `listing` result with four source-checked assertions. This probe did not exercise the proposed SDK or verify the OpenAI, Claude, or local endpoints.

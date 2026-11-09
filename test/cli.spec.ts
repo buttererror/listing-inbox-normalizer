@@ -89,7 +89,18 @@ describe('process command', () => {
 
   it('runs the production entry point with an unavailable provider failure', async () => {
     await writeFile(path, JSON.stringify(message));
-    expect(await runCli(['process', path], { ...dependencies(), createContext: createCliContext })).toBe(1);
+    const originalKey = process.env.GEMINI_API_KEY;
+    const originalProvider = process.env.LLM_PROVIDER;
+    process.env.LLM_PROVIDER = 'gemini';
+    process.env.GEMINI_API_KEY = '';
+    try {
+      expect(await runCli(['process', path], { ...dependencies(), createContext: createCliContext })).toBe(1);
+    } finally {
+      if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = originalKey;
+      if (originalProvider === undefined) delete process.env.LLM_PROVIDER;
+      else process.env.LLM_PROVIDER = originalProvider;
+    }
     expect(stderr).toBe('');
     expect(JSON.parse(stdout)).toEqual({
       message_id: 'm-001', error: { code: 'provider_unavailable', message: 'Extraction is not configured' },
