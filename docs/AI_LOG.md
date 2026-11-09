@@ -446,3 +446,11 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome** — Wired the JSONL command to a non-HTTP Nest context and an unavailable-provider processor. Recorded Phase 01 verification and partial success-criteria evidence.
 - **Verification** — The focused CLI suite passed 5 tests. The full offline suite passed 37 tests with local socket access; typecheck and build passed. A direct built CLI invocation returned the expected provider-unavailable record and exit 1. The sandbox blocked the existing health test's loopback listener and blocked a nested subprocess in a test, so the production context was tested in-process and the built command separately.
 - **Limitations** — Real extraction, persistence, HTTP parity and provider qualification remain pending.
+
+## Phase 02 task and test breakdown — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, approved Phase 01 policies, Phase 02 plan and existing schema and gateway contracts.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Let's split phase 2 tasks with its test cases”
+- **Outcome** — Split Phase 02 into six task and test pairs covering response validation, verbatim evidence, field meaning, normalization, review and offline CLI integration. Kept the OPEN-04 review checkpoint and the approved single-sale scope.
+- **Verification** — Checked task and test pairing, decision links and whitespace. The test cases are specifications for future implementation.
