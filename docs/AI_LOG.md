@@ -637,3 +637,12 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome** — Restored explicit prompt coverage and bounded findings, documented how grounded semantic findings survive validation, and made the incremental refactor, README measurement deliverable, and deduplication evaluation explicit. Aligned OPEN-03–05 with the approved v2 policies.
 - **Verification and limits** — Checked all 61 policy IDs, all runtime stages and the evaluator, the ordered model steps, changed links, and the documentation-only diff. Phase 02 remains planned and live provider evidence belongs to Phase 03.
 - **Related decisions** — [D-019–D-022](DECISIONS.md#v2-decisions).
+
+## Phase 02 live CLI checkpoints — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user prompts, Phase 02 tracker, and roadmap.
+- **Human review** — Not requested.
+- **Important prompts** — “Let's setup the live provider so that I can test every task with the cli in phase 2 going forward”; “Don't implement adjust the plan phase”.
+- **Outcome** — Added planned task 02.0 for Antigravity integration against the verified baseline. Added a separate manual live CLI check for each Phase 02 task and retained broader independent evaluation in Phase 03.
+- **Verification and limits** — Checked the phase references, task coverage, and documentation diff. Provider setup and all revised Phase 02 checks remain planned.
+- **Related decision** — [D-023](DECISIONS.md#d-023-integrate-the-live-cli-provider-at-the-start-of-phase-02).

@@ -20,7 +20,7 @@ The [v2 plan](PLAN-v2.md) describes the planned message-processing refactor and 
 
 In the [planned pipeline](docs/architecture.md), the model proposes typed values and source evidence in one request. The application validates candidates, resolves fields, derives review reasons, and returns a shared CLI or HTTP result. Stored-property matching runs before review once Phase 05 is in place.
 
-Phase 01 and the single-sale CLI baseline are verified. The Phase 02 revision is planned. Phase 03 integrates and qualifies Antigravity through the CLI and measures it on independent cases. Phase 04 adds SQLite, HTTP, and approval. The [earlier Antigravity smoke test](docs/AI_LOG.md#antigravity-provider-experiment) records one synthetic call. Representative cost and latency remain unmeasured.
+Phase 01 and the single-sale CLI baseline are verified. The Phase 02 revision is planned. Task 02.0 integrates Antigravity through the verified CLI baseline so each subsequent task can be checked with the live CLI. Phase 03 measures the integrated flow on independent cases. Phase 04 adds SQLite, HTTP, and approval. The [earlier Antigravity smoke test](docs/AI_LOG.md#antigravity-provider-experiment) records one synthetic call. Representative cost and latency remain unmeasured.
 
 The pnpm lockfile pins a Multer override for a production dependency advisory. The production dependency audit passed after the override; the full development dependency audit reported seven low-severity advisories at setup time.
 

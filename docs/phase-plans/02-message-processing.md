@@ -1,11 +1,12 @@
 # Phase 02 revision — Message processing through CLI
 
-Status — Planned. See the [verified single-sale baseline](02-extraction-through-cli.md) and [D-019–D-020](../DECISIONS.md#v2-decisions).
+Status — Planned. See the [verified single-sale baseline](02-extraction-through-cli.md) and the [v2 decisions](../DECISIONS.md#v2-decisions). [D-023](../DECISIONS.md#d-023-integrate-the-live-cli-provider-at-the-start-of-phase-02) puts live CLI setup first.
 
 The task numbers describe implementation order. Stage numbers and names follow the [runtime architecture](../architecture.md). Phase 02 reuses **Stage 0 — Input Validation** and verifies it through the CLI. **Stage 4 — Deduplication** enters in Phase 05. Phase 02 implements the result assembly portion of **Stage 6 — Result Assembly & Persistence**. Persistence enters in Phase 04.
 
 | Task | Architecture stage | Owner | Deliverable and focused check |
 | --- | --- | --- | --- |
+| 02.0 | Stage 1 — LLM Classification & Extraction | LLM Gateway | Integrate Antigravity through the existing gateway and CLI against the verified single-sale baseline. 02.0T covers adapter behavior offline. The live CLI check verifies configured end-to-end processing. |
 | 02.1 | [Stage 1 — LLM Classification & Extraction](../architecture.md#stage-1--llm-classification--extraction) | Extraction through the generic LLM Gateway | Define the typed extraction envelope and one-call prompt. 02.1T verifies the classification matrix, offer grouping, and all nine steps in order. |
 | 02.2 | [Stage 2 — Mechanical Validation](../architecture.md#stage-2--mechanical-validation) | Extraction | Check source evidence and evidence integrity. 02.2T verifies exact, clipped, repeated, fabricated, shared, and wrong-offer evidence. |
 | 02.3 | Stage 1 — LLM Classification & Extraction and Stage 2 — Mechanical Validation | Extraction | Replace legacy model verdict routing with typed candidates and structured findings. 02.3T verifies the handoff and the model's in-call evidence-to-value check. |
@@ -15,9 +16,13 @@ The task numbers describe implementation order. Stage numbers and names follow t
 
 ## Implementation order
 
-Review the current prompt, schemas, pipeline, and tests against the single-sale baseline. Pair the typed contract and prompt with mocked examples in 02.1 before replacing downstream consumers. Reuse the existing gateway and source checks, switch Listings to validated typed candidates, and integrate through the existing processor. Use the approved policy rules directly in the affected stages.
+Start with 02.0. Review the current prompt, schemas, pipeline, and tests against the single-sale baseline. Pair the typed contract and prompt with mocked examples in 02.1 before replacing downstream consumers. Reuse the existing gateway and source checks, switch Listings to validated typed candidates, and integrate through the existing processor. Use the approved policy rules directly in the affected stages.
+
+After 02.0, wire each changed stage into the shared CLI flow as part of its task. In 02.1, connect the typed extraction envelope to the existing processor for a supported sale fixture, making only the downstream changes required to keep that slice runnable. Expand that path in the following tasks. 02.6 closes out full integration and regression coverage.
 
 ## Acceptance cases
+
+- **02.0 / 02.0T — Stage 1.** Reuse the verified offline single-sale CLI path and existing gateway interface. Verify adapter request handling, structured responses, and typed provider failures offline. Verify the executable, authentication, and a structured result through the real CLI using a controlled synthetic sale fixture. Resolve OPEN-01 and verify the isolation required by OPEN-08 before processing untrusted input. Surface an unmet provider gate as a blocker and review any replacement separately.
 
 - **02.1 / 02.1T — Stage 1.** Verify the gateway receives the untouched source text, a schema derived from Zod, and the [nine instructions in execution order](../architecture.md#stage-1--llm-classification--extraction), including association between segmentation and extraction. Check the full [classification matrix](../processing-resolution-policy.md#classification-policy), base classes in source order, no duplicate detected classes, ignored incidental greetings, and multiple offers within one class. Exercise candidate types for every extractable public field, including sale and rent, qualified prices, area kinds, and normalized Saudi phones.
 - **02.2 / 02.2T — Stage 2.** Keep exact evidence within its grounded offer passage or explicitly shared with the applicable offers. Check shared evidence across multiple offers, reject wrong-offer, fabricated, clipped, and ambiguous repeated quotes, and keep usable offers when another offer cannot be grounded. Fail extraction when the response claims offers and none can be grounded.
@@ -27,8 +32,24 @@ Review the current prompt, schemas, pipeline, and tests against the single-sale 
 - **02.5 / 02.5T — Stage 5.** Check stable reasons and `needs_review` for missing applicable fields, unresolved conflicts, material uncertainty, and invalid evidence that affects reliability. Check a complete listing, harmless rejection alongside a supported value, optional studio bedrooms, inapplicable land room counts, and other or unresolved property types. Verify mixed classification alone leaves the review status unaffected. Preserve the evidence behind each finding.
 - **02.6 / 02.6T — Stages 0 and 6.** Exercise invalid JSONL and invalid raw input, with typed failures and zero gateway calls for those records. Verify typed provider failures propagate through the existing contract. Check the assembled public success schema before serialization, including `classification`, `detected_classes`, distinct application-assigned listing IDs, and `duplicate_of: null`. Run a mixed, multi-offer success and an invalid extraction followed by a success through the real CLI entry with a mocked gateway. Verify one ordered result per nonblank input line, clean JSONL stdout, continuation after failure, and exit 0 for all-success input or 1 for a batch with failures.
 
+## Manual live CLI checks
+
+Run the configured CLI against a small, independently labeled JSONL fixture after each task. Use `node dist/cli.js process <fixture.jsonl>` after building and configuring the provider according to the setup notes delivered by 02.0. Provide the fixture, expected behavior, actual result, and any discrepancy so the user can rerun the check. Inspect internal-only handoffs with a local debugger during the CLI run. Keep stdout for JSONL results.
+
+| Task | Live CLI observation |
+| --- | --- |
+| 02.0 | A controlled sale message returns a contract-compliant result through Antigravity. |
+| 02.1 | A supported sale exercises the typed extraction envelope and nine-step prompt. Inspect classification, offer grouping, and candidates at the Extraction handoff. |
+| 02.2 | A multi-offer fixture with shared information exercises the source-evidence checks. Inspect accepted and rejected evidence for each offer. |
+| 02.3 | An Arabic or mixed-language message exercises normalization and the in-call evidence-to-value check. Inspect typed values and any semantic findings. |
+| 02.4 | A fixture with quantities, qualified prices, and a phone exercises mechanical validation. Inspect candidate-level results and any findings. |
+| 02.5 | A fixture with competing or missing values exercises resolution and review. Inspect nulls, selected values, and review reasons in the CLI result. |
+| 02.6 | A JSONL batch with multiple offers and a malformed input exercises public schema, clean stdout, ordering, exit status, and continuation. |
+
+Record live observations separately from the offline checks. Use gateway mocks to force malformed or invented responses and to verify rejection and recovery deterministically. If the provider fails, record the blocker and complete independent offline checks. Resume the affected live check when the blocker is resolved.
+
 ## Exit and carryover
 
-Pass each focused check before its dependent task, then run the full offline suite, typecheck, and build. Compare existing single-sale behavior against the verified baseline. Record commands, results, and dated evidence for SC-01, SC-06–09, SC-11–13, PC-01, and PC-02 within the offline CLI boundary.
+Pass each offline focused check before its dependent task and record its live CLI check separately. At close-out, run the full offline suite, typecheck, and build. Compare existing single-sale behavior against the verified baseline. Record commands, results, and dated evidence for SC-01, SC-06–09, SC-11–13, PC-01, and PC-02 within the offline CLI boundary.
 
-Author a compact set of independently labeled Arabic, English, and mixed-language cases with expected intents, offer associations, field values, and review outcomes. Use the same cases for real model measurements in Phase 03. CLI and HTTP parity through SQLite follows in Phase 04. Stored-property matching cases follow in Phase 05. Mark the revision verified after its exit checks pass.
+Author a compact set of independently labeled Arabic, English, and mixed-language cases with expected intents, offer associations, field values, and review outcomes. Use these cases for the Phase 02 live checks and the broader independent evaluation in Phase 03. CLI and HTTP parity through SQLite follows in Phase 04. Stored-property matching cases follow in Phase 05. Mark the revision verified after its exit checks pass.

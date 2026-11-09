@@ -2,7 +2,7 @@
 
 **Status** — Complete v2 reference, based on the supplied Draft v1 and subsequent user decisions.
 
-The [assessment brief](task-brief.md) defines requirements. The [architecture](architecture.md) defines stage contracts. See [D-019–D-022](DECISIONS.md#v2-decisions) for decision history.
+The [assessment brief](task-brief.md) defines requirements. The [architecture](architecture.md) defines stage contracts. See [D-019–D-023](DECISIONS.md#v2-decisions) for decision history.
 
 ## 0. Core principles
 
@@ -343,4 +343,4 @@ Include both ordinary examples and deliberately malformed LLM responses.
 
 ## Implementation principle
 
-Policies define behavior, code implements policies, and tests verify policies. Keep language interpretation in the model. Use narrow mechanical checks and deterministic selection and review. Keep offline gateway mocks separate from Phase 03 live CLI evaluation, and measure prompt and schema revisions on the same independently authored cases.
+Policies define behavior, code implements policies, and tests verify policies. Keep language interpretation in the model. Use narrow mechanical checks and deterministic selection and review. Keep offline gateway mocks separate from Phase 02 manual live CLI checks and Phase 03 independent evaluation. Measure prompt and schema revisions on the same independently authored cases.

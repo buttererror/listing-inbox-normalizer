@@ -449,7 +449,7 @@ The approved `mixed` classification is an intentional extension to the brief's f
 
 The automated test suite must run offline without an API key.
 
-Phase 02 verifies application behavior with offline gateway mocks. Phase 03 integrates and qualifies Antigravity through the CLI and uses an independent evaluator to measure real model behavior. Phase 04 verifies SQLite and HTTP integration with offline fixtures. Quality evaluation stays outside runtime.
+Phase 02 integrates Antigravity through the verified CLI baseline first, then pairs offline gateway-mock verification with a manual live CLI check for each task. Phase 03 uses an independent evaluator to measure real model behavior across a broader corpus. Phase 04 verifies SQLite and HTTP integration with offline fixtures. Quality evaluation stays outside runtime.
 
 ---
 

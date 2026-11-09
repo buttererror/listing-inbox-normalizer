@@ -11,11 +11,11 @@ This evidence is a user-supplied summary, not an exported GPT transcript. Origin
 
 ## Open policy checkpoints
 
-[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). D-019 and D-020 settle the v2 treatment of project announcements, multi-offer evidence, price and currency eligibility, and field applicability within the current scope. The table distinguishes these dispositions from the remaining checkpoints. D-022 assigns live CLI integration and provider qualification to Phase 03 after the offline Phase 02 exit. OPEN-08 governs execution isolation before untrusted input.
+[D-012](#d-012-approve-the-first-listing-scope-and-contracts) settles OPEN-01, OPEN-02, OPEN-04, OPEN-05 and OPEN-07 for the [first listing contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices). D-019 and D-020 settle the v2 treatment of project announcements, multi-offer evidence, price and currency eligibility, and field applicability within the current scope. The table distinguishes these dispositions from the remaining checkpoints. D-023 assigns live CLI integration and provider qualification to 02.0 against the verified offline CLI baseline. OPEN-08 governs execution isolation before untrusted input.
 
 | ID | Question | Review checkpoint |
 | --- | --- | --- |
-| OPEN-01 | Production provider failure handling beyond the approved transport error contract | Before enabling live CLI ingestion in Phase 03 |
+| OPEN-01 | Production provider failure handling beyond the approved transport error contract | In 02.0 before enabling live CLI ingestion |
 | OPEN-02 | Area comparison for property identity beyond the approved projection | Before deduplication |
 | OPEN-03 | D-019 classifies project announcements and excludes unit ranges and starting prices from independent offers. Project-specific fields are deferred. | Revisit if project-specific output enters scope |
 | OPEN-04 | D-019 and D-020 settle association, price, currency, and inference policy for v2. | Verify the approved rules in Phase 02. Review future inference before use. |
@@ -101,7 +101,7 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ### D-022: Integrate the live provider before SQLite and HTTP
 
-- **Status** — Accepted on 2026-11-09.
+- **Status** — Superseded by D-023 for the Phase 03 provider setup checkpoint. Live CLI integration still precedes SQLite and HTTP.
 - **Context** — Phase 02 now covers the full offline CLI processing path. The user wants a working live CLI as soon as that path is ready.
 - **Options and tradeoffs** — Keep live integration after SQLite and HTTP, run a standalone experiment first, or integrate and qualify the provider against the verified CLI before storage work. The CLI-first sequence provides earlier end-to-end feedback and leaves transport and storage parity for the following phase.
 - **Decision and rationale** — Phase 03 integrates and qualifies Antigravity through the existing gateway and CLI. Phase 04 adds SQLite, HTTP, and approval. This supersedes the ordering provisions of D-011, D-014, and D-021 that placed qualification after HTTP and SQLite. Retain offline application tests and the OPEN-08 isolation gate.
@@ -109,6 +109,16 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Validation and checkpoint** — After the Phase 02 exit, verify the configured provider through the CLI. Resolve OPEN-01 and OPEN-08 before untrusted input. Measure extraction quality, latency, usage, and available cost on independent cases.
 - **Approval evidence** — “I said that we replace the order of two phases not to add a smoke test because I wanted integrate the live provider as soon as possible”.
 
+
+### D-023: Integrate the live CLI provider at the start of Phase 02
+
+- **Status** — Accepted on 2026-11-09.
+- **Context** — Phase 02 tasks need to be manually testable through the live CLI as they land. The single-sale CLI already has an offline verified baseline.
+- **Options and tradeoffs** — Integrate after Phase 02 as in D-022, which keeps provider setup off the refactor path, or integrate first, which lets the user exercise each incremental change but requires a runnable shared CLI path after each task.
+- **Decision and rationale** — Add 02.0 to integrate and qualify Antigravity through the existing gateway and baseline CLI. Pair each subsequent task with an offline focused check and a separate manual live CLI check. Keep broader independent provider evaluation in Phase 03.
+- **Consequences** — Supersedes the Phase 03 provider setup in D-022. Retain offline automated tests, the existing gateway boundary, and the OPEN-01 and OPEN-08 gates before untrusted input.
+- **Validation and checkpoint** — Verify a configured live CLI result in 02.0 and use task-specific fixtures throughout Phase 02. Record actual observations separately from mock results. Review the full independent evaluation in Phase 03.
+- **Approval evidence** — “Let's setup the live provider so that I can test every task with the cli in phase 2 going forward”. The follow-up “Don't implement adjust the plan phase” limits this session to documentation.
 
 ## Accepted
 
@@ -209,7 +219,7 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Validation** — Check CLI/HTTP behavior and persisted results offline, then verify real provider restrictions and evaluator setup using synthetic input before enabling untrusted live input.
 - **Review checkpoint** — Review the first slice's exact contracts before implementing it and the provider qualification plan before the second slice.
 - **Approval evidence** — “Verify the full CLI/HTTP and SQLite flow offline first, then qualify Antigravity in a second slice”.
-- **References** — [Current live provider integration](roadmap.md#phase-03-live-provider-integration) and [D-014](#d-014-organize-delivery-as-phases-and-tasks).
+- **References** — [Current provider prerequisite](roadmap.md#phase-02-provider-prerequisite) and [D-014](#d-014-organize-delivery-as-phases-and-tasks).
 
 ### D-012: Approve the first listing scope and contracts
 
