@@ -14,7 +14,9 @@ NestJS boots HTTP or a non-HTTP application context. GET /health returns applica
 | LLM Gateway | Generic provider execution, response envelopes, timeouts and usage |
 | Database | Prisma lifecycle and embedded persistence infrastructure |
 
-The proposed pipeline is input validation → model interpretation → structural validation → source grounding → deterministic normalization → domain validation → entity resolution → review triage → transactional persistence. Human approval follows processing. Reviewer assignment is outside the assessment scope.
+The shared ingestion pipeline is input validation → model interpretation → structural validation → source grounding → deterministic normalization → domain validation → entity resolution → review triage → transactional persistence. Messages coordinates these stages through the module boundaries above. Extraction produces candidate assertions with evidence. Listings uses those grounded assertions to normalize fields, compare against stored listings, and derive review flags and reasons.
+
+The provider's structured JSON is an intermediate contract. An invalid extraction envelope fails processing with a typed error. An unsupported field in a valid envelope remains null with a readable review reason. After persistence, the processor returns the public message result. CLI serializes it as a JSONL record and HTTP sends it as a JSON body. Serialization is part of each transport adapter. Listing reads and human approval are separate operations on persisted state.
 
 Model interpretation may vary with the model; application contracts and checks remain stable. Source quotes alone do not prove correct property association. Missing, unsupported, ambiguous, and contradictory assertions require distinct handling. No unsupported values may be invented.
 

@@ -1,26 +1,12 @@
 # Phase plans
 
-Phases refine the [roadmap](../roadmap.md) shortly before implementation. Keep future phases lightweight. Each phase links its slice records and governing [decisions](../DECISIONS.md).
+The [roadmap](../roadmap.md) orders the phases. Each phase records its own tasks, governing [decisions](../DECISIONS.md), [success criteria](../success-criteria.md), and verification evidence.
 
-## Index
+- [01 — Contracts, policies, and CLI harness](01-contracts-and-cli.md)
+- [02 — Extraction through CLI](02-extraction-through-cli.md)
 
-- [01: First listing flow](01-first-listing-flow.md) — Draft, awaiting scope review.
+Later phases are roadmap candidates. Refine their tasks after reviewing Phase 02 evidence.
 
 ## Phase format
 
-```text
-# NN: Outcome
-Status: Draft | Active | Verified | Closed
-Approval evidence: Pending, or user instruction/excerpt.
-Goal and requirement references: Observable result and brief sections.
-Success-criteria IDs: Links to the canonical checklist and affected criteria.
-Current state: Relevant implemented behavior and remaining gap.
-Included / deferred: Concrete boundaries.
-Governing decisions: Accepted IDs and unresolved proposals with checkpoints.
-Slices: Links to individually scoped slice records; approve incrementally.
-Exit criteria: Observable behavior and verification required for phase completion.
-Close-out: Review affected success criteria and carry remaining work to the roadmap;
-  record evidence, limitations, and decisions resolved or handed forward.
-```
-
-A phase can be approved while later slices remain drafts. Verified means its exit checks passed; Closed records explicit acceptance of the outcome. Neither status implies commit authorization or AI-log review.
+Record the goal, scope, status, approval evidence, decision links, affected criteria, and exit checks. Put a small implementation task and its focused testing task together in the phase record. Complete the check before dependent work. Record actual results, failures, and follow-up in the same document. Verified means the exit checks passed. Close-out reviews covered criteria and carries unresolved decisions or incomplete checks into the roadmap. Commit authorization and AI-log review are separate.

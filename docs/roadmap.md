@@ -1,23 +1,23 @@
 # Development roadmap
 
-Strategy: [D-009](DECISIONS.md#d-009-separate-the-baseline-plan-from-the-evolving-roadmap). Requirements: [candidate brief](task-brief.md). The original PLAN.md remains an untracked baseline awaiting user finalization; this roadmap records evolving sequencing and never replaces that evidence.
+The [root plan](../PLAN.md) preserves the original baseline and records the current planning structure in its dated amendment. [D-014](DECISIONS.md#d-014-organize-delivery-as-phases-and-tasks) governs delivery. Use the [brief](task-brief.md) and [success checklist](success-criteria.md) to review coverage.
 
-## Current state
+The stack foundation is implemented. Domain implementation starts with Phase 01. Detail later tasks after reviewing Phase 02 evidence.
 
-The stack is implemented and its foundation checks passed. Documentation organization and pnpm migration are present in the working tree. Their log entries require evidence checks and targeted user review where applicable; the original plan remains excluded from commits. Domain behavior is not implemented.
-
-## Candidate phases
-
-Only the strategy is accepted. The following sequence is a proposal for refinement, not approval to implement all listed work. Refine one phase at a time and budget against the brief's approximate five focused hours; elapsed focused time has not been tracked exactly.
-
-| Phase | Observable outcome | Status / details |
+| Phase | Outcome | Status |
 | --- | --- | --- |
-| Foundation | HTTP liveness and reusable application context; offline tests and SQLite driver work | Implemented; documentation/evidence checks and plan finalization remain |
-| 01: First listing flow | One supported listing travels through extraction, validation, normalization and SQLite to equivalent CLI/HTTP results; persisted review state is queryable | [Draft phase](phase-plans/01-first-listing-flow.md) |
-| 02: Broader message coverage | Classification, multiple properties, Arabic/mixed text, projects, ambiguity and contradictions follow the required contract | Candidate; refine after phase 01 |
-| 03: Property identity and review | Cross-broker reposts, similar distinct properties and human approval behave consistently | Candidate; refine after phase 02 |
-| 04: Submission readiness | Clean setup, hidden-message readiness, independent model evaluation, documentation and agent evidence are demonstrated | Candidate; includes assessment deliverable audit |
+| Foundation | HTTP liveness, reusable app context, offline foundation tests, and a working SQLite driver. | Implemented |
+| 01 — Contracts, policies, and CLI harness | Define the contracts and exercise JSONL with a controlled processor. | [Planned](phase-plans/01-contracts-and-cli.md) |
+| 02 — Extraction through CLI | Produce a grounded, normalized sale listing with readable review reasons using offline fixtures. | [Planned](phase-plans/02-extraction-through-cli.md) |
+| 03 — Persistence, HTTP, and provider qualification | Persist atomically in SQLite, enforce replay and conflict rules, and connect HTTP after the CLI and storage are testable. Verify offline CLI, HTTP and SQLite before qualifying Antigravity. | Candidate |
+| 04 — Broader message coverage | Expand classifications, multi-property messages, rentals, projects, mixed-language cases and contradiction handling. Check independent cases alongside the supplied examples. | Candidate |
+| 05 — Property identity and approval | Identify reposts and similar distinct properties, flag uncertain matches, and persist human approval. | Candidate |
+| 06 — Submission readiness | Verify fresh setup and the full brief. Record independent model results, per-message cost and latency, decisions, and agent evidence. Prepare the live extension environment. | Candidate |
 
-## How this roadmap evolves
+## Phase 03 carryover checks
 
-Use [phase plans](phase-plans/README.md) to define outcomes and exit criteria, and [slice records](slices/README.md) to scope the next end-to-end change. Record approval where it occurs. Revisit sequencing with the user when a discovery materially changes scope or priorities. Keep unfinished work explicit; avoid optional UI, additional providers, or standalone gateway deployment until core assessment behavior is complete.
+The former first-listing scope approved these checks. Review the Phase 03 task breakdown after Phase 02. Preserve the [storage and HTTP contracts](phase-plans/01-contracts-and-cli.md#approved-contract-and-policy-choices).
+
+- **SQLite and replay** — Add Prisma message and listing storage, atomic successful writes, and replay through the shared processor. Connect the CLI to that path. Store normalized and evidence payloads as JSON text, with review state and the message relation in columns. Use opaque stable listing IDs. Use an isolated migrated temporary SQLite database for each integration case. Check persisted state after restart, exact replay with saved IDs and no additional gateway call, conflicts for changed payloads, and one stored result from concurrent same-ID writes. Verify that failures create no successful listing.
+- **HTTP integration** — Connect POST `/messages` and GET `/listings` to the shared service and stored records. Check success and failure status mapping, review filters, and equivalent CLI/HTTP results on replay through the same database. Include the unconfigured gateway failure path.
+- **Provider qualification** — Apply OPEN-08 after the offline checks above pass. Confirm executable availability, authentication, evaluator setup, and isolation using synthetic input before untrusted live processing. Preserve the [D-011](DECISIONS.md#d-011-verify-the-listing-flow-offline-before-qualifying-antigravity) gate. Review any replacement provider separately if qualification fails.

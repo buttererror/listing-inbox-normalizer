@@ -205,3 +205,178 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Human intervention:** User asked how to make logs easier to review and specifically raised mistakes they caught, then instructed implementation of the approved plan.
 - **Limitations:** Earlier GPT conversation is available only as a handoff summary. One possible challenge is recorded as unconfirmed, not counted as an agent mistake. No application code or PLAN.md changed; no commit or push was made.
 - **Verification:** Checked documentation links, anchors, Markdown fences, decision/error-ID uniqueness, policy text, `git diff --check`, and the application/plan boundaries. No application tests were run for this documentation-only change.
+
+## Plan revision for joint review — 2026-11-09
+
+- **Evidence status:** Evidence checked against the candidate brief, current repository files, Git history, and this conversation.
+- **Human review:** Not requested for the session account. Foundation and slice decisions are awaiting separate user review.
+- **Objective:** Revise the application plan and prepare it for joint finalization.
+- **Important user prompt:**
+
+> Let's revise the plan and finalize it
+
+- **Outcome:** Appended a dated review addendum to PLAN.md without rewriting its existing text. Mapped the original implementation sequence to the current roadmap, summarized the foundation decisions for review, and drafted an offline first listing slice with a separate live provider qualification checkpoint. Linked the draft from its phase and slice index.
+- **Verification:** Checked local links, anchors, code fences, whitespace, and Git boundaries. PLAN.md remains untracked and the decision register still holds the previous statuses. This was a documentation review, so no application tests were rerun.
+- **Limitations:** Final plan approval and implementation scope remain pending. The first slice advances partial coverage of the brief. The original smoke test does not qualify Antigravity for untrusted or evaluator input.
+
+
+## Foundation review and first-slice order — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selected answers and the updated plan and register.
+- **Human review** — Not requested for the log account.
+- **Objective** — Settle the review process for prior decisions and the order of the first two slices.
+- **User selections**
+
+> Keep the foundation decisions Proposed for individual review
+
+> Verify the full CLI/HTTP and SQLite flow offline first, then qualify Antigravity in a second slice
+
+- **Outcome** — D-001–D-008 remain Proposed. D-011 records the approved slice order. The original plan text was preserved and its dated addendum, roadmap and slice references reflect the agreed sequence. D-001 has a focused proposal for the first individual review.
+- **Limitations** — Plan finalization and the first slice's contracts and implementation approval remain pending.
+
+
+## D-001 stack approval — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, the stack configuration, and the updated decision register.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve D-001 and keep the current stack
+
+- **Outcome** — Recorded D-001 as Accepted and updated its plan and phase references. D-002–D-008 retain Proposed status. The D-002 review distinguishes retiring the npm proposal from approving the current pnpm setup.
+- **Limitation** — Approval selects the stack. Listing persistence and shared transport behavior remain to be verified in the first slice.
+
+
+## D-002 npm disposition — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, original plan text, and pnpm migration commit.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Mark D-002 Superseded and preserve its history
+
+- **Outcome** — Recorded D-002 as Superseded and preserved the original npm choice in the baseline. D-008 remains Proposed. Prepared the D-003 shared-processor review.
+
+
+## D-003 shared processor approval — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, scaffold bootstraps, and decision register.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve D-003 and share one processor
+
+- **Outcome** — Accepted shared CLI and HTTP processing with transport-specific adapters. Updated the plan and first phase references. Prepared the D-004 CommonJS review from the actual compiler, Jest and Prisma generator configuration.
+- **Limitation** — Transport parity remains a first-slice verification criterion.
+
+
+## D-004 CommonJS approval — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, compiler, Jest and Prisma generator configuration, and decision register.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve D-004 and keep CommonJS
+
+- **Outcome** — Accepted CommonJS across the compiler, tests, and generated Prisma client. Updated the plan and first phase. Prepared D-005 from the current health controller and foundation test.
+- **Limitation** — Compiled CLI startup with the generated client remains a first-slice check.
+
+
+## D-005 liveness approval — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, health controller, foundation test, and decision register.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve D-005 and keep liveness only
+
+- **Outcome** — Accepted the current liveness-only contract. Prepared D-006 from the locked Multer resolution and the historical foundation audit result.
+- **Limitation** — No audit was rerun for this decision review.
+
+
+## D-006 Multer pin approval — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, manifest, pnpm lockfile and historical audit log.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve D-006 and retain the pin
+
+- **Outcome** — Accepted the existing Multer 2.5.0 override with reassessment on a Nest upgrade. The user's input questions clarified that the CLI reads a local JSONL file and HTTP accepts one JSON object. Prepared D-007 from the existing commit guide.
+- **Limitation** — The earlier production audit is historical evidence. This planning turn inspected the lockfile.
+
+
+## D-007 commit convention approval — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, the current commit guide, package configuration, and the decision register.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve D-007 and keep the current convention
+
+- **Outcome** — Accepted the documented commit convention. Prepared the D-008 review from the pinned manifest, lockfile, and recorded migration verification.
+- **Limitation** — D-008 review still needs approval. The historical frozen offline install does not establish fresh-clone setup.
+
+
+## D-008 pnpm approval and foundation review close — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, manifest, lockfile, and recorded verification.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve D-008 and retain the pnpm setup
+
+- **Outcome** — Accepted D-008 and closed the individual foundation review. Seven accepted foundation decisions now have rationale and approval evidence, satisfying SC-20. The dated plan addendum and phase point to the pending first-slice contract review.
+- **Limitation** — Fresh-clone verification and generated-client startup are still future checks. The application plan remains under review.
+
+## Slice 001 approval and plan finalization — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user's selection, the approved slice document, decision register, and success checklist.
+- **Human review** — Not requested for this log account.
+- **Important user selection**
+
+> Approve slice 001 scope and contracts as documented
+
+- **Outcome** — D-012 records the approved scope and contracts. Slice 001 is Ready. The dated plan addendum is finalized and preserves the earlier planning text. The roadmap and phase point to the first slice and the later live qualification checkpoint.
+- **Verification** — Checked decision approval evidence, plan and slice status, links and anchors, whitespace, and all 27 checklist entries. Source, tests, Prisma files, manifest and lockfile have no diff. PLAN.md remains untracked.
+- **Limitations** — The checklist records remaining implementation and submission evidence. Application tests were outside this documentation review.
+
+
+## Pipeline and slice task alignment — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user’s proposal, approved slice contracts, architecture and updated task records.
+- **Human review** — Not requested for this log account.
+- **Important user prompt excerpts**
+
+> Should the deduplication and review flagging be inside the extraction step?
+
+> Testing strategy is to add a testing task after the task
+
+> The slices will be split to small tasks (You should note that)
+
+- **Outcome** — Clarified the single shared ingestion flow, with extraction as one stage and domain deduplication and review policy in Listings. Recorded the task and testing sequence in D-013, the agent guide and slice 001. Interpreted the HTTP entry point “at the end” as the last implementation task within slice 001, consistent with D-012’s transport acceptance checks.
+- **Limitation** — Task checks are planned. The pipeline and transport behavior await implementation.
+
+## Phase-and-task delivery structure — 2026-11-09
+
+- **Evidence status** — Evidence checked against the approved plan, the migrated contract and task records, and the documentation checks.
+- **Human review** — Not requested for this log account.
+- **Important user instruction excerpts**
+
+> Remove the slice layer. Pair each implementation task with a focused testing task before starting dependent work.
+
+> Detail Phases 01 and 02 now. Treat Phases 03–06 as candidate outcomes and refine their tasks after reviewing Phase 02 evidence.
+
+- **Outcome** — D-014 records the phase-and-task structure. Phase 01 owns the shared contracts and CLI harness. Phase 02 owns offline extraction through CLI. Phase 03 carries the persistence, replay, HTTP and provider checks. The original planning text is retained and its estimates are historical.
+- **Verification** — Checked active links and anchors, the eight migrated contract rows, ownership of the former slice checks, six roadmap phases, whitespace, and the application and Git boundaries. Application tests were outside this documentation task.
+
+## Finalized plan checkpoint — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, finalized plan and updated documentation.
+- **Human review** — Not requested for this log account.
+- **Important user instruction**
+
+> Commit and update readme that the plan is finalized
+
+- **Outcome** — README links to the finalized plan and its dated amendment. The authorized documentation checkpoint includes the original planning baseline, phase tasks, decision history, and success checklist.
+- **Verification** — Checked documentation links and anchors, the README status, and whitespace before staging.

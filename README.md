@@ -15,12 +15,12 @@ Requires Node.js 24 and pnpm 10.28.2 (via Corepack). Install dependencies with `
 
 `GET /health` returns `{"status":"ok"}` and reports liveness only. Application startup does not call a model. Environment variables select a future provider and are validated at startup.
 
-The Git repository is initialized. `PLAN.md` remains a local draft and is excluded from the initial commit until it is finalized.
+The [implementation plan](PLAN.md) is finalized. It preserves the original planning baseline and records the phase-and-task delivery structure in a dated amendment.
 
-The Antigravity smoke test, including its observed latency and usage, is documented in `PLAN.md`; no per-message cost or production latency has been established. Next: define extraction and persistence contracts, evidence validation, and review policy before implementing the pipeline.
+The [Antigravity smoke test](docs/AI_LOG.md#antigravity-provider-experiment) records observed latency and usage for a synthetic call. Representative per-message cost and application latency remain unmeasured. Phase 01 has approved contracts and a planned CLI harness.
 
 The pnpm lockfile pins a Multer override for a production dependency advisory. The production dependency audit passed after the override; the full development dependency audit reported seven low-severity advisories at setup time.
 
 Project context: [assessment snapshot](docs/task-brief.md), [original Notion brief](https://app.notion.com/p/Dwello-task-4121b4ca63c980d482cde22eedfff233), and [documentation index](docs/README.md).
 
-Development follows the [roadmap](docs/roadmap.md), refined into reviewed phases and vertical slices under accepted decision D-009.
+Development follows the [roadmap](docs/roadmap.md), organized into phases with implementation and testing tasks under D-014.
