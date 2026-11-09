@@ -1,6 +1,6 @@
 # 02 — Extraction through CLI
 
-**Status** — Planned. Start after Phase 01 verification and implementation authorization.
+**Status** — In progress. Task 02.1 and its focused test are complete. Remaining tasks and phase exit checks are pending.
 
 Verify classification, extraction and normalization for one supported sale listing per message through the CLI. Use the [approved contracts](01-contracts-and-cli.md#approved-contract-and-policy-choices) and an offline test gateway. Both the one-line and multi-line fixtures use the same JSONL input shape.
 
@@ -22,6 +22,8 @@ Complete each focused testing task before starting dependent work, as required b
 | **02.4 — Normalize supported values** | In Listings, convert grounded evidence to the public field types under the approved sale, area, price and contact rules. Preserve distinct assertions for review. | **02.4T** — Check Arabic-Indic digits, decimal and comma-grouped SAR prices, area projection and Saudi mobile format. |
 | **02.5 — Resolve fields and derive review** | In Listings, resolve supported values, leave missing or conflicting fields null, and derive readable reasons and `needs_review`. | **02.5T** — Check complete listings, missing applicable fields, inapplicable land fields and competing assertions. |
 | **02.6 — Verify the shared processor through CLI** | Compose Extraction and Listings behind the shared processor with a gateway supplied by tests. Serialize the public result through the existing CLI with `duplicate_of: null`. | **02.6T** — Run one-message and multi-message JSONL fixtures, including a failed extraction followed by a valid message. |
+
+**02.1 / 02.1T — 2026-11-09:** Added the extraction service and a JSON Schema derived from the existing Zod contract. `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction.service.spec.ts` passed 5 tests; typecheck and build passed. The production processor is not yet wired to the service. Verbatim and field-specific grounding are tasks 02.2 and 02.3. The draft-7 schema's compatibility with the eventual provider remains to be verified during qualification.
 
 ### 02.1T — Gateway and response validation
 

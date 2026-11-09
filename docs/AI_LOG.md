@@ -454,3 +454,11 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Important user instruction** — “Let's split phase 2 tasks with its test cases”
 - **Outcome** — Split Phase 02 into six task and test pairs covering response validation, verbatim evidence, field meaning, normalization, review and offline CLI integration. Kept the OPEN-04 review checkpoint and the approved single-sale scope.
 - **Verification** — Checked task and test pairing, decision links and whitespace. The test cases are specifications for future implementation.
+
+## Phase 02 extraction request and validation — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, approved single-listing contract, implementation and focused test results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement task **02.1&#xA0;**&#x20;” (as received).
+- **Outcome** — Added an extraction service that submits the original text, domain instructions and a draft-7 JSON Schema derived from the Zod contract to an injected gateway. It returns a typed invalid-extraction failure for malformed or unsupported output.
+- **Verification** — The focused suite passed 5 tests; typecheck and build passed. Provider compatibility, source grounding and production processor integration remain pending.

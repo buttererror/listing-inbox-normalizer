@@ -18,7 +18,7 @@ Requires Node.js 24 and pnpm 10.28.2 (via Corepack). Install dependencies with `
 
 The [implementation plan](PLAN.md) is finalized. It preserves the original planning baseline and records the phase-and-task delivery structure in a dated amendment.
 
-The [Antigravity smoke test](docs/AI_LOG.md#antigravity-provider-experiment) records observed latency and usage for a synthetic call. Representative per-message cost and application latency remain unmeasured. Phase 01 is verified with a controlled processor; Phase 02 will implement offline extraction through the CLI.
+The [Antigravity smoke test](docs/AI_LOG.md#antigravity-provider-experiment) records observed latency and usage for a synthetic call. Representative per-message cost and application latency remain unmeasured. Phase 01 is verified with a controlled processor; Phase 02 is developing offline extraction through the CLI.
 
 The pnpm lockfile pins a Multer override for a production dependency advisory. The production dependency audit passed after the override; the full development dependency audit reported seven low-severity advisories at setup time.
 
