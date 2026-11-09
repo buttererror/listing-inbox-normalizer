@@ -472,3 +472,70 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Verification** — The evidence and extraction suites passed 8 tests; typecheck and build passed. Field meaning, readable review reasons and processor integration remain pending.
 - **Follow-up instruction** — “Should we utilize this validation to separate its concern?”
 - **Follow-up outcome** — Moved verbatim matching into a focused function in Extraction. The service delegates to it after parsing the gateway response. Both focused suites (8 tests) and typecheck passed again.
+
+## Phase 02 field meaning — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, approved first-listing policy, implementation and focused test results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement task **02.3&#xA0;**&#x20;&#x20;**&#xA0;**” (as received).
+- **Outcome** — Added conservative field-specific checks after verbatim matching. Unsupported assertions retain their evidence and a finding. The checks recognize selected explicit phrases and reject other phrasing for later review.
+- **Verification** — The extraction suites passed 14 tests, including wrong fields, deposits, district/city confusion and an adjacent negation; typecheck and build passed.
+- **Limitations** — Pattern checks cannot establish meaning in every context. Real-provider behavior, normalization, review reasons and integration remain pending.
+
+## Phase 02 contextual evidence revision — 2026-11-09
+
+- **Evidence status** — Evidence checked against the available user instructions, implementation and focused test output.
+- **Human review** — Requested for the attribution of E-004 and E-005; confirmation is not recorded.
+- **Important user prompts** — “Explain this task. Didn't we say that we are going to make the solution general, not focused only on the 10 examples?” and “Add to decistions: *where the agent got something wrong*, how you caught each one and what you changed from this.” The user subsequently instructed “PLEASE IMPLEMENT THIS PLAN” for the one-call contextual evidence plan.
+- **Outcome** — Recorded [D-015](DECISIONS.md#d-015-use-one-extraction-call-with-contextual-evidence-checks), [E-004](DECISIONS.md#e-004-whole-quote-patterns-rejected-supported-evidence), and [E-005](DECISIONS.md#e-005-a-trailing-price-qualifier-was-missed). Revised extraction instructions and drafted contextual checks. The earlier two-call proposal was replaced by the approved one-call plan.
+- **Verification** — Three focused extraction suites passed 18 tests, and typecheck and build passed. The initial revised test run caught Arabic negation and boundary errors, which were corrected before that pass.
+- **Limitations** — Context association needs further review; tests do not establish accuracy on unseen messages. Normalization and integration remain pending.
+
+## Phase 02 independent normalization — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, approved Phase 02 rules, implementation and focused command results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction excerpts** — “Implement 02.4 in Listings while 02.3 is in progress. Use fixtures that represent already-supported `{ field, quote }` assertions” and “Record integration as pending until the boundary test passes.”
+- **Outcome** — Added independent normalization, evidence-preserving findings and area priority selection. Competing values remain available for 02.5.
+- **Verification** — The focused normalization suite passed 11 tests; typecheck and build passed.
+- **Limitations** — 02.3 is still in progress, so integration and its mixed-outcome test remain pending. Quotes missing necessary qualifiers cannot be interpreted by the normalizer; the handoff needs review. Location normalization remains pending.
+
+## Phase 02 normalization follow-up — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, implementation and focused command results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement” in response to the proposed normalizer improvements.
+- **Outcome** — Added attached-unit handling, negotiable price support, per-area price rejection and conservative explicitly labelled location parsing.
+- **Verification** — The focused normalization suite passed 17 tests; typecheck and build passed.
+- **Limitations** — Extraction's clipped-qualifier handoff and the CLI integration remain pending 02.3T and later phase tasks. Location support is limited to colon-labelled names.
+
+## Normalization error records — 2026-11-09
+
+- **Evidence status** — Evidence checked against the available conversation, brief, implementation and recorded focused test results.
+- **Human review** — Not requested. The available conversation attributes detection of the specific defects to the agent's inspection following the user's request for a brief comparison.
+- **Important user instruction** — “Record this as *the agent got something wrong*, how you caught each one and what you changed.”
+- **Outcome** — Recorded [E-006](DECISIONS.md#e-006-normalizer-rejected-common-supported-formats) for rejected supported formats and [E-007](DECISIONS.md#e-007-a-per-area-rate-could-become-a-total-price) for an unsafe per-area price. Both records describe detection, correction, verification and limits.
+- **Limitation** — E-007's clipped-qualifier handoff remains unresolved and integration is pending 02.3T.
+
+## Phase 02 revise 02.3 meaning in one model call — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, implementation, phase plan, decision records, and focused test results.
+- **Human review** — Not requested for this log account.
+- **Important user prompt** — “Agent implementation plan — Revise 02.3 to verify meaning in one model call\nUse the same model call to propose evidence and assess whether it supports the claimed field. Remove the field cue patterns and let application code verify source integrity. Keep the single-sale scope and the existing { field, quote } handoff to 02.4.\n1. Define a private gateway response for extraction and assessment...\n2. Give the model explicit assessment instructions...\n3. Replace the context verifier with mechanical checks...\n4. Preserve the handoff and findings...\n5. Verify mechanics offline and meaning with a live provider...\n6. Record the design change and evidence. Update 02.3 and 02.3T in the phase plan. Once this design is approved, record the decision that supersedes D-015’s deterministic meaning checks. Preserve the earlier test results as historical evidence and update the AI log and error records with the actual verification results.\nThe tradeoff is that the model assesses its own extraction in one call. A verdict of supported is a model judgment backed by source-checked evidence. Accuracy on unseen messages remains a live qualification criterion.”
+- **Outcome** — Implemented single-call evidence proposal and meaning assessment. Defined private gateway response schema with `{ field, quote, verdict, context_quote }` validated at runtime, keeping extra fields internal to Extraction. Replaced pattern and keyword lists in application code with mechanical source integrity checks: exact quote presence in source, verbatim context quote containment, token boundary clipping enforcement (including cuts through decimal and grouping/thousands separators), and occurrence disambiguation. Preserved `{ field, quote }` handoff to 02.4 for supported assertions; retained contradicted, uncertain, and mechanically rejected assertions as findings with reasons. Recorded [D-016](DECISIONS.md#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks) (superseding [D-015](DECISIONS.md#d-015-use-one-extraction-call-with-contextual-evidence-checks)), updated 02.3 and 02.3T in the phase plan, and updated error records [E-004](DECISIONS.md#e-004-whole-quote-patterns-rejected-supported-evidence) and [E-005](DECISIONS.md#e-005-a-trailing-price-qualifier-was-missed).
+- **Verification** — `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction-field-meaning.spec.ts test/extraction-evidence.spec.ts test/extraction.service.spec.ts` passed 21 tests; all 10 test suites (80 tests) passed offline; `pnpm run typecheck` and `pnpm run build` passed cleanly.
+- **Limitations** — A verdict of supported is a model judgment backed by source-checked evidence. Accuracy on unseen messages remains a live qualification criterion in Phase 03. Normalization integration and end-to-end CLI integration remain pending 02.5 and 02.6.
+
+## Phase 02 mechanical verification fixes — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user review prompt, implementation, decision register, and focused test results.
+- **Human review** — Requested for [E-008](DECISIONS.md#e-008-mechanical-verifier-permitted-false-acceptances-on-context-mismatch-trimmed-context-and-signed-numbers).
+- **Important user prompt** — “[P1] Tie the context quote to the occurrence that passes the token check — verify-source-integrity.ts (line 123) ... For Deposit: 150,000 SAR; asking price: 50,000 SAR, a supported assertion quoting 50,000 SAR with context Deposit: 150,000 SAR passes ... [P2] Check context verbatim before using it as evidence — verify-source-integrity.ts (line 92) ... The verifier trims context_quote before checking source presence ... [P2] Include signs in numeric token boundaries — verify-source-integrity.ts (line 35) ... A quote of 50,000 SAR from -50,000 SAR passes the mechanical check ... The clipped rate case 2,500 SAR from 2,500 SAR/sqm also remains unprotected if the model marks it supported.”
+- **Outcome** — Strengthened mechanical source integrity checks in `verifySourceIntegrity`:
+  1. Restricted quote candidate evaluation to occurrences contained within `context_quote` whenever context is supplied, ensuring an assertion cannot match an unrelated unclipped occurrence outside the supplied context.
+  2. Evaluated `context_quote` verbatim without trimming; any whitespace mismatch, empty, or whitespace-only context is rejected with `context_not_in_source`.
+  3. Included signs (`+`, `-`, `\u2212`) in numeric token boundaries to prevent quotes that strip leading signs.
+  4. Added compound unit boundary checks for `/` (e.g. `SAR/sqm`) to reject quotes that clip off rate suffixes.
+  Recorded [E-008](DECISIONS.md#e-008-mechanical-verifier-permitted-false-acceptances-on-context-mismatch-trimmed-context-and-signed-numbers) in the decision register.
+- **Verification** — Expanded `test/extraction-field-meaning.spec.ts` with 8 new regression tests. `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction-field-meaning.spec.ts test/extraction-evidence.spec.ts test/extraction.service.spec.ts` passed 34 tests; full offline suite passed 88 tests across 10 test suites; `pnpm run typecheck` and `pnpm run build` passed cleanly.
+- **Limitations** — Does not evaluate model judgment accuracy on unseen messages (reserved for live qualification in Phase 03). Downstream normalization integration remains pending.
