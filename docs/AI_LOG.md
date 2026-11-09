@@ -539,3 +539,51 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   Recorded [E-008](DECISIONS.md#e-008-mechanical-verifier-permitted-false-acceptances-on-context-mismatch-trimmed-context-and-signed-numbers) in the decision register.
 - **Verification** — Expanded `test/extraction-field-meaning.spec.ts` with 8 new regression tests. `corepack pnpm exec jest --runInBand --runTestsByPath test/extraction-field-meaning.spec.ts test/extraction-evidence.spec.ts test/extraction.service.spec.ts` passed 34 tests; full offline suite passed 88 tests across 10 test suites; `pnpm run typecheck` and `pnpm run build` passed cleanly.
 - **Limitations** — Does not evaluate model judgment accuracy on unseen messages (reserved for live qualification in Phase 03). Downstream normalization integration remains pending.
+
+## Phase 02 field resolution and review — 2026-11-09
+
+- **Evidence status** — Evidence checked against user prompt, approved contracts, implementation, and focused test results.
+- **Human review** — Not requested for this log account.
+- **Important user prompt** — “Implement task 02.5”
+- **Outcome** — Implemented listing field resolution and review derivation in Listings (`resolveListing` and `ListingsService`). Resolved supported values into public fields, left missing or conflicting fields null, preserved competing evidence, respected land field inapplicability (omitting missing reasons for bedrooms and bathrooms on land), and derived readable review reasons and `needs_review = review_reasons.length > 0`.
+- **Verification** — `corepack pnpm exec jest --runInBand --runTestsByPath test/listings-resolution.spec.ts` passed 9 tests covering complete listings, missing/unsupported fields, inapplicable land fields, conflicting prices, conflicting areas, priority area selection, unsupported currency, duplicate assertions, and service composition. Full offline suite passed 97 tests across 11 test suites; `pnpm run typecheck` and `pnpm run build` passed cleanly.
+- **Limitations** — Extraction and Listings composition behind `MessageProcessor` and CLI remains task 02.6. Persistence and live qualification carry forward to Phase 03.
+
+## Phase 02 resolution follow-up — 2026-11-09
+
+- **Evidence status** — Evidence checked against user prompt, implementation, decision register, and focused test results.
+- **Human review** — Requested for [E-009](DECISIONS.md#e-009-listing-resolver-nullified-verified-asking-price-on-rejected-deposit-and-defaulted-category-on-conflicting-property-types).
+- **Important user prompt** — “Resolve this\n[P2] Keep the verified asking price when a deposit is rejected — resolve-listing.ts (line 164)\nA verified 3.2M SAR asking price becomes null and receives price_conflict if Extraction also rejects deposit 50,000 SAR as price evidence. The deposit supplies no competing asking price. Keep the verified amount and retain the rejected assertion in the evidence.\n[P2] Resolve the area only when the property category supports the selection — resolve-listing.ts (line 137)\nWhen supported property-type assertions say both villa and land, the resolver correctly leaves property_type null but applies the built-property area priority. With 380 sqm built-up and 450 sqm land, it publishes 380 even though the unresolved type determines which area applies. Leave the area null with a review reason when the category changes the selection.”
+- **Outcome** — Fixed two resolution edge cases in `resolveListing`:
+  1. Kept unambiguous verified asking prices even when a rejected deposit assertion is preserved in evidence, avoiding false `price_conflict`.
+  2. Compared area selections under both land and built priorities when `property_type` is unresolved; if the category changes the selected area value, left `area_sqm = null` and added `area_sqm_conflict` to `review_reasons`.
+  Recorded [E-009](DECISIONS.md#e-009-listing-resolver-nullified-verified-asking-price-on-rejected-deposit-and-defaulted-category-on-conflicting-property-types) in the decision register.
+- **Verification** — Added two regression tests to `test/listings-resolution.spec.ts`. Focused suite passed all 11 tests; full offline test suite passed 99 tests across 11 test suites; `pnpm run typecheck` and `pnpm run build` passed cleanly.
+- **Limitations** — Processor and CLI integration remain task 02.6.
+
+## Evidence-backed normalization plan — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user prompts, candidate brief, D-016, current handoff and phase plan.
+- **Human review** — Not requested for the log account. Decision approval is pending separately.
+- **Important user prompts** — “I want to follow the [task-brief.md](docs/task-brief.md). Shouldn't the llm detect that?” and “Make a plan to make these changes”
+- **Outcome** — Recorded [D-017](DECISIONS.md#d-017-carry-evidence-backed-field-interpretations-into-normalization) and the proposed Phase 02 revisions. The model would identify field meaning with evidence in one call. Listings would validate and normalize grounded tokens. Phase 02 would exercise the revised handoff through offline CLI fixtures.
+- **Verification** — Compared the proposed work with SC-08, SC-09, SC-11 and SC-13 and the current gateway and downstream assertion schemas. The preceding review reproduced sign loss, recurring-rate promotion and currency-first rejection through source checks and normalization. No implementation tests were run for this planning entry.
+- **Limitations** — Implementation and runtime validation depend on approval. Rental and currency-less price policy and live semantic evaluation remain separate checkpoints.
+
+## Evidence-backed normalization implementation — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction and focused checks.
+- **Human review** — Not requested.
+- **Important user prompt** — “PLEASE IMPLEMENT THIS PLAN” followed by the Evidence-backed normalization and architecture update plan.
+- **Outcome** — Accepted D-017, documented the planned handoff and module responsibilities in the architecture, and began the work by handling currency-first SAR amounts and rejecting negative, yearly and per-area examples in the existing price normalizer.
+- **Verification** — `pnpm exec jest --runInBand --runTestsByPath test/listings-normalization.spec.ts` passed 22 tests. Typecheck and build passed. The full suite passed 103 of 104 tests; the HTTP liveness test could not bind to loopback in the sandbox (EPERM).
+- **Limitations** — The structured handoff, location handling, processor integration and full acceptance checks remain pending. The architecture describes the handoff as in progress.
+
+## Phase 02.5 resolver corrections — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, implementation and focused checks.
+- **Human review** — Not requested.
+- **Important user prompt** — “PLEASE IMPLEMENT THIS PLAN” followed by “Phase 02.5 resolver corrections”.
+- **Outcome** — Recorded D-018 and updated uncertainty reasons, area metadata and room applicability.
+- **Verification** — The focused resolver suite passed 15 tests. Typecheck and build passed.
+- **Limitations** — The D-017 handoff and CLI integration remain pending. Price-period comparison carries forward to rental support.

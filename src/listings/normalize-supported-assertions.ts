@@ -66,14 +66,16 @@ function normalize(assertion: Assertion, sale: boolean): Value | null {
     return Number.isSafeInteger(value) ? { field, value } : null;
   }
   if (field === 'price') {
-    if (!sale || !/(?:\bSAR\b|ريال(?:\s+سعودي)?)/iu.test(quote) || /(?:\b(?:USD|deposit|installment|monthly|yearly|rent|from|starting)\b|دولار|عربون|قسط|شهري|سنوي|إيجار|ايجار|يبدأ|(?:\/|\bper\s+)(?:\s*)(?:sqm|m2|m²|م²|متر)|للمتر)/iu.test(quote)) return null;
+    if (!sale || !/(?:\bSAR\b|ريال(?:\s+سعودي)?)/iu.test(quote) || /(?:[-−]\s*\d|\b(?:USD|deposit|installment|monthly|yearly|rent|from|starting)\b|دولار|عربون|قسط|شهري|سنوي|إيجار|ايجار|يبدأ|(?:\/|\bper\s+)\s*(?:sqm|m2|m²|م²|متر|yr\b|year\b|month\b|mo\b)|للمتر)/iu.test(quote)) return null;
     const numbers = quote.match(/\d[\d,.]*/gu);
     if (numbers?.length !== 1) return null;
     const amount = numeric(numbers[0]);
     const tail = quote.slice(quote.indexOf(numbers[0]) + numbers[0].length);
     const currencyTail = tail.match(/^\s*(?:(million|m|مليون|ألف|الف|thousand|k)\s*)?(?:SAR\b|ريال(?:\s+سعودي)?)/iu);
-    if (!currencyTail) return null;
-    const suffix = currencyTail[1]?.toLowerCase();
+    const currencyPrefix = quote.slice(0, quote.indexOf(numbers[0])).match(/(?:\bSAR|ريال(?:\s+سعودي)?)\s*$/iu);
+    const prefixSuffix = currencyPrefix ? tail.match(/^\s*(million|m|مليون|ألف|الف|thousand|k)(?!\p{L})/iu) : null;
+    if (!currencyTail && !currencyPrefix) return null;
+    const suffix = (currencyTail?.[1] ?? prefixSuffix?.[1])?.toLowerCase();
     const multiplier = suffix && /^(?:million|m|مليون)$/iu.test(suffix) ? 1_000_000 : suffix ? 1_000 : 1;
     const result = amount === null ? null : amount * multiplier;
     return result !== null && Number.isFinite(result) && result <= Number.MAX_SAFE_INTEGER ? { field, value: { amount: result, currency: 'SAR', period: 'total' } } : null;

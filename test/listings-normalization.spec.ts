@@ -35,6 +35,18 @@ describe('normalization of supported assertions', () => {
     expect(result.values[1]).toMatchObject({ value: { amount: 3200000, currency: 'SAR', period: 'total' } });
   });
 
+  it('converts currency-first sale prices', () => {
+    const result = normalizeSupportedAssertions([sale, { field: 'price', quote: 'SAR 3.2M' }]);
+    expect(result.values[1]).toMatchObject({ value: { amount: 3200000, currency: 'SAR', period: 'total' } });
+  });
+
+  it.each(['−50,000 SAR', '-50,000 SAR', '50,000 SAR/yr', '2,500 SAR/m²'])(
+    'does not publish %s as a positive sale total',
+    (quote) => {
+      expect(normalizeSupportedAssertions([sale, { field: 'price', quote }]).findings).toHaveLength(1);
+    },
+  );
+
   it.each(['250,000 USD', '250,000', '3,20 SAR'])('retains a finding for %s', (quote) => {
     const assertion = { field: 'price', quote };
     const result = normalizeSupportedAssertions([sale, assertion]);
