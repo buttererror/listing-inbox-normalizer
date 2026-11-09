@@ -437,3 +437,12 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome** — Added ordered JSONL processing with input validation, per-line errors and aggregate exit status. Unexpected processor exceptions become safe internal errors, allowing later records to continue.
 - **Errors and correction** — The first focused run failed to compile the Jest mock due to an incorrect generic signature. Corrected the mock typing. See [E-003](DECISIONS.md#e-003-jest-mock-type-failed-to-compile).
 - **Verification** — The corrected focused suite passed 6 tests; typecheck and build passed. CLI wiring remains pending.
+
+## Phase 01 CLI and close-out — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, phase checks, implementation and command results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement next task”
+- **Outcome** — Wired the JSONL command to a non-HTTP Nest context and an unavailable-provider processor. Recorded Phase 01 verification and partial success-criteria evidence.
+- **Verification** — The focused CLI suite passed 5 tests. The full offline suite passed 37 tests with local socket access; typecheck and build passed. A direct built CLI invocation returned the expected provider-unavailable record and exit 1. The sandbox blocked the existing health test's loopback listener and blocked a nested subprocess in a test, so the production context was tested in-process and the built command separately.
+- **Limitations** — Real extraction, persistence, HTTP parity and provider qualification remain pending.

@@ -1,0 +1,3 @@
+{"id":"example-001","sender":"example-broker","received_at":"2026-11-01T09:12:00+03:00","text":"For sale: Villa in Riyadh. Asking 3.2M SAR."}
+{"id":"example-002","sender":"example-broker-2","received_at":"2026-11-01T10:00:00+03:00","text":"للبيع شقة في الرياض، السعر ٩٥٠ ألف ريال."}
+{"id":"example-003","sender":"example-broker-3","received_at":"2026-11-01T11:00:00+03:00","text":"Looking for an apartment in Jeddah."}

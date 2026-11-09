@@ -1,6 +1,6 @@
 # 01 — Contracts, policies, and CLI harness
 
-**Status** — In progress. D-014 approves the phase grouping and D-012 governs the first listing contracts. Tasks 01.1–01.4 and their focused checks are complete; task 01.5 remains planned.
+**Status** — Verified on 2026-11-09. D-014 approves the phase grouping and D-012 governs the first listing contracts. All Phase 01 tasks and exit checks passed.
 
 Establish the shared processor contract and an offline CLI harness. The CLI accepts a local JSONL file with one or several messages. Use an injected processor in tests. Phase 02 will exercise extraction through the same boundary.
 
@@ -40,6 +40,8 @@ Complete each testing task before starting the next implementation task. Record 
 **01.3 / 01.3T — 2026-11-09:** Defined the processor and gateway interfaces and strict single-candidate extraction schema. The focused Jest command `corepack pnpm exec jest --runInBand --runTestsByPath test/processing-boundaries.spec.ts` passed 9 tests after correcting a test-table type error. Typecheck and build passed. Evidence grounding and real processing remain pending.
 
 **01.4 / 01.4T — 2026-11-09:** Added the injected JSONL runner. `corepack pnpm exec jest --runInBand --runTestsByPath test/jsonl-runner.spec.ts` passed 6 tests after correcting a test-double type error; typecheck and build passed. The runner receives text and an output writer; command wiring and application-context shutdown remain task 01.5.
+
+**01.5 / 01.5T — 2026-11-09:** Wired `node dist/cli.js process <input.jsonl>` to a non-HTTP Nest context and the runner. The focused CLI suite passed 5 tests, including injected processing, lifecycle, argument and file errors, and the production unavailable-provider path. A direct built-command invocation returned the expected failure record and exit 1. The full suite passed 37 tests with local socket access, and typecheck and build passed. The sandboxed full-suite attempt could not bind the existing HTTP health test to loopback; the offline rerun with local socket access passed.
 
 ## Task briefs and test cases
 
@@ -117,4 +119,4 @@ Wire `process <input.jsonl>` to a file reader, the Nest application-context boot
 
 ## Exit check
 
-The contracts and CLI work offline with a test-injected processor. A malformed nonblank line yields its own error record and the CLI continues to the next message. Run the offline suite, type check, and build, then record the results against the affected criteria. Verification evidence is pending.
+The contracts and CLI work offline with a test-injected processor. A malformed nonblank line yields its own error record and the CLI continues to the next message. The offline suite, typecheck and build passed on 2026-11-09 as recorded above. CLI product extraction, HTTP parity, persistence and provider qualification remain future work under Phases 02 and 03. See the [success checklist](../success-criteria.md) for partial coverage.
