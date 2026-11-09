@@ -738,3 +738,24 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome and verification** — Replaced the paraphrased remaining-task sections with the supplied starting point, complete 02.2–02.6 table, and Mechanical Validation code boundaries. Compared those sections verbatim with the attachment and checked that the 02.0 and 02.1 progress records were preserved. This was a documentation correction.
 - **Human intervention** — The user identified that the prior tracker update did not follow the supplied plan.
 - **Related error** — [E-014](DECISIONS.md#e-014-phase-02-tracker-condensed-the-supplied-plan).
+
+## Output Stage 1 ExtractionEnvelope through process and route legacy via process-legacy — 2026-11-10
+
+- **Evidence status** — Evidence checked against source, tests, typecheck, build, and live Gemini CLI runs.
+- **Human review** — Not requested.
+- **Objective** — Temporarily output the internal Stage 1 ExtractionEnvelope from `process <input.jsonl>` and preserve the single-sale baseline via `process-legacy <input.jsonl>` under D-028.
+- **Important prompt** — “Change process <input.jsonl> itself to output the internal Stage 1 ExtractionEnvelope, temporarily changing its output contract and keep the legacy pipeline throught process-legacy”.
+- **Outcome** —
+  - Renamed the legacy bridge processor to `LegacyListingMessageProcessor` in `src/messages/legacy-listing-message-processor.ts` and legacy unit tests to `test/legacy-listing-message-processor.spec.ts`.
+  - Implemented the active `ListingMessageProcessor` in `src/messages/listing-message-processor.ts`, calling `ExtractionService.extract(message)` and returning the validated `Stage1ExtractionResult` envelope (`classification`, `detected_classes`, `listings` with `offer_quote`, `candidates`, `findings`) or typed `ProcessingFailure`. Added dedicated unit tests in `test/listing-message-processor.spec.ts`.
+  - Registered `ListingMessageProcessor` as `MESSAGE_PROCESSOR` and `LegacyListingMessageProcessor` as `LEGACY_MESSAGE_PROCESSOR` in `MessagesModule`.
+  - Expanded `MessageResult` to include `Stage1ExtractionResult`.
+  - Updated `runCli` in `src/cli.ts` to support both `process` and `process-legacy` subcommands. `process` invokes `ListingMessageProcessor` and outputs the internal Stage 1 ExtractionEnvelope. `process-legacy` invokes `LegacyListingMessageProcessor` and outputs the legacy resolved `MessageSuccess` single-sale record.
+  - Updated `test/cli.spec.ts`, `test/gemini-cli.spec.ts`, and `test/cli-integration.spec.ts` with tests covering both `process` and `process-legacy`.
+- **Verification and limits** —
+  - `pnpm run typecheck` and `pnpm run build` passed cleanly.
+  - CLI test suites (`cli.spec.ts`, `gemini-cli.spec.ts`, `cli-integration.spec.ts`) passed 17 tests.
+  - Real built CLI ran against `test/fixtures/one-message.jsonl`:
+    - `node dist/cli.js process test/fixtures/one-message.jsonl` returned exit 0 and outputted the exact `Stage1ExtractionResult` with classification, detected classes, and 1 offer containing 4 candidates and 0 findings.
+    - `node dist/cli.js process-legacy test/fixtures/one-message.jsonl` returned exit 0 and outputted the legacy resolved `MessageSuccess` listing with price 3,200,000 SAR.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-027](DECISIONS.md#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline), [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli).

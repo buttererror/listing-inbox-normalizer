@@ -4,11 +4,12 @@ import { ExtractionService } from './extraction/extraction.service';
 import { ListingsService } from './listings/listings.service';
 import { LlmGateway } from './llm-gateway/llm-request';
 import { runJsonl } from './messages/jsonl-runner';
+import { LegacyListingMessageProcessor } from './messages/legacy-listing-message-processor';
 import { ListingMessageProcessor } from './messages/listing-message-processor';
-import { MESSAGE_PROCESSOR, MessageProcessor } from './messages/message-processor';
+import { LEGACY_MESSAGE_PROCESSOR, MESSAGE_PROCESSOR, MessageProcessor } from './messages/message-processor';
 
 type CliContext = {
-  getProcessor(): MessageProcessor;
+  getProcessor(command?: 'process' | 'process-legacy'): MessageProcessor;
   close(): Promise<void>;
 };
 
@@ -19,8 +20,9 @@ type CliDependencies = {
 };
 
 export async function runCli(args: string[], dependencies: CliDependencies): Promise<0 | 1> {
-  if (args.length !== 2 || args[0] !== 'process' || !args[1]) {
-    dependencies.stderr('Usage: process <input.jsonl>\n');
+  const command = args[0] as 'process' | 'process-legacy' | undefined;
+  if (args.length !== 2 || (command !== 'process' && command !== 'process-legacy') || !args[1]) {
+    dependencies.stderr('Usage: process <input.jsonl> | process-legacy <input.jsonl>\n');
     return 1;
   }
 
@@ -36,7 +38,7 @@ export async function runCli(args: string[], dependencies: CliDependencies): Pro
   let exitCode: 0 | 1 = 1;
   try {
     context = await dependencies.createContext();
-    exitCode = await runJsonl(input, context.getProcessor(), dependencies.stdout);
+    exitCode = await runJsonl(input, context.getProcessor(command), dependencies.stdout);
   } catch {
     dependencies.stderr('Unable to run message processing\n');
   } finally {
@@ -54,11 +56,21 @@ export async function runCli(args: string[], dependencies: CliDependencies): Pro
 
 export async function createCliContext(options?: { gateway?: LlmGateway }): Promise<CliContext> {
   const app = await createApplicationContext({ logger: false });
+  const extractionService = options?.gateway
+    ? new ExtractionService(options.gateway)
+    : app.get(ExtractionService);
+
   const processor = options?.gateway
-    ? new ListingMessageProcessor(new ExtractionService(options.gateway), app.get(ListingsService))
+    ? new ListingMessageProcessor(extractionService)
     : app.get<MessageProcessor>(MESSAGE_PROCESSOR);
+
+  const legacyProcessor = options?.gateway
+    ? new LegacyListingMessageProcessor(extractionService, app.get(ListingsService))
+    : app.get<MessageProcessor>(LEGACY_MESSAGE_PROCESSOR);
+
   return {
-    getProcessor: () => processor,
+    getProcessor: (command?: 'process' | 'process-legacy') =>
+      command === 'process-legacy' ? legacyProcessor : processor,
     close: () => app.close(),
   };
 }

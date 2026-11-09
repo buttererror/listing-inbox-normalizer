@@ -487,3 +487,18 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Later revision** — The user-supplied [Phase 02 plan](phase-plans/02-message-processing.md#remaining-tasks) moves bridge removal to 02.5, when Listings switches to `ValidationOutcome`. Full public assembly remains in 02.6.
 - **Approval evidence** — User prompt for Task 02.1: "Implement Stage 1 of the architecture under D-019. Exercise the full classification and offer-grouping contract at the Extraction boundary, then connect one supported sale through the shared processor and CLI as specified in the Phase 02 task plan."
 - **References** — D-019, D-023, Task 02.1 brief, [Phase 02 task plan](phase-plans/02-message-processing.md).
+
+### D-028: Temporarily output Stage 1 ExtractionEnvelope through process CLI
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — During Phase 02 (tasks 02.2–02.4), developers and evaluators need to inspect the model's internal extraction handoff (`Stage1ExtractionResult`) directly through the CLI across arbitrary message types (including multi-offer, mixed, and non-listing inputs), while the interim single-sale bridge in `ListingMessageProcessor` only resolved single sales and rejected multi-offer messages with `internal_error`.
+- **Options and tradeoffs** —
+  1. Inspect extraction handoffs only via internal debuggers or unit tests (opaque, cannot easily process JSONL batches via CLI).
+  2. Add an optional CLI flag `--stage1` to `process` (preserves `process` contract but requires flag pass-through).
+  3. Direct instruction: Temporarily re-point `process <input.jsonl>` to output the internal Stage 1 ExtractionEnvelope directly, and keep the legacy single-sale bridge pipeline accessible through `process-legacy <input.jsonl>`.
+- **Recommendation and rationale** — Implement option 3 as directed by explicit user prompt. CLI command `process` executes `ListingMessageProcessor` in `src/messages/listing-message-processor.ts` and outputs `Stage1ExtractionResult` (or `ProcessingFailure`), while `process-legacy` routes through `LegacyListingMessageProcessor` in `src/messages/legacy-listing-message-processor.ts` to preserve the single-sale baseline until task 02.5 / 02.6.
+- **Consequences** — `process <input.jsonl>` temporarily outputs `{ classification, detected_classes, listings: [{ offer_quote, candidates, findings }] }` records. Public assembled contract `{ message_id, classification, listings: [{ id, ... }] }` remains available under `process-legacy` until Stage 6 (task 02.6) brings final multi-offer public assembly into `process`.
+- **Validation** — Unit tests in `test/cli.spec.ts` for both subcommands; integration tests in `test/cli-integration.spec.ts` checking Stage 1 ExtractionEnvelope outputs for listing, multi-offer, and non-listing inputs, as well as `process-legacy` baseline outputs; live Gemini CLI check with `test/fixtures/one-message.jsonl` returning the ExtractionEnvelope under `process` and the resolved listing under `process-legacy`.
+- **Review checkpoint** — Revert `process` output contract to the assembled public result in 02.6 and retire `process-legacy`.
+- **Approval evidence** — User prompt: "Change process <input.jsonl> itself to output the internal Stage 1 ExtractionEnvelope, temporarily changing its output contract and keep the legacy pipeline throught process-legacy".
+- **References** — D-019, D-027, [Phase 02 plan](phase-plans/02-message-processing.md).

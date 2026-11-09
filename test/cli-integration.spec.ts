@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createCliContext, runCli } from '../src/cli';
+import { stage1ExtractionResultSchema } from '../src/extraction/extraction-result.schema';
 import { LlmGateway } from '../src/llm-gateway/llm-request';
 import { messageSuccessSchema, processingFailureSchema } from '../src/messages/message-result.schema';
 
@@ -88,8 +89,11 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     await rm(directory, { recursive: true, force: true });
   });
 
-  const runWithGateway = async (gateway: LlmGateway): Promise<0 | 1> => {
-    return runCli(['process', path], {
+  const runWithGateway = async (
+    gateway: LlmGateway,
+    command: 'process' | 'process-legacy' = 'process-legacy',
+  ): Promise<0 | 1> => {
+    return runCli([command, path], {
       createContext: () => createCliContext({ gateway }),
       stdout: (text: string) => { stdout += text; },
       stderr: (text: string) => { stderr += text; },
@@ -305,5 +309,83 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     });
     const second = messageSuccessSchema.parse(JSON.parse(lines[1]));
     expect(second.message_id).toBe('m-english-01');
+  });
+
+  describe('process command outputs internal Stage 1 ExtractionEnvelope', () => {
+    it('outputs the internal Stage 1 ExtractionEnvelope for a listing message', async () => {
+      await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
+      const gateway: LlmGateway = {
+        execute: async () => englishGatewayResponse,
+      };
+
+      const exitCode = await runWithGateway(gateway, 'process');
+      expect(exitCode).toBe(0);
+      expect(stderr).toBe('');
+
+      const parsed = JSON.parse(stdout.trim());
+      expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
+      expect(parsed).toEqual(englishGatewayResponse);
+    });
+
+    it('outputs the internal Stage 1 ExtractionEnvelope for multi-offer messages', async () => {
+      const multiOfferResponse = {
+        classification: 'listing' as const,
+        detected_classes: ['listing' as const],
+        listings: [
+          englishGatewayResponse.listings[0],
+          arabicGatewayResponse.listings[0],
+        ],
+      };
+      await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
+      const gateway: LlmGateway = {
+        execute: async () => multiOfferResponse,
+      };
+
+      const exitCode = await runWithGateway(gateway, 'process');
+      expect(exitCode).toBe(0);
+      expect(stderr).toBe('');
+
+      const parsed = JSON.parse(stdout.trim());
+      expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
+      expect(parsed.listings).toHaveLength(2);
+    });
+
+    it('outputs the internal Stage 1 ExtractionEnvelope for non-listing classification', async () => {
+      const buyerRequestResponse = {
+        classification: 'buyer_request' as const,
+        detected_classes: ['buyer_request' as const],
+        listings: [],
+      };
+      await writeFile(path, `${JSON.stringify({ ...englishMessage, text: 'Looking for a 3 BR apartment in Riyadh' })}\n`);
+      const gateway: LlmGateway = {
+        execute: async () => buyerRequestResponse,
+      };
+
+      const exitCode = await runWithGateway(gateway, 'process');
+      expect(exitCode).toBe(0);
+      expect(stderr).toBe('');
+
+      const parsed = JSON.parse(stdout.trim());
+      expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
+      expect(parsed.classification).toBe('buyer_request');
+      expect(parsed.listings).toEqual([]);
+    });
+
+    it('outputs failure for invalid extraction response in process', async () => {
+      await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
+      const gateway: LlmGateway = {
+        execute: async () => ({ invalid: 'envelope' }),
+      };
+
+      const exitCode = await runWithGateway(gateway, 'process');
+      expect(exitCode).toBe(1);
+      expect(stderr).toBe('');
+
+      const parsed = JSON.parse(stdout.trim());
+      expect(parsed).toEqual({
+        message_id: 'm-english-01',
+        error: { code: 'invalid_extraction', message: 'Invalid extraction response' },
+      });
+    });
   });
 });

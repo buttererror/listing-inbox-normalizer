@@ -106,4 +106,12 @@ describe('process command', () => {
       message_id: 'm-001', error: { code: 'provider_unavailable', message: 'Extraction is not configured' },
     });
   });
+
+  it('runs process-legacy using the legacy pipeline processor', async () => {
+    await writeFile(path, JSON.stringify(message));
+    expect(await runCli(['process-legacy', path], dependencies())).toBe(0);
+    expect(JSON.parse(stdout)).toEqual({ message_id: 'm-001', classification: 'listing', listings: [] });
+    expect(stderr).toBe('');
+    expect(closed).toBe(true);
+  });
 });

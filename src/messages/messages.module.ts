@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { MESSAGE_PROCESSOR } from './message-processor';
+import { LEGACY_MESSAGE_PROCESSOR, MESSAGE_PROCESSOR } from './message-processor';
+import { LegacyListingMessageProcessor } from './legacy-listing-message-processor';
 import { ListingMessageProcessor } from './listing-message-processor';
 import { ExtractionModule } from '../extraction/extraction.module';
 import { ListingsModule } from '../listings/listings.module';
@@ -8,9 +9,16 @@ import { ListingsModule } from '../listings/listings.module';
   imports: [ExtractionModule, ListingsModule],
   providers: [
     ListingMessageProcessor,
+    LegacyListingMessageProcessor,
     { provide: MESSAGE_PROCESSOR, useExisting: ListingMessageProcessor },
+    { provide: LEGACY_MESSAGE_PROCESSOR, useExisting: LegacyListingMessageProcessor },
   ],
-  exports: [MESSAGE_PROCESSOR, ListingMessageProcessor],
+  exports: [
+    MESSAGE_PROCESSOR,
+    LEGACY_MESSAGE_PROCESSOR,
+    ListingMessageProcessor,
+    LegacyListingMessageProcessor,
+  ],
 })
 export class MessagesModule {}
 
