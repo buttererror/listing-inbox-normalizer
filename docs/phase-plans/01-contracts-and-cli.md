@@ -23,11 +23,90 @@ These rules come from [D-012](../DECISIONS.md#d-012-approve-the-first-listing-sc
 
 ## Tasks and testing
 
-| Task | Implementation outcome | Focused testing task |
+Complete each testing task before starting the next implementation task. Record commands, results and limitations here as work proceeds. All tasks are planned.
+
+| Implementation task | Outcome | Follow-up testing task |
 | --- | --- | --- |
-| 01.1 — Shared contracts | Define the shared input, successful result, typed failures, and gateway boundary using the approved rules above. | Validate the required input fields and timestamp, success shape, and failure envelope. |
-| 01.2 — JSONL CLI harness | Add the JSONL entry point and connect it to the shared processor boundary. Inject a controlled processor or gateway through the test harness. | Verify argument handling, blank lines, one result per nonblank line, and continuation after malformed input. Check exit status and clean JSONL stdout. Test a one-line and a multi-line file. |
+| **01.1 — Validate input messages** | Define the shared runtime input schema for `id`, `sender`, `received_at` and `text`. Preserve their original strings and ignore extra keys under OPEN-01. | **01.1T** — Accept a valid message and preserve the four values. Reject missing fields, non-string values, empty strings, and invalid timestamps or timestamps without a timezone. Check that extra keys are ignored. |
+| **01.2 — Define public result contracts** | Define the successful message and listing result using the brief's minimum fields and nullability. Define the typed error envelope and the approved stable error codes. | **01.2T** — Check a valid success result with nullable fields, the required nested price shape, and a failure with an unknown message ID. Reject invalid enum values and missing required fields. |
+| **01.3 — Define the processor and extraction boundaries** | Define the shared processor contract from a validated message to a result. Define the provider-independent extraction request and the strict candidate assertion schema for one `listing` candidate. Keep provider output unknown until parsed. | **01.3T** — Check that a controlled processor can return either result kind. Parse a valid candidate envelope and reject malformed assertions or unsupported candidate counts. Phase 02 exercises actual evidence checks. |
+| **01.4 — Build the JSONL runner** | Process lines in order through the injected processor. Skip blank lines, emit one JSON result per nonblank line, and continue after a per-line failure. Keep diagnostics on stderr. | **01.4T** — Use one-line and multi-line inputs, including a blank line, malformed JSON, invalid input, and a valid message after a failure. Assert record order and count, clean stdout, and exit 0 for success or exit 1 after any failure. |
+| **01.5 — Wire the CLI command** | Connect `process <input.jsonl>` to local file reading and the shared Nest application-context boundary. Use the controlled processor through the test boundary. Production uses the typed unavailable failure while the extraction route is unconfigured. | **01.5T** — Exercise the command with temporary JSONL files and the controlled processor. Check argument and file-read failures on stderr, exit 1, and application-context shutdown. Confirm the CLI runs without an HTTP listener. |
+
+## Task briefs and test cases
+
+The cases below define the inputs and expected outcomes for each testing task. Run each testing task after its implementation task. Use controlled processors and gateways for these offline checks. Record the actual result with the task ID when a test runs.
+
+### 01.1 — Validate input messages
+
+Define a runtime schema for the shared input. Return the four approved fields with their original string values and discard extra keys. Use this synthetic valid input as a base fixture for the CLI cases as well.
+
+```json
+{"id":"m-001","sender":"+966551234567","received_at":"2026-11-01T09:12:00+03:00","text":"For sale: Villa in Riyadh. Asking 3.2M SAR."}
+```
+
+**01.1T — Input schema cases**
+
+| Case | Input | Expected outcome |
+| --- | --- | --- |
+| Valid message | The base fixture with an extra `debug` key | The schema accepts the message and returns exactly the four original fields. |
+| Required field missing | Remove each required field in turn | The schema rejects each input. |
+| Invalid field value | Substitute a number or an empty string for each required string | The schema rejects each input. |
+| Invalid timestamp | Use `yesterday` or `2026-11-01T09:12:00` | The schema rejects invalid syntax or the missing timezone. |
+
+### 01.2 — Define public result contracts
+
+Define and validate the success shape against the [brief's minimum output contract](../task-brief.md#output-contract-minimum-you-may-add-fields). Include the nested price and review fields. Use a separate typed error envelope with the stable codes in the approved contract table.
+
+**01.2T — Result schema cases**
+
+| Case | Input | Expected outcome |
+| --- | --- | --- |
+| Listing success | A result with `message_id: "m-001"`, classification `listing`, one listing, `price: { "amount": 3200000, "currency": "SAR", "period": "total" }`, nullable unsupported fields, and a review reason | The success schema accepts the complete record with its original values. |
+| Minimum shape violation | Remove `price.period` or `duplicate_of`, or use `classification: "unknown"` | The success schema rejects the record. |
+| Failure with unavailable ID | `{ "message_id": null, "error": { "code": "invalid_input", "message": "Invalid JSONL record" } }` | The failure schema accepts the record. It contains the error and nullable ID. |
+| Invalid error code | Substitute `unknown_error` for `invalid_input` | The failure schema rejects the code. |
+
+### 01.3 — Define the processor and extraction boundaries
+
+Define the processor interface that accepts one validated message and returns the public success or failure result. Define the provider-independent request with instructions, source text, and response schema. Parse unknown provider output with the strict single-listing candidate schema. Source grounding follows in Phase 02.
+
+**01.3T — Boundary cases**
+
+| Case | Input | Expected outcome |
+| --- | --- | --- |
+| Processor seam | Inject one processor returning the success fixture and another returning a typed failure | Both fit the same processor contract and their results remain distinguishable. |
+| Valid extraction | A `listing` envelope with one candidate and a price assertion quoting `Asking 3.2M SAR.` | The extraction schema accepts the candidate and preserves the quote. |
+| Malformed assertion | Omit `quote` or supply a non-string quote | The strict extraction schema rejects the envelope. |
+| Unsupported candidate count | Supply zero or two candidates for a `listing` | The single-candidate schema rejects the envelope. |
+
+### 01.4 — Build the JSONL runner
+
+Read lines in order and use the input schema before invoking the injected processor. Serialize one result per nonblank line. Keep diagnostic text on stderr and aggregate the exit status after all lines are read.
+
+**01.4T — Runner cases**
+
+| Case | Input | Expected outcome |
+| --- | --- | --- |
+| One valid line | The base fixture and a successful test processor | One parseable JSON success on stdout and exit `0`. |
+| Blank and malformed lines | Valid `m-001`, a blank line, malformed JSON, then valid `m-002` | Three JSON records in input order. The malformed line has `invalid_input` and a null ID. Both valid messages reach the processor. Exit `1`. |
+| Invalid message fields | Valid JSON with `id: "m-003"` and an invalid timestamp, followed by valid `m-002` | An `invalid_input` record for `m-003`, then a success for `m-002`. The invalid message never reaches the processor. Exit `1`. |
+| Processor failure | A valid message whose processor returns a typed failure, then a successful message | The failure and success both appear as JSON records. Processing continues and exit status is `1`. |
+| Only blank lines | A file containing blank lines | No stdout records or processor calls. Exit `0`. |
+
+### 01.5 — Wire the CLI command
+
+Wire `process <input.jsonl>` to a file reader, the Nest application-context bootstrap, and the JSONL runner. Close the context when the command completes or fails after startup. Production reports `provider_unavailable` while the extraction route is unconfigured.
+
+**01.5T — Command cases**
+
+| Case | Input | Expected outcome |
+| --- | --- | --- |
+| Local file | A temporary one-line or multi-line JSONL file and a test-injected processor | The command returns the expected JSON records. It closes the application context and starts no HTTP listener. |
+| Bad arguments | Invoke `process` without a file path | A diagnostic on stderr, empty stdout, and exit `1`. |
+| Unreadable input | Pass a nonexistent file path | A diagnostic on stderr, empty stdout, and exit `1`. Any opened application context closes. |
+| Unconfigured extraction route | Run the production composition on one valid line before provider qualification | One `provider_unavailable` result and exit `1`, without a provider call. |
 
 ## Exit check
 
-The contracts and CLI work offline with a test-injected processor. A malformed nonblank line yields its own error record and the CLI continues to the next message. Verification evidence is pending.
+The contracts and CLI work offline with a test-injected processor. A malformed nonblank line yields its own error record and the CLI continues to the next message. Run the offline suite, type check, and build, then record the results against the affected criteria. Verification evidence is pending.

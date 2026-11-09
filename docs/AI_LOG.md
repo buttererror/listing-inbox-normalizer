@@ -380,3 +380,26 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 
 - **Outcome** — README links to the finalized plan and its dated amendment. The authorized documentation checkpoint includes the original planning baseline, phase tasks, decision history, and success checklist.
 - **Verification** — Checked documentation links and anchors, the README status, and whitespace before staging.
+
+## Phase 01 task breakdown — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, approved contract table and updated phase plan.
+- **Human review** — Not requested for this log account.
+- **Important user instruction**
+
+> Split phase one to small tasks
+
+- **Outcome** — Split Phase 01 into input validation, public result contracts, processor and extraction boundaries, the JSONL runner, and CLI command wiring. Each implementation task has a numbered testing task. The phase exit check covers the offline suite, type check, and build.
+- **Verification** — Checked the five task/test pairs, preservation of the eight approved contract rows, local links, and whitespace. Implementation and its tests remain planned.
+
+
+## Phase 01 task and test specifications — 2026-11-09
+
+- **Evidence status** — Evidence checked against the task briefs, approved contracts and documentation checks.
+- **Human review** — Not requested for this log account.
+- **Important user instruction**
+
+> Document the task and add their respective tests
+
+- **Outcome** — Added implementation briefs and concrete input/expected-result cases for 01.1T–01.5T in the Phase 01 document. The user asked about the difference between written cases and executable Jest tests. This update documents the cases ahead of implementation and preserves the task-and-test sequence.
+- **Verification** — Checked five task briefs and matching test sections, eight approved contract rows, local links, and whitespace. These are planned checks, with results to be recorded when the implementation runs.
