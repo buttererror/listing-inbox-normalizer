@@ -1,6 +1,6 @@
 # 01 — Contracts, policies, and CLI harness
 
-**Status** — Planned. D-014 approves the phase grouping and D-012 governs the first listing contracts. Implementation starts on request.
+**Status** — In progress. D-014 approves the phase grouping and D-012 governs the first listing contracts. Task 01.1 and its focused check are complete; subsequent tasks remain planned.
 
 Establish the shared processor contract and an offline CLI harness. The CLI accepts a local JSONL file with one or several messages. Use an injected processor in tests. Phase 02 will exercise extraction through the same boundary.
 
@@ -23,7 +23,7 @@ These rules come from [D-012](../DECISIONS.md#d-012-approve-the-first-listing-sc
 
 ## Tasks and testing
 
-Complete each testing task before starting the next implementation task. Record commands, results and limitations here as work proceeds. All tasks are planned.
+Complete each testing task before starting the next implementation task. Record commands, results and limitations here as work proceeds.
 
 | Implementation task | Outcome | Follow-up testing task |
 | --- | --- | --- |
@@ -32,6 +32,8 @@ Complete each testing task before starting the next implementation task. Record 
 | **01.3 — Define the processor and extraction boundaries** | Define the shared processor contract from a validated message to a result. Define the provider-independent extraction request and the strict candidate assertion schema for one `listing` candidate. Keep provider output unknown until parsed. | **01.3T** — Check that a controlled processor can return either result kind. Parse a valid candidate envelope and reject malformed assertions or unsupported candidate counts. Phase 02 exercises actual evidence checks. |
 | **01.4 — Build the JSONL runner** | Process lines in order through the injected processor. Skip blank lines, emit one JSON result per nonblank line, and continue after a per-line failure. Keep diagnostics on stderr. | **01.4T** — Use one-line and multi-line inputs, including a blank line, malformed JSON, invalid input, and a valid message after a failure. Assert record order and count, clean stdout, and exit 0 for success or exit 1 after any failure. |
 | **01.5 — Wire the CLI command** | Connect `process <input.jsonl>` to local file reading and the shared Nest application-context boundary. Use the controlled processor through the test boundary. Production uses the typed unavailable failure while the extraction route is unconfigured. | **01.5T** — Exercise the command with temporary JSONL files and the controlled processor. Check argument and file-read failures on stderr, exit 1, and application-context shutdown. Confirm the CLI runs without an HTTP listener. |
+
+**01.1 / 01.1T — 2026-11-09:** Implemented the shared Zod input schema in Messages. `corepack pnpm test -- --runTestsByPath test/raw-message.schema.spec.ts` passed (9 tests), covering the specified cases and UTC timestamps; `corepack pnpm run typecheck` and `corepack pnpm run build` passed. The schema is not yet connected to a CLI or HTTP processor. Remaining tasks and phase exit checks are pending.
 
 ## Task briefs and test cases
 

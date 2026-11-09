@@ -7,7 +7,7 @@ The stack foundation is implemented. Domain implementation starts with Phase 01.
 | Phase | Outcome | Status |
 | --- | --- | --- |
 | Foundation | HTTP liveness, reusable app context, offline foundation tests, and a working SQLite driver. | Implemented |
-| 01 — Contracts, policies, and CLI harness | Define the contracts and exercise JSONL with a controlled processor. | [Planned](phase-plans/01-contracts-and-cli.md) |
+| 01 — Contracts, policies, and CLI harness | Define the contracts and exercise JSONL with a controlled processor. | [In progress](phase-plans/01-contracts-and-cli.md) |
 | 02 — Extraction through CLI | Produce a grounded, normalized sale listing with readable review reasons using offline fixtures. | [Planned](phase-plans/02-extraction-through-cli.md) |
 | 03 — Persistence, HTTP, and provider qualification | Persist atomically in SQLite, enforce replay and conflict rules, and connect HTTP after the CLI and storage are testable. Verify offline CLI, HTTP and SQLite before qualifying Antigravity. | Candidate |
 | 04 — Broader message coverage | Expand classifications, multi-property messages, rentals, projects, mixed-language cases and contradiction handling. Check independent cases alongside the supplied examples. | Candidate |

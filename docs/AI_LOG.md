@@ -403,3 +403,11 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 
 - **Outcome** — Added implementation briefs and concrete input/expected-result cases for 01.1T–01.5T in the Phase 01 document. The user asked about the difference between written cases and executable Jest tests. This update documents the cases ahead of implementation and preserves the task-and-test sequence.
 - **Verification** — Checked five task briefs and matching test sections, eight approved contract rows, local links, and whitespace. These are planned checks, with results to be recorded when the implementation runs.
+
+## Phase 01 input validation — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, approved task specification, implementation and test results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement task 01.1 phase 1”
+- **Outcome** — Added the shared input schema and inferred type in Messages, preserving the four strings and stripping extra keys. Added offline tests for required fields, types, empty values and timestamp validation.
+- **Verification** — The focused suite passed all 9 tests; typecheck and build passed. The schema is not yet wired into ingestion; remaining Phase 01 tasks and exit checks are pending.
