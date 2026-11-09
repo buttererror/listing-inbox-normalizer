@@ -428,3 +428,12 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Outcome** — Defined the shared processor interface, generic gateway request and unknown response boundary, and strict single-listing extraction schema. Assertion field names remain strings for subsequent domain interpretation.
 - **Errors and correction** — The initial focused test run failed to compile a parameterized test; corrected its table shape. See [E-002](DECISIONS.md#e-002-parameterized-test-table-failed-to-compile).
 - **Verification** — The corrected focused suite passed 9 tests; typecheck and build passed. Source grounding and actual processing remain pending.
+
+## Phase 01 JSONL runner — 2026-11-09
+
+- **Evidence status** — Evidence checked against the user instruction, task specification, implementation and test results.
+- **Human review** — Not requested for this log account.
+- **Important user instruction** — “Implement next task”
+- **Outcome** — Added ordered JSONL processing with input validation, per-line errors and aggregate exit status. Unexpected processor exceptions become safe internal errors, allowing later records to continue.
+- **Errors and correction** — The first focused run failed to compile the Jest mock due to an incorrect generic signature. Corrected the mock typing. See [E-003](DECISIONS.md#e-003-jest-mock-type-failed-to-compile).
+- **Verification** — The corrected focused suite passed 6 tests; typecheck and build passed. CLI wiring remains pending.

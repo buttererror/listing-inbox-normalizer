@@ -213,6 +213,14 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Verification:** The focused suite passed all nine tests after the correction. See the [session log](AI_LOG.md#phase-01-processing-boundaries--2026-11-09) and [test](../test/processing-boundaries.spec.ts).
 - **Human review:** Not requested. This was a transient test compilation error.
 
+### E-003: Jest mock type failed to compile
+
+- **Incorrect action:** The agent supplied one generic argument to a Jest mock overload that requires two.
+- **Caught by:** Automated focused test run, which reported TS2743 before tests ran.
+- **Correction:** Supplied the processor method's return and parameter types separately.
+- **Verification:** The focused suite passed all six tests after correction. See the [session log](AI_LOG.md#phase-01-jsonl-runner--2026-11-09) and [test](../test/jsonl-runner.spec.ts).
+- **Human review:** Not requested. This was a transient test compilation error.
+
 ### Unconfirmed candidate: Earlier GPT extraction strategy challenge
 
 - **Status:** Needs clarification; not counted toward the three required incidents.
