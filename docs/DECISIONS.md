@@ -204,6 +204,15 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Human review:** Not requested. Previously recorded as Pending user review under the earlier policy; no confirmation is implied.
 - **Limitation:** This was a documentation status error; whether it should count toward the assessment is not independently confirmed.
 
+### E-002: Parameterized test table failed to compile
+
+- **Incorrect action:** The agent wrote a Jest parameter table containing arrays interpreted as argument lists, producing a TypeScript mismatch.
+- **Caught by:** Automated focused test run.
+- **Detection:** Jest reported TS2345 before running the boundary tests. No user correction prompt was involved.
+- **Correction:** Wrapped each candidates array in an object so each test receives one named case.
+- **Verification:** The focused suite passed all nine tests after the correction. See the [session log](AI_LOG.md#phase-01-processing-boundaries--2026-11-09) and [test](../test/processing-boundaries.spec.ts).
+- **Human review:** Not requested. This was a transient test compilation error.
+
 ### Unconfirmed candidate: Earlier GPT extraction strategy challenge
 
 - **Status:** Needs clarification; not counted toward the three required incidents.

@@ -1,6 +1,6 @@
 # 01 — Contracts, policies, and CLI harness
 
-**Status** — In progress. D-014 approves the phase grouping and D-012 governs the first listing contracts. Tasks 01.1 and 01.2 and their focused checks are complete; subsequent tasks remain planned.
+**Status** — In progress. D-014 approves the phase grouping and D-012 governs the first listing contracts. Tasks 01.1–01.3 and their focused checks are complete; subsequent tasks remain planned.
 
 Establish the shared processor contract and an offline CLI harness. The CLI accepts a local JSONL file with one or several messages. Use an injected processor in tests. Phase 02 will exercise extraction through the same boundary.
 
@@ -36,6 +36,8 @@ Complete each testing task before starting the next implementation task. Record 
 **01.1 / 01.1T — 2026-11-09:** Implemented the shared Zod input schema in Messages. `corepack pnpm test -- --runTestsByPath test/raw-message.schema.spec.ts` passed (9 tests), covering the specified cases and UTC timestamps; `corepack pnpm run typecheck` and `corepack pnpm run build` passed. The schema is not yet connected to a CLI or HTTP processor. Remaining tasks and phase exit checks are pending.
 
 **01.2 / 01.2T — 2026-11-09:** Added runtime success, listing and failure schemas and inferred types. `corepack pnpm exec jest --runInBand --runTestsByPath test/message-result.schema.spec.ts` passed (5 tests); `corepack pnpm run typecheck` and `corepack pnpm run build` passed. The schemas are not yet connected to processing. Remaining tasks and phase exit checks are pending.
+
+**01.3 / 01.3T — 2026-11-09:** Defined the processor and gateway interfaces and strict single-candidate extraction schema. The focused Jest command `corepack pnpm exec jest --runInBand --runTestsByPath test/processing-boundaries.spec.ts` passed 9 tests after correcting a test-table type error. Typecheck and build passed. Evidence grounding and real processing remain pending.
 
 ## Task briefs and test cases
 
