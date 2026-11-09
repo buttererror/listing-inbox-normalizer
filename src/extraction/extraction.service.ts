@@ -4,10 +4,13 @@ import { LLM_GATEWAY, ProviderError } from '../llm-gateway/llm-request';
 import type { LlmGateway } from '../llm-gateway/llm-request';
 import { ProcessingFailure } from '../messages/message-result.schema';
 import { RawMessage } from '../messages/raw-message.schema';
+import { DOMAIN_INSTRUCTIONS } from './domain-prompt';
 import {
-  ExtractionResult,
+  ExtractedOffer,
   gatewayExtractionResponseSchema,
-  gatewayWireResponseSchema,
+  Stage1ExtractionResult,
+  stage1GatewayWireSchema,
+  validateExtractionEnvelope,
 } from './extraction-result.schema';
 import {
   RejectedEvidence,
@@ -17,21 +20,14 @@ import {
 
 export type { RejectedEvidence, RejectedReason };
 
-const instructions = [
-  'Identify one property offered for sale in the source message.',
-  'Return classification listing and one candidate with assertions.',
-  'Use field names purpose, property_type, city, district, bedrooms, bathrooms, area_sqm, price, and contact_phone.',
-  'For each assertion, provide field, quote, verdict (supported, contradicted, or uncertain), and optionally a verbatim context_quote when surrounding text is needed to explain the verdict.',
-  'Quote the shortest contiguous passage that contains the value and its essential qualifiers (including units, currency, price period, and negation), then assess it against the original message.',
-  'The claimed value must appear in the quote.',
-  'A deposit or recurring amount does not support a total sale price.',
-  'If the same quote appears with different meanings, provide a more specific quote that distinguishes the intended occurrence; if unable to do so, return uncertain.',
-  'Preserve separate assertions for competing facts. Do not invent facts or quotes.',
-  'If the message is not a single sale listing, do not invent a listing.',
-].join(' ');
-
 export type ExtractionOutcome =
-  | { ok: true; result: ExtractionResult; rejectedEvidence: RejectedEvidence[] }
+  | {
+      ok: true;
+      result: Stage1ExtractionResult & {
+        candidates?: Array<{ assertions: Array<{ field: string; quote: string }> }>;
+      };
+      rejectedEvidence?: RejectedEvidence[];
+    }
   | { ok: false; failure: ProcessingFailure };
 
 @Injectable()
@@ -42,9 +38,9 @@ export class ExtractionService {
     let output: unknown;
     try {
       output = await this.gateway.execute({
-        instructions,
+        instructions: DOMAIN_INSTRUCTIONS,
         sourceText: message.text,
-        responseSchema: z.toJSONSchema(gatewayWireResponseSchema, { target: 'draft-7' }),
+        responseSchema: z.toJSONSchema(stage1GatewayWireSchema, { target: 'draft-7' }),
       });
     } catch (err: unknown) {
       if (err instanceof ProviderError) {
@@ -73,29 +69,52 @@ export class ExtractionService {
       }
       throw err;
     }
-    const parsed = gatewayExtractionResponseSchema.safeParse(output);
-    if (!parsed.success) {
+
+    // First validate Stage 1 envelope
+    const envelope = validateExtractionEnvelope(output);
+    if (envelope.ok) {
+      const { classification, detected_classes, listings } = envelope.data;
+      const legacyCandidates = listings.map((offer) => ({
+        assertions: (offer.candidates as Array<{ field?: string; quote?: string }>)
+          .filter((c) => typeof c?.field === 'string' && typeof c?.quote === 'string')
+          .map((c) => ({ field: c.field!, quote: c.quote! })),
+      }));
+
       return {
-        ok: false,
-        failure: {
-          message_id: message.id,
-          error: { code: 'invalid_extraction', message: 'Invalid extraction response' },
+        ok: true,
+        result: {
+          classification,
+          detected_classes,
+          listings: listings as ExtractedOffer[],
+          candidates: legacyCandidates,
         },
+        rejectedEvidence: [],
       };
     }
 
-    const { accepted, rejectedEvidence } = verifySourceIntegrity(
-      message.text,
-      parsed.data.candidates[0].assertions,
-    );
+    // Fallback: check legacy v1 candidate assertions structure
+    const legacyParsed = gatewayExtractionResponseSchema.safeParse(output);
+    if (legacyParsed.success) {
+      const { accepted, rejectedEvidence } = verifySourceIntegrity(
+        message.text,
+        legacyParsed.data.candidates[0].assertions,
+      );
+      return {
+        ok: true,
+        result: {
+          classification: 'listing',
+          candidates: [{ assertions: accepted }],
+        } as any,
+        rejectedEvidence,
+      };
+    }
 
     return {
-      ok: true,
-      result: {
-        classification: parsed.data.classification,
-        candidates: [{ assertions: accepted }],
+      ok: false,
+      failure: {
+        message_id: message.id,
+        error: { code: 'invalid_extraction', message: 'Invalid extraction response' },
       },
-      rejectedEvidence,
     };
   }
 }

@@ -14,15 +14,24 @@ const arabicMessage = {
 
 const arabicGatewayResponse = {
   classification: 'listing' as const,
-  candidates: [
+  detected_classes: ['listing' as const],
+  listings: [
     {
-      assertions: [
-        { field: 'purpose', quote: 'للبيع', verdict: 'supported' as const },
-        { field: 'property_type', quote: 'شقة', verdict: 'supported' as const },
-        { field: 'bedrooms', quote: '٣ غرف نوم', verdict: 'supported' as const },
-        { field: 'price', quote: '٩٥٠ ألف ريال', verdict: 'supported' as const },
-        { field: 'contact_phone', quote: 'للتواصل: ٠٥٥١٢٣٤٥٦٧', verdict: 'supported' as const },
+      offer_quote: 'للبيع شقة، ٣ غرف نوم، السعر ٩٥٠ ألف ريال. للتواصل: ٠٥٥١٢٣٤٥٦٧',
+      candidates: [
+        { field: 'purpose' as const, value: 'sale' as const, quote: 'للبيع', scope: 'local' as const },
+        { field: 'property_type' as const, value: 'apartment' as const, quote: 'شقة', scope: 'local' as const },
+        { field: 'bedrooms' as const, value: 3, quote: '٣ غرف نوم', scope: 'local' as const },
+        {
+          field: 'price' as const,
+          value: { amount: 950000, currency: 'SAR' as const, period: 'total' as const },
+          role: 'asking_price' as const,
+          quote: '٩٥٠ ألف ريال',
+          scope: 'local' as const,
+        },
+        { field: 'contact_phone' as const, value: '+966551234567', quote: 'للتواصل: ٠٥٥١٢٣٤٥٦٧', scope: 'local' as const },
       ],
+      findings: [],
     },
   ],
 };
@@ -36,24 +45,33 @@ const englishMessage = {
 
 const englishGatewayResponse = {
   classification: 'listing' as const,
-  candidates: [
+  detected_classes: ['listing' as const],
+  listings: [
     {
-      assertions: [
-        { field: 'purpose', quote: 'sale', verdict: 'supported' as const },
-        { field: 'property_type', quote: 'Villa', verdict: 'supported' as const },
-        { field: 'city', quote: 'City: Riyadh', verdict: 'supported' as const },
-        { field: 'district', quote: 'District: Al Malqa', verdict: 'supported' as const },
-        { field: 'bedrooms', quote: '5 BR', verdict: 'supported' as const },
-        { field: 'bathrooms', quote: '6 baths', verdict: 'supported' as const },
-        { field: 'area_sqm', quote: '380 sqm built-up', verdict: 'supported' as const },
-        { field: 'price', quote: 'Asking 3.2M SAR', verdict: 'supported' as const },
-        { field: 'contact_phone', quote: 'Call 0551234567', verdict: 'supported' as const },
+      offer_quote: 'Villa for sale in City: Riyadh, District: Al Malqa. 5 BR, 6 baths, 380 sqm built-up. Asking 3.2M SAR. Call 0551234567',
+      candidates: [
+        { field: 'purpose' as const, value: 'sale' as const, quote: 'sale', scope: 'local' as const },
+        { field: 'property_type' as const, value: 'villa' as const, quote: 'Villa', scope: 'local' as const },
+        { field: 'city' as const, value: 'Riyadh', quote: 'City: Riyadh', scope: 'local' as const },
+        { field: 'district' as const, value: 'Al Malqa', quote: 'District: Al Malqa', scope: 'local' as const },
+        { field: 'bedrooms' as const, value: 5, quote: '5 BR', scope: 'local' as const },
+        { field: 'bathrooms' as const, value: 6, quote: '6 baths', scope: 'local' as const },
+        { field: 'area_sqm' as const, value: 380, kind: 'built_up' as const, quote: '380 sqm built-up', scope: 'local' as const },
+        {
+          field: 'price' as const,
+          value: { amount: 3200000, currency: 'SAR' as const, period: 'total' as const },
+          role: 'asking_price' as const,
+          quote: 'Asking 3.2M SAR',
+          scope: 'local' as const,
+        },
+        { field: 'contact_phone' as const, value: '+966551234567', quote: 'Call 0551234567', scope: 'local' as const },
       ],
+      findings: [],
     },
   ],
 };
 
-describe('02.6T — Offline CLI integration', () => {
+describe('02.1T / 02.6T — Offline CLI integration', () => {
   let directory: string;
   let path: string;
   let stdout: string;
@@ -160,6 +178,74 @@ describe('02.6T — Offline CLI integration', () => {
     expect(second.listings[0].duplicate_of).toBeNull();
   });
 
+  it('rejects a fabricated quote and leaves the field unresolved on the review path', async () => {
+    await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
+
+    const responseWithFabricatedPrice = {
+      ...englishGatewayResponse,
+      listings: [
+        {
+          ...englishGatewayResponse.listings[0],
+          candidates: englishGatewayResponse.listings[0].candidates.map((c) =>
+            c.field === 'price'
+              ? { ...c, quote: 'Asking 5.0M SAR' }
+              : c,
+          ),
+        },
+      ],
+    };
+
+    const gateway: LlmGateway = {
+      execute: async () => responseWithFabricatedPrice,
+    };
+
+    const exitCode = await runWithGateway(gateway);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe('');
+
+    const lines = stdout.trim().split('\n');
+    expect(lines).toHaveLength(1);
+
+    const parsed = messageSuccessSchema.parse(JSON.parse(lines[0]));
+    expect(parsed.listings[0].price).toEqual({ amount: null, currency: 'SAR', period: null });
+    expect(parsed.listings[0].needs_review).toBe(true);
+    expect(parsed.listings[0].review_reasons).toContain('price_unsupported');
+  });
+
+  it('rejects a candidate with quote/value mismatch and leaves the field unresolved', async () => {
+    await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
+
+    const responseWithMismatch = {
+      ...englishGatewayResponse,
+      listings: [
+        {
+          ...englishGatewayResponse.listings[0],
+          candidates: englishGatewayResponse.listings[0].candidates.map((c) =>
+            c.field === 'bedrooms'
+              ? { ...c, value: 4, quote: '5 BR' } // quote says 5, value proposes 4
+              : c,
+          ),
+        },
+      ],
+    };
+
+    const gateway: LlmGateway = {
+      execute: async () => responseWithMismatch,
+    };
+
+    const exitCode = await runWithGateway(gateway);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe('');
+
+    const lines = stdout.trim().split('\n');
+    expect(lines).toHaveLength(1);
+
+    const parsed = messageSuccessSchema.parse(JSON.parse(lines[0]));
+    expect(parsed.listings[0].bedrooms).toBeNull();
+    expect(parsed.listings[0].needs_review).toBe(true);
+    expect(parsed.listings[0].review_reasons).toContain('bedrooms_unsupported');
+  });
+
   it('continues after an invalid extraction envelope and exits 1 without diagnostic logs', async () => {
     await writeFile(
       path,
@@ -170,7 +256,7 @@ describe('02.6T — Offline CLI integration', () => {
       execute: async (req) => {
         // Return malformed candidate envelope for the first message
         if (req.sourceText.includes('للبيع')) {
-          return { classification: 'listing', candidates: [] };
+          return { classification: 'listing', detected_classes: ['listing'], listings: [] };
         }
         return englishGatewayResponse;
       },

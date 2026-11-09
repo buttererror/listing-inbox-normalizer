@@ -440,6 +440,25 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Correction and verification** — Rewrote all six boundary lists to state permitted behavior and stage ownership. Compared them against the handoff and checked the documentation diff.
 - **Evidence** — [Phase 02 coverage audit](AI_LOG.md#phase-02-coverage-audit--2026-11-09).
 
+### E-013: Fallback in processor bypassed source verification when candidate lacked scope
+
+- **Incorrect action** — `ListingMessageProcessor` gated execution on `hasTypedCandidates = offer.candidates[0]?.scope === 'string'`. If candidate 0 lacked scope, the processor bypassed `bridgeStage1SaleToBaseline` and fell through to a legacy fallback where all candidate quotes were forwarded directly to `listingsService.process` without source checks, allowing ungrounded or fabricated quotes (such as 99,000,000 SAR from "For sale: Villa") to be published.
+- **Caught by** — User in review ([P1] item).
+- **Detection** — User review prompt:
+  > “[P1] Remove the fallback that publishes unvalidated Stage 1 quotes — listing-message-processor.ts (line 61)
+  > The first candidate’s scope determines whether the entire offer goes through the validation bridge. If that candidate has no scope, the processor sends all quote-only assertions to Listings without source checks. I reproduced a successful listing priced at 99,000,000 SAR from the source For sale: Villa. Route Stage 1 offers through the bridge regardless of candidate order or shape.”
+- **Correction** — Removed the conditional `hasTypedCandidates` gate in `ListingMessageProcessor` and removed synthetic `candidates: legacyCandidates` from Stage 1 extraction results in `ExtractionService`. All Stage 1 offers in `result.listings` are now routed unconditionally through `bridgeStage1SaleToBaseline`, which validates candidate schemas (rejecting scopeless candidates) and validates source grounding, token clipping, and baseline agreement for every candidate.
+- **Verification and limits** — Added regression test in `test/listing-message-processor.spec.ts` reproducing an offer with candidate 0 lacking scope and candidate 1 carrying a fabricated 99,000,000 SAR quote. Verified that both candidates are rejected, `price.amount` remains null, and `price_unsupported` is flagged. Full offline suite (158 tests across 15 suites), typecheck, and build pass.
+- **Evidence** — [Listing processor](../src/messages/listing-message-processor.ts), [extraction service](../src/extraction/extraction.service.ts), and [tests](../test/listing-message-processor.spec.ts).
+- **Human review** — Confirmed by user prompt.
+
+### E-014: Phase 02 tracker condensed the supplied plan
+
+- **Incorrect action** — Reorganized and paraphrased the remaining tasks, leaving out explicit directions such as keeping Zod schemas with the extraction contract and updating legacy test fixtures that could bypass the typed path.
+- **Caught by** — User, who wrote “You didn't update according to this plan” and attached the intended text.
+- **Correction and verification** — Adopted the attached task table and code boundaries verbatim. Compared the revised sections with the attachment and checked that completed evidence was preserved.
+- **Evidence** — [Planning log](AI_LOG.md#phase-02-tracker-aligned-to-supplied-plan--2026-11-10) and [Phase 02 tracker](phase-plans/02-message-processing.md).
+
 ### Unconfirmed candidate: Earlier GPT extraction strategy challenge
 
 - **Status:** Needs clarification; not counted toward the three required incidents.
@@ -455,3 +474,16 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Consequences** — Gateway construction is asynchronous. Automated tests use Node's VM-module support when exercising the ESM SDK. `LLM_API_KEY` supplies the credential for the provider selected by `LLM_PROVIDER`. Provider schemas and tool-free requests require provider-specific verification. Claude and OpenAI require live qualification.
 - **Validation and checkpoint** — Verify offline request boundaries and the real Gemini CLI before removing the earlier adapter. The offline suite and live Gemini fixture passed on 2026-11-10.
 - **Approval evidence** — “Revert back and complete the implementation of vercel ai sdk. Make a detailed plan” and “Implement the plan”.
+
+### D-027: Bridge Stage 1 typed proposals to the single-sale baseline
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Task 02.1 defines the Stage 1 typed extraction envelope and one-call prompt in Extraction under D-019. Full multi-offer mechanical grounding (02.2), structured finding validation (02.3), independent candidate validation (02.4), and multi-offer/mixed assembly (02.6) follow in subsequent tasks. The shared processor and CLI must remain runnable end-to-end after each task.
+- **Options and tradeoffs** — Implement full multi-offer downstream pipeline in one step (high complexity, violates incremental task order), or bridge one independently identified sale offer to baseline Listings resolution while returning typed failures for unhandled shapes. The latter keeps the CLI operational and focused suites passing.
+- **Recommendation and rationale** — Use an interim bridge in the processor for one independently identified sale offer. Forward only offer-local evidence whose baseline normalization agrees with the typed proposal, including area kind and the complete price tuple. Preserve empty results for buyer requests, irrelevant messages, and project announcements without offers. Return an `internal_error` envelope for otherwise valid Stage 1 results (mixed, multi-offer) that the interim processor cannot assemble safely.
+- **Consequences** — CLI can run against supported sale messages and non-listing single intents. Multi-offer and mixed message public assembly is deferred to 02.6.
+- **Validation** — Offline CLI integration tests with Arabic and English sales, quote/value mismatch and fabricated quote checks, clean JSONL output, typecheck, build, and live Gemini CLI check with `test/fixtures/one-message.jsonl` verifying one `listing` offer, exact evidence, and public price 3,200,000 SAR total.
+- **Review checkpoint** — Remove the bridge in 02.6 when full Stage 6 assembly replaces the single-sale path.
+- **Later revision** — The user-supplied [Phase 02 plan](phase-plans/02-message-processing.md#remaining-tasks) moves bridge removal to 02.5, when Listings switches to `ValidationOutcome`. Full public assembly remains in 02.6.
+- **Approval evidence** — User prompt for Task 02.1: "Implement Stage 1 of the architecture under D-019. Exercise the full classification and offer-grouping contract at the Extraction boundary, then connect one supported sale through the shared processor and CLI as specified in the Phase 02 task plan."
+- **References** — D-019, D-023, Task 02.1 brief, [Phase 02 task plan](phase-plans/02-message-processing.md).

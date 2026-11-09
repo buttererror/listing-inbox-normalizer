@@ -16,13 +16,24 @@ describe('AI SDK Gemini CLI wiring', () => {
     process.env.LLM_API_KEY = 'test-key';
     const extraction = {
       classification: 'listing',
-      candidates: [{
-        assertions: [
-          { field: 'purpose', quote: 'sale', verdict: 'supported', context_quote: null },
-          { field: 'property_type', quote: 'Villa', verdict: 'supported', context_quote: null },
-          { field: 'price', quote: 'Asking 3.2M SAR', verdict: 'supported', context_quote: null },
-        ],
-      }],
+      detected_classes: ['listing'],
+      listings: [
+        {
+          offer_quote: 'For sale: Villa in Riyadh. Asking 3.2M SAR.',
+          candidates: [
+            { field: 'purpose', value: 'sale', quote: 'For sale', scope: 'local' },
+            { field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' },
+            {
+              field: 'price',
+              value: { amount: 3200000, currency: 'SAR', period: 'total' },
+              role: 'asking_price',
+              quote: 'Asking 3.2M SAR',
+              scope: 'local',
+            },
+          ],
+          findings: [],
+        },
+      ],
     };
     const fetchMock = jest.fn().mockResolvedValue(new Response(JSON.stringify({
       candidates: [{ finishReason: 'STOP', content: { role: 'model', parts: [{ text: JSON.stringify(extraction) }] } }],
@@ -49,7 +60,7 @@ describe('AI SDK Gemini CLI wiring', () => {
     const request = JSON.parse(String(init.body));
     expect(url).toContain('/models/test-model:generateContent');
     expect(request.tools).toBeUndefined();
-    expect(request.systemInstruction.parts[0].text).toContain('Identify one property');
+    expect(request.systemInstruction.parts[0].text).toContain("Dwelleo's extraction engine");
     expect(request.contents[0].parts[0].text).toContain('Asking 3.2M SAR');
   });
 });

@@ -684,3 +684,57 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Important prompts** — “Revert back and complete the implementation of vercel ai sdk. Make a detailed plan”; “Implement the plan”.
 - **Outcome** — Restored CommonJS and extensionless local imports. Replaced the handwritten Gemini transport with a single Vercel AI SDK 7 gateway that dynamically imports the selected Gemini, Anthropic, or OpenAI package. The provider selected by `LLM_PROVIDER` receives `LLM_API_KEY`. OpenAI uses the SDK's Chat Completions model for strict JSON Schema. Removed the handwritten Gemini adapter.
 - **Verification and limits** — Typecheck and build passed. The complete offline suite passed 125 tests across 15 suites. Offline tests checked all three configured provider paths, authentication, model selection, structured schemas, no tools, malformed output, provider failures, timeouts, and missing configuration. The built Gemini CLI fixture returned a sale listing with `price.amount: 3200000`. `start:dev` reached Nest startup. Anthropic and OpenAI live qualification, representative quality, cost, latency, and usage remain for Phase 03.
+
+## Phase 02.1 typed classification and extraction — 2026-11-10
+
+- **Evidence status** — Evidence checked against source, offline command results, test suites, and live CLI execution.
+- **Human review** — Not requested.
+- **Objective** — Implement Stage 1 of the architecture under D-019 and connect one supported sale through the CLI under D-027.
+- **Important prompts** — “# Task 02.1 — Typed classification and extraction in one model call\n\n## Summary\n\nImplement Stage 1 of the architecture under D-019. Exercise the full classification and offer-grouping contract at the Extraction boundary, then connect one supported sale through the shared processor and CLI as specified in the Phase 02 task plan...\nImplement that plan”.
+- **Outcome** —
+  - Defined the typed Stage 1 extraction response schema with `classification` (`listing | project | buyer_request | irrelevant | mixed`), source-ordered `detected_classes`, and `listings` containing `offer_quote`, field-discriminated `candidates` across all 9 extractable fields, and bounded `findings` (`uncertainty | contradiction | missing_context`).
+  - Added candidates for canonical sale and rent purposes, 6 property types, separate city and district strings, non-negative integer room counts, square metres with measurement kind (`land`, `built_up`, `unspecified`), Saudi mobile E.164, and prices carrying amount, explicit currency, period, and role (`asking_price`, `deposit`, `installment`, `per_sqm_rate`, `other`). Each candidate quote is marked as `local` or `shared`.
+  - Authored the ordered 9-step domain prompt in `DOMAIN_INSTRUCTIONS` (Classify → Segment → Associate → Extract → Interpret → Normalize → Verify evidence-to-value consistency → Assess consistency → Produce structured output), with representative examples covering Arabic, English, mixed wording, project ranges, shared contacts, written numbers, and qualified prices. Untouched source text is passed separately as `sourceText`.
+  - Implemented envelope validation in `validateExtractionEnvelope`, verifying single-intent base class matching, mixed substantive class uniqueness (no duplicates, no `'mixed'` in detected classes), and offer presence exactly when `listing` is detected.
+  - Implemented the interim bridge in `bridgeStage1SaleToBaseline` under D-027, forwarding agreed offer-local evidence whose baseline normalization matches the typed proposal (including area kind and complete price tuple). Preserved empty results for buyer requests, irrelevant messages, and project announcements without offers. Unhandled multi-offer and mixed assembly returns typed `internal_error` awaiting 02.6.
+- **Verification and limits** —
+  - `02.1T — Extraction` passed 34 focused tests in `test/extraction.service.spec.ts` covering 1 gateway call, byte-for-byte source preservation, derived JSON Schema, all 9 instructions in order, all classification matrix rows, reordered intents, duplicate class rejection, incidental greetings, multiple offers, local vs shared evidence, all 9 field variants, qualified prices, conflicting candidates, bounded findings, 15 unusable envelopes, and typed provider failures.
+  - `02.1T — CLI` passed in `test/cli-integration.spec.ts` with typed Arabic and English sales, clean JSONL stdout, unchanged output, rejected fabricated quote (`price_unsupported`), and quote/value mismatch (`bedrooms_unsupported`).
+  - Full offline suite passed 158 tests across 15 suites. Typecheck and build passed.
+  - Live CLI execution with Gemini 3.6 Flash on `test/fixtures/one-message.jsonl` completed in 6 seconds and returned a contract-compliant sale listing with `price.amount: 3200000` SAR total. Inspection of the live Extraction handoff verified 1 offer, exact evidence, and typed candidates with local scope.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-023](DECISIONS.md#d-023-integrate-the-live-cli-provider-at-the-start-of-phase-02), [D-027](DECISIONS.md#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline).
+
+## Phase 02.1 processor bridge correction (E-013) — 2026-11-10
+
+- **Evidence status** — Evidence checked against source, reproduction test, and user review prompt.
+- **Human review** — Confirmed by user prompt.
+- **Objective** — Fix [P1] vulnerability where unvalidated Stage 1 quotes were published when candidate 0 lacked scope.
+- **Important prompt** — “[P1] Remove the fallback that publishes unvalidated Stage 1 quotes — listing-message-processor.ts (line 61)\nThe first candidate’s scope determines whether the entire offer goes through the validation bridge. If that candidate has no scope, the processor sends all quote-only assertions to Listings without source checks. I reproduced a successful listing priced at 99,000,000 SAR from the source For sale: Villa. Route Stage 1 offers through the bridge regardless of candidate order or shape.”
+- **Outcome** —
+  - Removed conditional `hasTypedCandidates` gate in `ListingMessageProcessor`. All Stage 1 offers are routed unconditionally through `bridgeStage1SaleToBaseline`.
+  - Removed synthetic `candidates: legacyCandidates` from Stage 1 extraction results in `ExtractionService`.
+  - In `bridgeStage1SaleToBaseline`, each candidate is validated against `typedFieldCandidateSchema`; candidates lacking `scope` are rejected with `cannot_normalize`. Candidates with ungrounded/fabricated quotes (such as `99,000,000 SAR`) are rejected with `quote_not_in_source`.
+  - Added regression test in `test/listing-message-processor.spec.ts` asserting that an offer with candidate 0 lacking scope and candidate 1 carrying fabricated 99,000,000 SAR quote rejects both candidates, nullifies price, and flags `price_unsupported`.
+- **Verification and limits** —
+  - Regression test passed; 158 tests across 15 suites passed; typecheck and build passed.
+- **Related error record** — [E-013](DECISIONS.md#e-013-fallback-in-processor-bypassed-source-verification-when-candidate-lacked-scope).
+
+## Phase 02 task boundaries and documentation-only scope — 2026-11-10
+
+- **Evidence status** — Evidence checked against the conversation, architecture, tracker, source inspection, and the diff.
+- **Human review** — Not requested.
+- **Objective** — Clarify the remaining Phase 02 tasks and their acceptance checks.
+- **Important prompts** — “Make sure that the code commented and separate the mechanical validation well for better maintainance”; “Check 2.5 and 2.6 tasks. They are still ambiguous”; verbatim excerpt “PLEASE IMPLEMENT THIS PLAN”; “Don't implement just update the phase plan”.
+- **Outcome and verification** — Updated the Phase 02 tracker’s task table, implementation order, acceptance cases, and live checks. It assigns the complete prompt to 02.1, Mechanical Validation to 02.2–02.4, per-offer Field Resolution and Runtime Reviewer outputs to 02.5, and public result assembly to 02.6. Checked the edited sections against the supplied plan and architecture.
+- **Human intervention** — The user narrowed the requested changes to the phase plan after source and test edits had begun. Restored those edits and retained the existing 02.1 work.
+- **Limitations** — The build and focused tests run before the rollback exercised the transient code and provide no verification evidence for the planned tasks. No new live CLI check was run.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-027](DECISIONS.md#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline).
+
+## Phase 02 tracker aligned to supplied plan — 2026-11-10
+
+- **Evidence status** — Evidence checked against the attached plan, the prior tracker, and the revised tracker.
+- **Human review** — Not requested.
+- **Important prompt** — “You didn't update according to this plan”, with the attached “Phase 02 revision — Message processing through CLI”.
+- **Outcome and verification** — Replaced the paraphrased remaining-task sections with the supplied starting point, complete 02.2–02.6 table, and Mechanical Validation code boundaries. Compared those sections verbatim with the attachment and checked that the 02.0 and 02.1 progress records were preserved. This was a documentation correction.
+- **Human intervention** — The user identified that the prior tracker update did not follow the supplied plan.
+- **Related error** — [E-014](DECISIONS.md#e-014-phase-02-tracker-condensed-the-supplied-plan).
