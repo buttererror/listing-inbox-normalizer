@@ -1,6 +1,6 @@
 # Dwelleo — Phase 03: Independent LLM Evaluation
 
-**Status:** Accepted plan — implementation pending
+**Status:** Complete / Verified — 2026-11-10
 **Target provider:** Antigravity CLI through the existing `agy` gateway
 **Scope:** Evaluation, measurement, and reporting
 **Prerequisite:** Phase 02 completed
@@ -334,6 +334,8 @@ Preserve original `PLAN.md` unchanged.
 
 Do not claim that results on 20 synthetic examples establish production-level accuracy or hidden-test performance.
 
+**Implementation evidence — 2026-11-10 (Task 03.6):** Added the evaluation summary section to `README.md` (covering dataset scope, `agy`/`gemini-3.8-flash-low`, baseline vs. post-fix metrics with denominators, observed error examples, latency/token usage, unavailable USD cost assumptions under OAuth quota, prompt alignment changes, exact commands, and scope caveat). Updated `docs/roadmap.md`, recorded `D-039` in `docs/DECISIONS.md`, and updated `docs/success-criteria.md` (`SC-12`, `SC-13`, `SC-14`, `SC-16`, `SC-17`, `SC-21`, `SC-22`, `SC-23`, `PC-01`, `PC-02`, `PC-03` — removing stale duplicate `PC-01`/`PC-02` rows) with dated evidence. Clarified Root Cause 1 omission counts in `docs/evaluation-baseline-analysis.md`. Verified original `PLAN.md` remains unmodified (`df2c201`), offline tests pass (`20` suites, `228` tests), and `typecheck` / `build` pass cleanly.
+
 ## 8. Phase completion criteria
 
 Phase 03 is complete when:
@@ -345,10 +347,10 @@ Phase 03 is complete when:
 - [x] Classification, offer, field, and review metrics are reported with denominators.
 - [x] Unsupported-value acceptance and supported-value omission are reported.
 - [x] Latency and token usage are measured, or their limitations are explicitly documented.
-- [ ] Cost estimates use attributable provider usage and documented pricing assumptions.
+- [x] Cost estimates use attributable provider usage and documented pricing assumptions. *(Attributable token usage recorded; USD cost explicitly documented as unavailable under Antigravity OAuth quota rather than invented.)*
 - [x] Significant failures have been investigated.
-- [ ] README and roadmap include dated evaluation evidence.
-- [ ] Relevant offline tests, typecheck, and build pass.
+- [x] README and roadmap include dated evaluation evidence.
+- [x] Relevant offline tests, typecheck, and build pass.
 
 **Phase 03 may be completed even if the evaluation identifies remaining model-quality limitations, provided those limitations are documented accurately.**
 

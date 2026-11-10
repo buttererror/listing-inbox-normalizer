@@ -151,7 +151,7 @@ Prioritized according to the Phase 03 error-analysis order:
 4. **Missed human-review requirements (`0 occurrences`):** `100.0%` recall (`12/12`).
 5. **Incorrect classifications or missing offers (`0 occurrences`):** `100.0%` classification, detected-class, and offer-count accuracy.
 
-### Root Cause 1 (Major — 20 of 22 Field Omissions): `price_unsupported` & `area_sqm_unsupported`
+### Root Cause 1 (Major — 32 of 34 Field-Comparison Omissions / 20 of 22 Attribute Instances): `price_unsupported` & `area_sqm_unsupported`
 - **Responsible stages:** **LLM Extraction (`agy`) + Mechanical Validation (Stage 2)**.
 - **Direct diagnostic evidence (`eval-009`):** Running `eval-009` directly through `AgyGateway` and inspecting `validateStage2` rejected candidates confirmed that the model extracted the exact right semantic fields (`amount: 3500, currency: "SAR", period: "monthly", role: "asking_price"`), but produced:
   ```json

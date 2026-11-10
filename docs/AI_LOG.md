@@ -1,5 +1,16 @@
 # Key agent sessions
 
+## Task 03.6 Phase 03 documentation & close-out — 2026-11-10
+
+- **Evidence status** — Evidence checked against `README.md`, `docs/roadmap.md`, `docs/success-criteria.md`, `docs/DECISIONS.md`, `docs/phase-plans/03-independent-provider-evaluation.md`, `docs/evaluation-baseline-analysis.md`, `PLAN.md`, and offline test/build output.
+- **Human review** — Not requested.
+- **Objective** — Implement Task 03.6 and review/close Phase 03 cleanly across README, roadmap, success criteria, and decision records.
+- **Important prompt** — User: “Implement task 3.6”, “Make a quick review on phase 3 before close it”, and “Fix then commit”.
+- **Outcome** — Added the concise `Independent evaluation (Phase 03)` section to `README.md` covering dataset coverage, `agy` (`1.5.3` / `gemini-3.8-flash-low`), baseline and post-fix metrics with denominators, observed error examples, latency/token measurements, explicit USD cost unavailability under OAuth quota, prompt alignment changes, exact verification commands, and the 20-case generalization caveat. Updated `docs/roadmap.md` to mark Phase 03 Complete/Verified, updated `docs/success-criteria.md` (`SC-12`, `SC-13`, `SC-14`, `SC-16`, `SC-17`, `SC-21`, `SC-22`, `SC-23`, `PC-01`, `PC-02`, `PC-03` — removing stale duplicate `PC-01`/`PC-02` rows), recorded `D-039` in `docs/DECISIONS.md` (amending Phase 03 evaluation provider selection under `D-038` to `agy`), clarified the Root Cause 1 omission count heading in `docs/evaluation-baseline-analysis.md`, fixed the D-019 anchor link in Task 03.1 log entry, and checked off all Phase 03 completion criteria in `docs/phase-plans/03-independent-provider-evaluation.md`. Confirmed original `PLAN.md` remains preserved unmodified (`df2c201`).
+- **Verification and limits** — Full offline test suite (`20` suites, `228` tests), `pnpm run typecheck`, `pnpm run build`, offline evaluator replay (`pnpm ts-node scripts/evaluate.ts --actual ...`), and markdown link checks passed cleanly after all edits.
+- **Related decisions** — D-014, D-024, D-036, D-038, D-039.
+
+
 ## Task 03.5 targeted prompt-to-schema alignment & comparison — 2026-11-10
 
 - **Evidence status** — Evidence checked against offline regression suite, 3-case live spot check, 20-case post-fix evaluation run (`evaluation-results/post-fix/`), and preserved baseline (`evaluation-results/baseline/`).
@@ -61,7 +72,7 @@
 - **Important prompt** — User: “Implement Task 03.1 . PS: Prerequisite is underway”.
 - **Outcome** — Created `test/evaluation/cases.jsonl` containing 20 independently authored Saudi real estate messages across Arabic (8), English (6), and Mixed (6) languages covering sale/rent, multi-offer, shared attributes, buyer requests, project announcements, irrelevant messages, mixed intents, Arabic-Indic numbers, price abbreviations, missing fields, and conflicting attributes. Created `test/evaluation/expected.json` (version 1.0.0) with normalized public fields, inapplicable field tracking, and verbatim source quote traceability. Added `test/evaluation-dataset.spec.ts` with 11 automated verification tests.
 - **Verification and limits** — 11 dedicated tests in `test/evaluation-dataset.spec.ts` passed; TypeScript typecheck and build passed. No live model or evaluation calls were performed. The OPEN-08 isolation prerequisite remains underway separately.
-- **Related decisions** — [D-036](DECISIONS.md#d-036-use-a-frozen-independent-corpus-and-separate-live-measurement), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-019](DECISIONS.md#d-019-ground-offers-and-intents-in-one-self-checked-call).
+- **Related decisions** — [D-036](DECISIONS.md#d-036-use-a-frozen-independent-corpus-and-separate-live-measurement), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent).
 
 
 ## Phase 03 isolation prerequisite review — 2026-11-10

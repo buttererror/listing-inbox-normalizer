@@ -44,9 +44,20 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ## Proposed and recently approved
 
+### D-039: Use Antigravity CLI (agy) for Phase 03 independent evaluation
+
+- **Status** — Accepted on 2026-11-10 (amends Phase 03 evaluation provider selection in D-038).
+- **Context** — Under D-038, custom Bubblewrap isolation was removed and the direct Gemini API (`gemini-3.6-flash`) remained the production default. During Task 03.3 telemetry setup, free-tier quota constraints on the direct Gemini API prevented running the 20–45 call Phase 03 evaluation suite, and the user directed using the installed Antigravity CLI (`agy`) for Phase 03 evaluation.
+- **Options and tradeoffs** — Wait on remote Gemini API quota resets, or run Phase 03 independent evaluation through the existing `agy` CLI gateway (`1.5.3` / `gemini-3.8-flash-low`) using its built-in `--sandbox` flag, isolated working directory (`os.tmpdir()`), and explicit no-tools prompt directive while capturing stderr telemetry directly from `agy` output envelopes.
+- **Decision and rationale** — Run Phase 03 evaluation Tasks 03.3–03.6 through `agy` (`gemini-3.8-flash-low`), parse fenced/multi-line response payloads (`parseAgyResponseString`), and capture duration and token counts into `evaluation-results/telemetry.jsonl`. Keep `LLM_PROVIDER=gemini` (`gemini-3.6-flash`) via Vercel AI SDK as the default production/`.env.example` configuration and defer full 20-case qualification of the direct REST Gemini API to next-day follow-up work.
+- **Consequences** — Phase 03 evaluation accuracy, latency, and token metrics (`agy` OAuth quota overhead ~10k–33k input tokens/call; USD cost unavailable) characterize `agy` / `gemini-3.8-flash-low`, rather than the direct REST Gemini API. Prompt alignment improvements in `domain-prompt.ts` (Task 03.5) benefit both `agy` (without grammar decoding) and strict schema providers.
+- **Validation** — Verified offline telemetry/envelope unit tests (`test/agy.gateway.spec.ts`, `test/evaluator.spec.ts`), 20-case baseline (`evaluation-results/baseline/`), 3-case live spot checks, and 20-case post-fix evaluation (`evaluation-results/post-fix/`) with 0 provider failures.
+- **Approval evidence** — User instructions: “We will use agy instead here” (Task 03.3), followed by “Implement task 3.4”, “Implement task 3.5”, and “Fix then commit” (Task 03.6 review).
+- **References** — D-029, D-036, D-038, [Phase 03 plan](phase-plans/03-independent-provider-evaluation.md), [evaluation analysis](evaluation-baseline-analysis.md).
+
 ### D-038: Keep custom sandbox infrastructure outside Dwelleo
 
-- **Status** — Accepted on 2026-11-10.
+- **Status** — Accepted on 2026-11-10 (Phase 03 evaluation provider selection amended to `agy` under D-039; Bubblewrap removal and direct Gemini API default remain in effect).
 - **Context** — The Bubblewrap experiment introduced custom process isolation and prevented the local `agy` profile from authenticating. Dwelleo’s production extraction path already uses the direct Gemini API through the Vercel AI SDK with no agent tools or shell execution.
 - **Decision and rationale** — Remove Bubblewrap from Dwelleo. Use the direct Gemini API for production extraction and Phase 03 evaluation. `agy` remains an optional development utility using its documented built-in sandbox and permission controls. Evaluate custom isolation only for a demonstrated untrusted-code execution path, with its required filesystem, credentials and network access recorded first.
 - **Consequences** — D-037 and the `agy` provider selection in D-036 are superseded. OPEN-08 does not gate the direct Gemini flow. No sandbox infrastructure is part of the assessment scope.
