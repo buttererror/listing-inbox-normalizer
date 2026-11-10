@@ -5,7 +5,7 @@ The [roadmap](../roadmap.md) orders the phases. Each phase records its own tasks
 - [01 — Contracts, policies, and CLI harness](01-contracts-and-cli.md)
 - [02 — Extraction through CLI baseline](02-extraction-through-cli.md)
 - [02 revision — Message processing through CLI](02-message-processing.md)
-- [03 — Independent provider evaluation (proposed)](03-independent-provider-evaluation.md)
+- [03 — Independent provider evaluation](03-independent-provider-evaluation.md)
 
 Phases 04–06 remain roadmap candidates. Refine their tasks after reviewing the preceding phase evidence.
 

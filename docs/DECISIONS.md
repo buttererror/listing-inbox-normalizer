@@ -46,15 +46,15 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ### D-036: Use a frozen independent corpus and separate live measurement
 
-- **Status** — Proposed on 2026-11-10; approval pending.
-- **Context** — Phase 03 must assess real CLI extraction on cases independent of implementation examples and report accuracy, latency, usage and cost. Phase 02 smoke checks do not establish representative quality. The current SDK gateway returns only `result.output`, so token usage is not available to the caller.
-- **Options and tradeoffs** — Reuse existing smoke fixtures (cheap, but biased); score an independently authored frozen corpus through the public CLI (more work, reproducible and tests the delivered path); or score only internal model envelopes (fine-grained, but bypasses resolution and review). For telemetry, alter the public JSONL contract (easy to observe, incompatible), use an evaluation-only capture path (isolated, extra harness work), or add a narrow internal gateway hook (less duplication, small production boundary change).
-- **Recommendation and rationale** — Freeze independent source messages and audited labels before the first live baseline. Use a separate evaluator against the built CLI's public JSONL output, with offer-local matching and explicit error denominators. Capture usage and timing outside the public result, choosing the smallest viable evaluation-only or internal telemetry path after inspecting SDK behavior. Report costs only when usage and an attributable rate snapshot are available. Compare revisions on the same frozen cases and preserve the original run.
-- **Consequences** — Requires a label guide, corpus provenance, evaluator, run artifacts and mismatch audit. It does not set a quality threshold or assert hidden-set generalization. Gemini is the primary provider; other providers require distinct run records. The production JSONL contract remains unchanged.
-- **Validation** — Offline evaluator tests for message/offer alignment, nulls, errors, denominators and optional telemetry; live CLI run manifest and manual audit of scored mismatches; reconcile README figures with raw artifacts.
-- **Review checkpoint** — Approve the protocol, corpus independence rule and telemetry boundary before Phase 03 qualification runs or dependent evaluator implementation. Set corpus size and any minimum acceptance threshold before viewing live baseline results. Review any prompt/schema/provider change before its implementation.
-- **Approval evidence** — Pending. The instruction “Make a plan” authorizes planning, not this proposed evaluation policy.
-- **References** — [Phase 03 plan](phase-plans/03-independent-provider-evaluation.md), [Plan v2](../PLAN-v2.md), [roadmap](roadmap.md), SC-12, SC-14, PC-03, D-019, D-023, D-024, D-026, D-033.
+- **Status** — Accepted on 2026-11-10 for the supplied Phase 03 plan and `agy` provider. Isolation verification remains pending under OPEN-08.
+- **Context** — Evaluate the public CLI using independent cases and report quality and operating measurements. The current `agy` gateway skips permission prompts and a tool-free mode has not been verified.
+- **Options and tradeoffs** — Existing smoke fixtures are inexpensive but biased; independent frozen cases require labeling but allow a reproducible evaluation. A separate evaluator measures the delivered CLI while preserving the public output contract.
+- **Decision and rationale** — Use the supplied approximately 20-case evaluation plan and configured `agy` gateway. Freeze independent labels before the baseline. Capture usage from the `agy` envelope when available and disclose unavailable usage or cost. Require verified isolation before processing evaluation cases.
+- **Consequences** — Phase 03 evaluates `agy`; Gemini's Phase 02 history remains unchanged. Isolation, corpus creation, evaluator implementation and live results remain pending. Model quality on this small corpus does not establish hidden-set performance.
+- **Validation** — Verify isolation under OPEN-08, then execute the paired offline checks and live evaluation in the Phase 03 plan. Check metrics and reports against recorded results.
+- **Review checkpoint** — Do not execute evaluation cases through `agy` until isolation passes. Review consequential changes before implementing them.
+- **Approval evidence** — User: “Add this detailed plan instead. Just modify that we use agy agent instead of vercel ai due to limitiations”; selected “Verified isolation”; then “PLEASE IMPLEMENT THIS PLAN”.
+- **References** — [Phase 03 plan](phase-plans/03-independent-provider-evaluation.md), [Plan v2](../PLAN-v2.md), D-024, D-026, D-029, D-033, OPEN-08.
 
 ### D-018: Resolve uncertain evidence and field applicability
 

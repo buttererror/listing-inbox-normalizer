@@ -1,5 +1,16 @@
 # Key agent sessions
 
+## Phase 03 supplied plan and agy selection — 2026-11-10
+
+- **Evidence status** — Evidence checked against the supplied plan, gateway source and documented OPEN-08 history.
+- **Human review** — Not requested.
+- **Objective** — Replace the Phase 03 plan with the supplied evaluation plan and select agy.
+- **Important prompt** — User: “Add this detailed plan instead. Just modify that we use agy agent instead of vercel ai due to limitiations”; selected “Verified isolation”, then requested “PLEASE IMPLEMENT THIS PLAN”.
+- **Outcome** — Replaced the task plan, recorded D-036 approval, and aligned the roadmap and Plan v2. Added an isolation gate before evaluation cases and adapted telemetry to agy.
+- **Verification and limits** — Documentation review and diff check; no isolation verification, evaluation, model calls or behavior tests were performed.
+- **Related decisions** — [D-036](DECISIONS.md#d-036-use-a-frozen-independent-corpus-and-separate-live-measurement), OPEN-08.
+
+
 ## Phase 03 evaluation planning — 2026-11-10
 
 - **Evidence status** — Evidence checked against Plan v2, roadmap, Phase 02 task record, public result schema and SDK gateway code. No live evaluation was run.
