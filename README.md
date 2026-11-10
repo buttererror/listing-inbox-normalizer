@@ -262,7 +262,7 @@ The durations cover the provider call, including any internal `agy` retries; the
 - **No offline inference mode:** offline tests and rescoring work without credentials; fresh extraction still requires a reachable API or authenticated CLI that may use remote models.
 - **Approval does not correct extracted fields:** it records a human decision and optional context; field edits, reviewer identity, approval history, rejection, and undo are not available.
 - **Approval timestamps remain internal:** listing reads and approval responses expose `approval_note`, while message and CLI output do not expose approval metadata.
-- **No cross-broker deduplication yet:** duplicate detection remains a Phase 05 responsibility.
+- **No cross-broker deduplication:** Phase 05 is intentionally outside this submission under [D-052](docs/DECISIONS.md#d-052-deliver-without-phase-05-deduplication). `duplicate_of` remains `null`; repost detection is an unmet brief requirement.
 - **Model/provider variability:** the evaluation figures are specific to one model, CLI version, and corpus; other providers are not equally live-qualified.
 - **Uncertain data remains reviewable:** incorrect or incomplete evidence may yield `null` values and review reasons instead of authoritative listing fields.
 
@@ -272,6 +272,6 @@ The durations cover the provider call, including any internal `agy` retries; the
 
 ## Next steps
 
-**With another day:** implement Phase 05 cross-broker deduplication and qualify the default direct Gemini API against the evaluation cases.
+**With another day:** implement and verify Phase 05 cross-broker deduplication under [D-051](docs/DECISIONS.md#d-051-phase-05-precise-deduplication-rules-extraction-guards-and-persistence-flow), then qualify the default direct Gemini API against the evaluation cases.
 
 For deeper project context, see the [documentation index](docs/README.md), [roadmap](docs/roadmap.md), and [evaluation analysis](docs/evaluation-baseline-analysis.md).

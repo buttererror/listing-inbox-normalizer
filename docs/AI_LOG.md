@@ -1,5 +1,64 @@
 # Key agent sessions
 
+## Entry format and review policy
+
+Record significant implementation, consequential planning, meaningful user corrections, and model experiments. Keep entries compact and link to detailed decisions and error records. A paraphrased objective alone does not satisfy the brief's prompt requirement. Redact secrets and label summaries and shortened quotations accurately.
+
+```text
+## Session title — date (Africa/Cairo)
+Evidence status: Unchecked | Evidence checked | Needs clarification
+Evidence sources: Actual available conversation, commands, results, files or commits.
+Human review: Not requested | Requested | Confirmed
+Human confirmation evidence: Exact confirmation/reference when applicable.
+Objective: Requested outcome.
+Important prompts: Actual prompts or labeled verbatim excerpts.
+Outcome and verification: What changed and checks actually performed.
+Human intervention: User correction, rejection or approval, when applicable.
+Limitations: Unknowns, unperformed checks and deferred work.
+Related decisions / mistakes: Links where applicable.
+```
+
+Before marking Evidence checked, compare the account against available sources using all six checks:
+
+1. Is the session significant enough to retain?
+2. Are important actual prompts shown?
+3. Does the summary accurately describe the outcome and user steering?
+4. Are implemented behavior, proposals and limitations distinguished?
+5. Do verification claims match checks actually performed?
+6. Are corrections and their discoverer accurately attributed?
+
+Evidence checked is an agent comparison, not independent verification or user approval. Mark Needs clarification when a material claim cannot be supported; identify the missing source or specific question. Human review is Not requested by default, Requested for uncertain attribution, disputed accounts, important user-caught mistakes, or material narrative ambiguity, and Confirmed only with explicit confirmation and its source. Routine entries do not require user approval before a commit. Decision approvals and commit authorization remain separate. Historical Pending user review labels below record the previous policy; they are not confirmations.
+
+## Assessment evidence index
+
+| Evidence | Session |
+| --- | --- |
+| [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent) | [Phase 02.1 typed classification and extraction](#phase-021-typed-classification-and-extraction--2026-11-10) |
+| [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review) | [Task 02.5 field resolution and runtime review](#task-025--field-resolution-and-runtime-reviewer--2026-11-10) |
+| [D-033](DECISIONS.md#d-033-simplify-stage-2-to-a-structural-safety-boundary) | [Stage 2 validation simplification](#stage-2-validation-simplification-task-025b--2026-11-10) |
+| [D-003](DECISIONS.md#d-003-share-listing-processing-between-cli-and-http) and [D-043](DECISIONS.md#d-043-keep-cli-stateless-and-assign-persistence-to-http-ingestion) | [Phase 04 architecture correction](#phase-04-architecture-correction--2026-11-10) |
+| [D-024](DECISIONS.md#d-024-use-the-gemini-api-for-tool-less-extraction) and [D-026](DECISIONS.md#d-026-use-ai-sdk-7-from-the-commonjs-application) | [CommonJS AI SDK gateway](#replaced-es-module-attempt-with-commonjs-ai-sdk-gateway--2026-11-10) |
+| [D-044](DECISIONS.md#d-044-store-an-optional-internal-approval-note) and [D-045](DECISIONS.md#d-045-expose-approval-notes-in-persisted-listing-reads-and-approval-responses) | [Task 04.5 approval with optional note](#task-045-approval-with-optional-note--2026-11-10) |
+| [D-039](DECISIONS.md#d-039-use-antigravity-cli-agy-for-phase-03-independent-evaluation) | [Task 03.4 baseline evaluation](#task-034-baseline-evaluation--2026-11-10) |
+
+### User-detected error evidence
+
+| Error | What happened and evidence |
+| --- | --- |
+| [E-010](DECISIONS.md#e-010-source-edits-during-the-v2-documentation-update) | Documentation-only scope was mistaken for code authorization; [the V2 plan session](#v2-plan-and-roadmap--2026-11-09) preserves the correction and restoration. |
+| [E-016](DECISIONS.md#e-016-omitted-approval-note-from-listing-reads) | Listing reads initially omitted the approval note; [Task 04.5](#task-045-approval-with-optional-note--2026-11-10) records the user correction and verification. |
+| [E-017](DECISIONS.md#e-017-omitted-approval-note-from-the-approval-response) | The approval response initially omitted the note; [Task 04.5](#task-045-approval-with-optional-note--2026-11-10) records the user correction and verification. |
+| [E-018](DECISIONS.md#e-018-prematurely-implemented-phase-05-code-and-migration-during-a-phase-document-update) | Phase 05 code was started during a documentation-only update; [the Phase 05 session](#phase-05-planning-and-scope-correction--2026-11-10) preserves the correction and revert evidence. |
+
+## Assessment evidence organization — 2026-11-10
+
+- **Evidence status** — Evidence checked against the user instruction, the assessment brief, decision records, session records, roadmap, README, success criteria, Git diff, and local Markdown link scan.
+- **Human review** — Confirmed by direct user instruction.
+- **Important prompt** — “PLEASE IMPLEMENT THIS PLAN: # Organize assessment evidence by importance”.
+- **Outcome** — Added a ranked key-decision index and supporting-decision index, separated unfinished Phase 05 policy from delivered-product evidence, and recorded [D-052](DECISIONS.md#d-052-deliver-without-phase-05-deduplication) for the explicit submission scope. Consolidated D-042, marked D-025 superseded by D-026, and reclassified D-026–D-035 as delivered decisions outside the error-record section. Moved this log's entry policy to the start and added decision and user-detected error indexes. Updated the README, roadmap, and success criteria to state that deduplication is an unmet requirement for this submission.
+- **Verification and limits** — Confirmed no duplicate D-IDs, 0 broken local Markdown targets across 21 files and 509 links, and a clean `git diff --check`. No application tests were run because the change is documentation-only. Phase 05 remains unimplemented.
+- **Related decisions** — D-010, D-014, D-025, D-026, D-042, D-052, E-010, E-016, E-017, E-018.
+
 ## Documentation link and consistency review — 2026-11-10
 
 - **Evidence status** — Evidence checked against the available user prompt, repository files, `git diff`, `git status`, `git ls-tree`, and a Markdown link and anchor scan.
@@ -326,35 +385,6 @@ Instruction excerpt from the approved documentation implementation plan:
 Summary: adapted Clinic Platform's documentation ownership, central decisions, and focused verification to this smaller project. Created a local Notion brief snapshot, documentation index, and architecture/status guide; moved canonical decisions and logs into docs with root links; expanded repository instructions. Preserved application files and the untracked draft plan. Link, Markdown, and Git boundary checks are recorded in the implementation handoff.
 
 Correction: the previous register placed the implemented Multer override under Open; this documentation pass moved D-006 to Accepted. No application regression test is warranted for this documentation-only correction. Additional genuine agent mistakes have not been manufactured to meet the assessment count.
-
-## Entry format and review policy
-
-Record significant implementation, consequential planning, meaningful user corrections, and model experiments. Keep entries compact and link to detailed decisions and error records. A paraphrased objective alone does not satisfy the brief's prompt requirement. Redact secrets and label summaries and shortened quotations accurately.
-
-```text
-## Session title — date (Africa/Cairo)
-Evidence status: Unchecked | Evidence checked | Needs clarification
-Evidence sources: Actual available conversation, commands, results, files or commits.
-Human review: Not requested | Requested | Confirmed
-Human confirmation evidence: Exact confirmation/reference when applicable.
-Objective: Requested outcome.
-Important prompts: Actual prompts or labeled verbatim excerpts.
-Outcome and verification: What changed and checks actually performed.
-Human intervention: User correction, rejection or approval, when applicable.
-Limitations: Unknowns, unperformed checks and deferred work.
-Related decisions / mistakes: Links where applicable.
-```
-
-Before marking Evidence checked, compare the account against available sources using all six checks:
-
-1. Is the session significant enough to retain?
-2. Are important actual prompts shown?
-3. Does the summary accurately describe the outcome and user steering?
-4. Are implemented behavior, proposals and limitations distinguished?
-5. Do verification claims match checks actually performed?
-6. Are corrections and their discoverer accurately attributed?
-
-Evidence checked is an agent comparison, not independent verification or user approval. Mark Needs clarification when a material claim cannot be supported; identify the missing source or specific question. Human review is Not requested by default, Requested for uncertain attribution, disputed accounts, important user-caught mistakes, or material narrative ambiguity, and Confirmed only with explicit confirmation and its source. Routine entries do not require user approval before a commit. Decision approvals and commit authorization remain separate. Historical Pending user review labels below record the previous policy; they are not confirmations.
 
 ## Package manager migration — 2026-11-08
 

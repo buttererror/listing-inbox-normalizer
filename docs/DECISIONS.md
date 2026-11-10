@@ -1,8 +1,34 @@
 # Decisions
 
+## Key decisions for the delivered product
+
+These records are ranked by their effect on public behavior, evidence safety, and the CLI/HTTP contract. Each link leads to the full historical record and a session containing the important prompt or approval evidence.
+
+| Priority | Decision | Why it matters | Evidence |
+| --- | --- | --- | --- |
+| 1 | [D-019](#d-019-use-typed-extraction-proposals-and-mixed-intent) — typed extraction and mixed intent | Defines the supported message classification and the typed handoff from interpretation to the rest of the product. | [Task 02.1 session](AI_LOG.md#phase-021-typed-classification-and-extraction--2026-11-10) |
+| 2 | [D-020](#d-020-apply-conservative-field-selection-and-separate-automated-review) — conservative resolution and review | Requires unresolved or uncertain facts to remain null and be flagged instead of inferred. | [Task 02.5 session](AI_LOG.md#task-025--field-resolution-and-runtime-reviewer--2026-11-10) |
+| 3 | [D-033](#d-033-simplify-stage-2-to-a-structural-safety-boundary) — structural source validation | Limits deterministic validation to schema, source grounding, scope, clipping, and format checks while preserving language interpretation in Extraction. | [Stage 2 session](AI_LOG.md#stage-2-validation-simplification-task-025b--2026-11-10) |
+| 4 | [D-003](#d-003-share-listing-processing-between-cli-and-http) and [D-043](#d-043-keep-cli-stateless-and-assign-persistence-to-http-ingestion) — shared processing and transport ownership | Keeps CLI and HTTP processing equivalent while assigning persistence, replay, and conflicts to HTTP ingestion. | [Phase 04 correction session](AI_LOG.md#phase-04-architecture-correction--2026-11-10) |
+| 5 | [D-024](#d-024-use-the-gemini-api-for-tool-less-extraction) and [D-026](#d-026-use-ai-sdk-7-from-the-commonjs-application) — tool-less SDK gateway | Keeps untrusted broker text out of tool execution and provides the configured multi-provider extraction boundary. | [SDK gateway session](AI_LOG.md#replaced-es-module-attempt-with-commonjs-ai-sdk-gateway--2026-11-10) |
+| 6 | [D-044](#d-044-store-an-optional-internal-approval-note) and [D-045](#d-045-expose-approval-notes-in-persisted-listing-reads-and-approval-responses) — approval context | Defines the persisted human approval note and the listing endpoints that expose it without changing CLI or ingestion results. | [Task 04.5 session](AI_LOG.md#task-045-approval-with-optional-note--2026-11-10) |
+| 7 | [D-039](#d-039-use-antigravity-cli-agy-for-phase-03-independent-evaluation) — independent live evaluation | Separates measured provider quality from offline behavior tests and documents observed latency and accuracy. | [Task 03.4 session](AI_LOG.md#task-034-baseline-evaluation--2026-11-10) |
+
+## Supporting decisions
+
+| Group | Records | Purpose |
+| --- | --- | --- |
+| Architecture and contracts | [D-001](#d-001-keep-the-current-stack), [D-004](#d-004-keep-commonjs-across-the-toolchain), [D-005](#d-005-keep-health-as-a-liveness-check), [D-012](#d-012-approve-the-first-listing-scope-and-contracts), [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks), [D-027](#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline)–[D-035](#d-035-business-level-review-reasons-human-facing-cli-presentation-and-stage-2-validation-corrections) | Supporting product and implementation contracts. |
+| Workflow and evidence | [D-007](#d-007-keep-the-existing-commit-convention), [D-009](#d-009-separate-the-baseline-plan-from-the-evolving-roadmap), [D-010](#d-010-evidence-checks-and-targeted-human-review-for-ai-logs), [D-013](#d-013-pair-small-slice-tasks-with-focused-verification), [D-014](#d-014-organize-delivery-as-phases-and-tasks) | Preserves assessment evidence and focused verification. |
+| Operations | [D-006](#d-006-retain-the-multer-override), [D-008](#d-008-retain-pinned-pnpm-and-the-frozen-lockfile), [D-041](#d-041-support-claude-code-cli-claude-cli-in-the-llm-gateway-and-harden-environment-config), [D-042](#d-042-apply-committed-sqlite-migrations-through-package-startup-commands) | Supports secure dependencies, reproducible setup, and provider or migration operation. |
+
+## Unfinished scope
+
+Phase 05 cross-broker deduplication is not part of the delivered product. [D-052](#d-052-deliver-without-phase-05-deduplication) records the submission scope. The accepted policy directions in D-046–D-050 and the proposed detailed rules in D-051 remain below as future work; they are not evidence of implemented duplicate detection.
+
 ## Open
 
-- Extraction and persistence contracts, review policies, deduplication thresholds, and provider execution isolation remain to be decided. See the local draft `PLAN.md` for the initial checkpoints.
+This historical checkpoint list preserves the initial questions. The table records their current disposition; only future Phase 05 implementation and any workflow that executes tools on untrusted input remain open.
 
 
 ## Earlier architecture discussion (supplied handoff summary)
@@ -42,7 +68,7 @@ References: Related brief requirements, decisions, logs, and code where availabl
 Supersedes / superseded by: Relevant ID, if applicable.
 ```
 
-## Proposed and recently approved
+## Future Phase 05 policy decisions
 
 ### D-046: Strict identity-based linking for automatic deduplication
 
@@ -128,6 +154,22 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Approval evidence** — Pending (the user clarified on 2026-11-10 that only the phase document should be updated until later implementation).
 - **References** — OPEN-02, OPEN-06, D-046–D-050, E-018, [Phase 05](phase-plans/05-deduplication.md), [AI log](AI_LOG.md).
 
+## Submission scope
+
+### D-052: Deliver without Phase 05 deduplication
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Cross-broker duplicate detection is a brief requirement, but Phase 05 has not been implemented. The Phase 05 policy directions are documented and the detailed rules remain Proposed in D-051.
+- **Options and tradeoffs** — Implement and verify Phase 05 before submission, or deliver the verified Phase 01–04 product while clearly reporting deduplication as an unmet requirement. The latter keeps the submission evidence truthful and avoids presenting planning policy as delivered behavior.
+- **Decision and rationale** — Deliver without Phase 05 deduplication. Keep `duplicate_of: null`, preserve the Phase 05 records as future work, and state the gap in operational and assessment documentation.
+- **Consequences** — The submission does not satisfy the brief's repost-detection requirement. No automatic or review-only stored-property matching is available.
+- **Validation** — Confirm README, roadmap, success criteria, and the public contract consistently state that deduplication is unimplemented.
+- **Review checkpoint** — Reopen D-051 before any Phase 05 implementation.
+- **Approval evidence** — User instruction: “I will deliver without it.”
+- **References** — [Phase 05 plan](phase-plans/05-deduplication.md), D-046–D-051, [SC-10](success-criteria.md#brief-requirements).
+
+## Delivered Phase 04 and evaluation decisions
+
 ### D-044: Store an optional internal approval note
 
 - **Status** — Accepted on 2026-11-10.
@@ -160,12 +202,6 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Validation** — Focused stateless CLI and temporary-SQLite persistence tests; HTTP route checks remain Task 04.3.
 - **Approval evidence** — User supplied “Phase 04 Architecture Correction & Documentation Handoff” and directed “Implement this”.
 
-### D-042: Apply committed SQLite migrations through package startup commands
-
-- **Status** — Superseded by D-043 on 2026-11-10 for CLI startup; HTTP migration startup remains in effect.
-- **Correction** — `start` and `start:dev` apply committed migrations. The `cli` command builds and runs without database deployment. The earlier CLI migration wiring was removed after the architecture review.
-- **References** — D-043, Phase 04 plan, [AI log](AI_LOG.md).
-
 ### D-041: Support Claude Code CLI (claude-cli) in the LLM Gateway and harden environment config
 
 - **Status** — Accepted on 2026-11-10.
@@ -182,13 +218,13 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ### D-042: Apply committed SQLite migrations through package startup commands
 
-- **Status** — Accepted on 2026-11-10.
+- **Status** — Accepted on 2026-11-10; amended by D-043 for CLI startup.
 - **Context** — Task 04.1 requires committed SQLite migrations before CLI and HTTP startup. The initial temporary database-module runner was created after Prisma 7.10.1 reported an empty schema-engine error on a fresh SQLite database.
 - **Options and tradeoffs** — Use `prisma migrate deploy` from package scripts, retaining Prisma's migration ownership and one-command startup; retain a custom SQL runner, which duplicates Prisma migration behavior; or require a manual setup command, which violates the fresh-start contract.
-- **Decision and rationale** — Keep `db:migrate` for authoring and use `db:deploy` for committed migrations. `start`, `start:dev`, and `cli` invoke `db:deploy`; `cli` builds first and redirects build/migration diagnostics to stderr. Remove the custom runner. Prisma 7.10.1 needs `RUST_LOG=info` for SQLite `migrate deploy` in this environment, so the package command includes that narrow workaround rather than changing the pinned dependencies.
-- **Consequences** — Fresh HTTP and CLI starts provision the database without a separate setup step, and DatabaseService retains only Prisma connection and shutdown ownership. Startup requires committed migration files in the distribution. A Prisma logging workaround remains until the upstream defect is fixed and can be rechecked.
-- **Validation** — `db:deploy` applied the migration to fresh temporary SQLite files. HTTP and CLI startup invoked it successfully; CLI stdout remained JSONL-only. A disposable copy of a database initialized by the former runner was recognized with no pending migration.
-- **Review checkpoint** — Recheck the Prisma workaround on dependency upgrade; use the same command before Tasks 04.2 through 04.5.
+- **Decision and rationale** — Keep `db:migrate` for authoring and use `db:deploy` for committed migrations. The original approval applied `db:deploy` to `start`, `start:dev`, and `cli`; D-043 later removed database deployment from CLI so it remains stateless. Remove the custom runner. Prisma 7.10.1 needs `RUST_LOG=info` for SQLite `migrate deploy` in this environment, so the package command includes that narrow workaround rather than changing the pinned dependencies.
+- **Consequences** — Fresh HTTP starts provision the database without a separate setup step, while CLI runs without a database connection. DatabaseService retains only Prisma connection and shutdown ownership. Startup requires committed migration files in the distribution. A Prisma logging workaround remains until the upstream defect is fixed and can be rechecked.
+- **Validation** — `db:deploy` applied the migration to fresh temporary SQLite files. HTTP startup invoked it successfully. D-043 verified that CLI operates without a database connection. A disposable copy of a database initialized by the former runner was recognized with no pending migration.
+- **Review checkpoint** — Recheck the Prisma workaround on dependency upgrade; use the same command before HTTP persistence work.
 - **Approval evidence** — User instruction: “PLEASE IMPLEMENT THIS PLAN: Use package scripts for Phase 04 migrations”, explicitly selecting `prisma migrate deploy`, `db:deploy`, and one-command CLI/HTTP startup.
 - **References** — D-001, D-003, D-013, D-014, D-040, [Phase 04](phase-plans/04-sqlite-http-and-approval.md), [AI log](AI_LOG.md), [Prisma issue #29355](https://github.com/prisma/orm/issues/29355).
 
@@ -339,13 +375,14 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ### D-025: Evaluate a shared Chat Completions gateway
 
-- **Status** — Proposed.
+- **Status** — Superseded by D-026 on 2026-11-10.
 - **Context** — The unified gateway handoff proposes a single OpenAI-compatible client for Gemini, OpenAI, Claude, and compatible local endpoints.
 - **Options and tradeoffs** — Keep the verified native Gemini path and add adapters as needed, adopt a multi-provider SDK with provider packages, or use the official OpenAI SDK with a configurable Chat Completions endpoint. The last option shares transport code and depends on the selected endpoint's structured output support.
 - **Recommendation and rationale** — Use a configurable Chat Completions gateway for verified provider and model combinations. Request strict structured JSON without tools, disable SDK retries, and keep the existing Zod and source-evidence checks. Treat required nullable fields as an explicit wire-schema decision. A synthetic Gemini 3.6 Flash request accepted the current schema unchanged through the compatibility endpoint.
 - **Consequences** — The SDK adds a runtime dependency and provider configuration moves to a shared endpoint, credential, model, and timeout. Current gateway callers keep the same interface. Usage and latency belong in diagnostic metadata outside the public listing response.
 - **Validation and checkpoint** — Verify configuration, schema compatibility, error mapping, and the single call offline. Before replacing the native Gemini path, run a live synthetic CLI comparison with the configured SDK. Qualify each additional provider and model before documenting it as supported.
-- **Approval evidence** — Pending. The user requested review of the proposed handoff.
+- **Approval evidence** — Pending. The user requested review of the proposed handoff; D-026 records the later approved AI SDK 7 direction.
+- **Superseded by** — D-026.
 
 ## Accepted
 
@@ -565,7 +602,7 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 
 - **Incorrect action:** The agent appended D-006, the implemented Multer override, under Open decisions.
 - **Caught by:** Agent during the documentation review.
-- **Detection:** The agent observed that the register placed the implemented override under Open; [commit 9145564](../AI_LOG.md) and the [AI log](AI_LOG.md#documentation-organization-and-evidence-requirements) preserve the sequence. No user correction prompt for this incident is recorded.
+- **Detection:** The agent observed that the register placed the implemented override under Open; [commit 9145564](AI_LOG.md#commit-convention-and-initial-commit) and the [AI log](AI_LOG.md#documentation-organization-and-evidence-requirements) preserve the sequence. No user correction prompt for this incident is recorded.
 - **Correction:** Moved D-006 into Accepted during documentation organization; subsequent package-manager migration retained the override.
 - **Verification:** Compared the register with the package override and checked document links/structure. Application behavior was unchanged by the classification correction.
 - **Evidence:** See the documentation-organization session in the [AI log](AI_LOG.md).
@@ -705,6 +742,10 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Status:** Needs clarification; not counted toward the three required incidents.
 - **Evidence:** The supplied handoff summarizes that the earlier assistant initially favored rules and regex and the user emphasized generalization. It is a second-hand summary, not the original exchange.
 - **Missing evidence:** Original prompt/context and what specifically was incorrect or changed. A reasonable disagreement alone is not a mistake. Request the user's account only if needed to assess this candidate; do not reconstruct the missing transcript.
+
+## Delivered implementation decisions
+
+The following full records were originally appended after the error records. They are decisions, not error records, and remain in chronological order here for historical traceability.
 
 ### D-026: Use AI SDK 7 from the CommonJS application
 
