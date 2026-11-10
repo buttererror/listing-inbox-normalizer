@@ -759,3 +759,21 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
     - `node dist/cli.js process test/fixtures/one-message.jsonl` returned exit 0 and outputted the exact `Stage1ExtractionResult` with classification, detected classes, and 1 offer containing 4 candidates and 0 findings.
     - `node dist/cli.js process-legacy test/fixtures/one-message.jsonl` returned exit 0 and outputted the legacy resolved `MessageSuccess` listing with price 3,200,000 SAR.
 - **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-027](DECISIONS.md#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline), [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli).
+
+## Connect Antigravity CLI gateway and verify live execution — 2026-11-10
+
+- **Evidence status** — Evidence checked against source, tests, typecheck, build, and live CLI runs.
+- **Human review** — Not requested.
+- **Objective** — Connect local `agy` CLI provider fallback under `LLM_PROVIDER=agy` and verify structured Stage 1 extraction.
+- **Important prompts** — “I think we are at the stage that we must use the agy cli temporarily along with the current implmentation”; “Implement”; “Let's use agy, how to fix that error?”; “It's working now. run this and check the output node dist/cli.js process test/fixtures/message.json”; “Commit”.
+- **Outcome** —
+  - Implemented `AgyGateway` in `src/llm-gateway/agy.gateway.ts` executing `agy` non-interactively with `--output-format json`, `--json-schema`, and `--disable-slash-commands`. Added response envelope unwrapping and provider error classification.
+  - Added dedicated unit tests in `test/agy.gateway.spec.ts` (7 tests).
+  - Wired `AgyGateway` in `src/llm-gateway/llm-gateway.module.ts` and `src/config/env.ts` with smart path resolution for `~/.local/bin/agy`.
+  - Refactored `LegacyListingMessageProcessor` in `src/messages/legacy-listing-message-processor.ts` to route single sale offers directly through `bridgeStage1SaleToBaseline` without fragile candidate indexing assumptions.
+- **Verification and limits** —
+  - `pnpm run typecheck` and `pnpm run build` passed cleanly.
+  - All 17 test suites (170 tests) passed offline without network credentials.
+  - Live execution of `node dist/cli.js process test/fixtures/message.json` passed with exit code 0, returning the valid Stage 1 ExtractionEnvelope JSON with apartment classification, offer quote, candidate fields with evidence quotes, and zero findings.
+- **Related decisions** — [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli), [D-029](DECISIONS.md#d-029-antigravity-cli-gateway-for-local-model-execution).
+

@@ -58,30 +58,24 @@ export class LegacyListingMessageProcessor implements MessageProcessor {
     // 3. For one independently identified sale offer
     if (result.listings && result.listings.length === 1) {
       const offer = result.listings[0];
-      const hasTypedCandidates =
-        offer.candidates.length > 0 &&
-        typeof (offer.candidates[0] as any)?.scope === 'string';
-
-      if (hasTypedCandidates) {
-        const { accepted, rejectedEvidence } = bridgeStage1SaleToBaseline(message.text, offer);
-        const combinedRejected = [
-          ...(outcome.rejectedEvidence ?? []),
-          ...rejectedEvidence,
-        ];
-        const listingId = this.generateId();
-        const resolved = this.listingsService.process(
-          listingId,
-          accepted,
-          combinedRejected,
-          null,
-        );
-        const success: MessageSuccess = {
-          message_id: message.id,
-          classification: 'listing',
-          listings: [resolved.listing],
-        };
-        return success;
-      }
+      const { accepted, rejectedEvidence } = bridgeStage1SaleToBaseline(message.text, offer);
+      const combinedRejected = [
+        ...(outcome.rejectedEvidence ?? []),
+        ...rejectedEvidence,
+      ];
+      const listingId = this.generateId();
+      const resolved = this.listingsService.process(
+        listingId,
+        accepted,
+        combinedRejected,
+        null,
+      );
+      const success: MessageSuccess = {
+        message_id: message.id,
+        classification: 'listing',
+        listings: [resolved.listing],
+      };
+      return success;
     }
 
     // Legacy fallback for tests mocking candidates directly

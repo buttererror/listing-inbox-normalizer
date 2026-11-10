@@ -502,3 +502,17 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Review checkpoint** — Revert `process` output contract to the assembled public result in 02.6 and retire `process-legacy`.
 - **Approval evidence** — User prompt: "Change process <input.jsonl> itself to output the internal Stage 1 ExtractionEnvelope, temporarily changing its output contract and keep the legacy pipeline throught process-legacy".
 - **References** — D-019, D-027, [Phase 02 plan](phase-plans/02-message-processing.md).
+
+### D-029: Antigravity CLI gateway for local model execution
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — When remote API provider quotas are constrained (e.g. Gemini API daily free-tier limits) or local execution is requested, developers need a provider fallback leveraging the installed Antigravity CLI (`agy`) while preserving the tool-less, structured extraction contract.
+- **Options and tradeoffs** —
+  1. Wait for remote quota resets (blocks evaluation and development).
+  2. Implement an `AgyGateway` that invokes the local `agy` CLI non-interactively (`-p ... --output-format json --json-schema ... --disable-slash-commands`) and extracts structured output envelopes.
+- **Recommendation and rationale** — Implement `AgyGateway` in `src/llm-gateway/agy.gateway.ts`, integrated via `src/llm-gateway/llm-gateway.module.ts` and `src/config/env.ts` under `LLM_PROVIDER=agy` (and alias `antigravity`). Auto-resolves `AGY_EXECUTABLE` to `~/.local/bin/agy` when available.
+- **Consequences** — CLI and evaluation can run locally using `agy` without remote API keys. Does not execute interactive tools during extraction turns.
+- **Validation** — Dedicated unit test suite in `test/agy.gateway.spec.ts` (7 tests covering argument construction, timeouts, non-zero exits, and response parsing); full offline test suite passing (170 tests); and live verification with `node dist/cli.js process test/fixtures/message.json` returning the valid Stage 1 extraction envelope with exit code 0.
+- **Approval evidence** — User instructions: "I think we are at the stage that we must use the agy cli temporarily along with the current implmentation", "Implement", "Let's use agy, how to fix that error?", and "Commit".
+- **References** — D-023, D-026, [AI log](AI_LOG.md).
+
