@@ -880,6 +880,26 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   - `pnpm run build` succeeded without errors.
 - **Related decisions** — [D-027](DECISIONS.md#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline), [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli).
 
+## Stage 2 Verification Matrix E01–E12, M01–M15, and P01–P03 — 2026-11-10
+
+- **Evidence status** — Evidence checked against unit tests, typecheck, build, and test suite.
+- **Human review** — Confirmed by user prompt.
+- **Objective** — Implement comprehensive offline verification matrix covering Tasks 02.2–02.4: evidence integrity (E01–E12), mechanical validation (M01–M15), and partial recovery integration (P01–P03) against the two-offer Arabic fixture.
+- **Important prompt** — Verbatim: “Test cases\n1. Evidence integrity — Task 02.2... E01–E12\n2. Mechanical validation — Task 02.4... M01–M15\n3. Partial recovery — Combined Stage 2... P01–P03\n... Copy-paste handoff: Verify Tasks 02.2–02.4 against the existing two-offer Arabic fixture... Implement focused offline tests E01–E12, M01–M15, and integration tests P01–P03 as described.”
+- **Outcome** —
+  - Created `test/stage2-verification-matrix.spec.ts` with 30 focused offline tests covering all matrix rows:
+    - E01–E12: non-existent quotes, wrong-offer scoping, clipped tokens, invalid field names, invalid value shapes, shared phone association, repeated quotes scoping, fabricated finding quotes, wrong-offer findings, invalid offer quotes, message-level invalid extraction on all fabricated offers or malformed envelopes.
+    - M01–M15: bedroom/bathroom quantities, negative/fractional room counts, area numbers and positive constraints, shorthand millions and thousands, phone E.164 and digit matching, competing prices with contradiction findings, price deposit qualifier checks, and null currency handling.
+    - P01–P03: villa candidate rejection without invalidating apartment, invalid semantic finding without invalidating candidates, ungrounded offer rejection without invalidating surviving grounded offer.
+  - Fixed Unicode word boundary in shorthand millions/thousands matchers (`(?:M\b|مليون(?:[^\p{L}\p{N}]|$))` with flag `/iu`), resolving Arabic word boundary matching in `src/extraction/stage2-mechanical-validation.ts`.
+  - Added role qualifier check rejecting deposit quotes (`عربون`) when incorrectly assigned `role: 'asking_price'`.
+- **Verification and limits** —
+  - `test/stage2-verification-matrix.spec.ts` passed all 30 tests in 0.76s.
+  - Full test suite passed all 219 tests across 18 test suites without network or API dependencies.
+  - `pnpm run typecheck` and `pnpm run build` passed cleanly.
+- **Related decisions** — [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks).
+
+
 
 
 

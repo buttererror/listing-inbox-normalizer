@@ -326,10 +326,30 @@ export function crossCheckMechanicalConsistency(candidate: TypedFieldCandidate):
     }
 
     case 'price': {
+      // 0. Role / qualifier consistency check: detect unambiguous mismatch between quote qualifiers and candidate role
+      if (candidate.role === 'asking_price') {
+        if (candidate.quote.includes('عربون') || /\bdeposit\b/i.test(candidate.quote)) {
+          return {
+            valid: false,
+            reason: 'quote_value_mismatch',
+            message: `Price quote "${candidate.quote}" specifies deposit/earnest money (عربون), but candidate role is asking_price`,
+          };
+        }
+        if (candidate.quote.includes('للمتر') || /\b(?:per\s*sqm|\/sqm|\/m2)\b/i.test(candidate.quote)) {
+          return {
+            valid: false,
+            reason: 'quote_value_mismatch',
+            message: `Price quote "${candidate.quote}" specifies per-sqm rate (للمتر), but candidate role is asking_price`,
+          };
+        }
+      }
+
       const amount = candidate.value.amount;
 
       // 1. Shorthand Millions (e.g. "3.2M", "3.2 M", "3.2M SAR", "٣٫٢ مليون", "2 مليون")
-      const millionMatch = quoteAscii.match(/(\d+(?:[.,\u066b]\d+)?)\s*(?:M|مليون)\b/i);
+      const millionMatch = quoteAscii.match(
+        /(\d+(?:[.,\u066b]\d+)?)\s*(?:M\b|مليون(?:[^\p{L}\p{N}]|$))/iu,
+      );
       if (millionMatch) {
         const base = parseFloat(millionMatch[1].replace(/[\u066b,]/g, '.'));
         if (Number.isFinite(base)) {
@@ -346,7 +366,9 @@ export function crossCheckMechanicalConsistency(candidate: TypedFieldCandidate):
       }
 
       // 2. Shorthand Thousands (e.g. "950K", "950 K", "950 ألف")
-      const thousandMatch = quoteAscii.match(/(\d+(?:[.,\u066b]\d+)?)\s*(?:K|ألف)\b/i);
+      const thousandMatch = quoteAscii.match(
+        /(\d+(?:[.,\u066b]\d+)?)\s*(?:K\b|ألف(?:[^\p{L}\p{N}]|$))/iu,
+      );
       if (thousandMatch) {
         const base = parseFloat(thousandMatch[1].replace(/[\u066b,]/g, '.'));
         if (Number.isFinite(base)) {
