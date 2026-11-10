@@ -4,6 +4,7 @@ import { ExtractionService } from './extraction/extraction.service';
 import { ListingsService } from './listings/listings.service';
 import { LlmGateway } from './llm-gateway/llm-request';
 import { runJsonl } from './messages/jsonl-runner';
+import { runTable } from './messages/table-runner';
 import { ListingMessageProcessor } from './messages/listing-message-processor';
 import { MESSAGE_PROCESSOR, MessageProcessor } from './messages/message-processor';
 
@@ -19,14 +20,17 @@ type CliDependencies = {
 };
 
 export async function runCli(args: string[], dependencies: CliDependencies): Promise<0 | 1> {
-  if (args.length !== 2 || args[0] !== 'process' || !args[1]) {
+  const isTable = args.includes('--format=table');
+  const fileArgs = args.slice(1).filter((arg) => arg !== '--format=table');
+
+  if (args.length < 2 || args[0] !== 'process' || fileArgs.length !== 1 || !fileArgs[0]) {
     dependencies.stderr('Usage: process <input.jsonl>\n');
     return 1;
   }
 
   let input: string;
   try {
-    input = await readFile(args[1], 'utf8');
+    input = await readFile(fileArgs[0], 'utf8');
   } catch {
     dependencies.stderr('Unable to read input file\n');
     return 1;
@@ -36,7 +40,9 @@ export async function runCli(args: string[], dependencies: CliDependencies): Pro
   let exitCode: 0 | 1 = 1;
   try {
     context = await dependencies.createContext();
-    exitCode = await runJsonl(input, context.getProcessor(), dependencies.stdout);
+    exitCode = isTable
+      ? await runTable(input, context.getProcessor(), dependencies.stdout)
+      : await runJsonl(input, context.getProcessor(), dependencies.stdout);
   } catch {
     dependencies.stderr('Unable to run message processing\n');
   } finally {

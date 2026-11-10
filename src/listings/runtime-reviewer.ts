@@ -1,4 +1,5 @@
 import type { ResolvedOffer, ResolutionFinding } from './resolve-offer';
+export { formatReviewReason, REVIEW_REASON_LABELS } from './review-labels';
 
 export interface ReviewDecision {
   needs_review: boolean;
