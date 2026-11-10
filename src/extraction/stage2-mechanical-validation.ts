@@ -358,16 +358,10 @@ export function validateStage2(
         const field = typeof (rawCandidate as any)?.field === 'string' ? (rawCandidate as any).field : undefined;
         const quote = typeof (rawCandidate as any)?.quote === 'string' ? (rawCandidate as any).quote : undefined;
         const scope = typeof (rawCandidate as any)?.scope === 'string' ? (rawCandidate as any).scope : undefined;
-
         const isNumericConstraint =
           (field === 'bedrooms' || field === 'bathrooms' || field === 'area_sqm' || field === 'price') &&
           schemaCheck.issues?.some(
-            (i: any) =>
-              i.code === 'too_small' ||
-              i.code === 'too_big' ||
-              i.message?.toLowerCase().includes('integer') ||
-              i.message?.toLowerCase().includes('greater than') ||
-              (i.path && (i.path.includes('amount') || i.path.includes('value'))),
+            (i: any) => i.path && (i.path.includes('amount') || i.path.includes('value')),
           );
 
         const reason: Stage2RejectionReason = isNumericConstraint ? 'invalid_numeric_constraint' : 'invalid_schema';
@@ -465,6 +459,12 @@ export function validateStage2(
 
       } else {
         // candidate.scope === 'shared'
+        // Architectural boundary & limitation:
+        // Stage 2 mechanically verifies evidence existence and unclipped token boundaries
+        // in the source text. Stage 1 LLM extraction remains responsible for interpreting
+        // whether shared evidence semantically applies across multiple offers.
+        // Stage 2 deliberately does not perform semantic parsing, co-reference resolution,
+        // or linguistic inference on shared evidence.
         const quoteOccurrences = findOccurrences(sourceText, candidate.quote);
         const unclippedOccurrences = quoteOccurrences.filter(
           (occ) => !isClippedToken(sourceText, occ.start, occ.end),
@@ -593,11 +593,11 @@ export function validateStage2(
           continue;
         }
 
-        // Check wrong-offer association for finding
+        // Check wrong-offer association for finding using only valid, unclipped occurrences
         const inCurrentOffer = currentOfferSpans.some((s) =>
-          occs.some((o) => o.start >= s.start && o.end <= s.end),
+          unclipped.some((o) => o.start >= s.start && o.end <= s.end),
         );
-        const inSharedContext = occs.some(
+        const inSharedContext = unclipped.some(
           (o) =>
             !otherOffersSpans.some(
               (other) => o.start >= other.start && o.end <= other.end,
