@@ -11,4 +11,5 @@
 - [Processing and resolution policy](processing-resolution-policy.md)
 - [Decision register](DECISIONS.md)
 - [Key agent sessions](AI_LOG.md)
+- [Agent working agreements](../AGENTS.md)
 - [Commit convention](commits.md)

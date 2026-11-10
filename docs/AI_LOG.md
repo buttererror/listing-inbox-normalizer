@@ -1,5 +1,14 @@
 # Key agent sessions
 
+## Documentation link and consistency review — 2026-11-10
+
+- **Evidence status** — Evidence checked against the available user prompt, repository files, `git diff`, `git status`, `git ls-tree`, and a Markdown link and anchor scan.
+- **Human review** — Not requested. The user asked for a report first; findings were reported before edits.
+- **Important user prompt** — “Review the docs links and agents.md readme and finalize all the docs and check the links and reference any proper link. Report firstr”
+- **Outcome** — Corrected broken section anchors and relative paths, linked retired Phase 02 files to the commit snapshot that contains them, and added working local navigation for the assessment brief's imported placeholder links while preserving the brief snapshot and original `PLAN.md`. Updated README, AGENTS.md, the documentation index, and SC-23 to reflect implemented approval, the Phase 04 offline test count, and POSIX shell requirements. Preserved the pre-existing working-tree changes in the decision register and success criteria.
+- **Verification and limits** — The local link and heading scan found no broken local targets after the edits; `git cat-file` confirmed the linked historical files in commit `058e6bd`. `git diff --check` passed. External public documentation links were checked through the browser; the private GitHub snapshot links were verified against local Git history, and the original Notion brief link could not be accessed by the browser tool. No application tests were run for this documentation-only pass.
+- **Related decisions** — D-010 and D-014 govern evidence and documentation structure. No new product or workflow decision was made.
+
 ## Phase 05 planning and scope correction — 2026-11-10
 
 - **Evidence status** — Evidence checked against the supplied Phase 05 plan, user correction prompt, `git status -s`, `docs/phase-plans/05-deduplication.md`, `docs/phase-plans/README.md`, `docs/roadmap.md`, `docs/DECISIONS.md`, and post-revert test/build/typecheck output.
@@ -799,7 +808,7 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 
 - **Evidence status** — Evidence checked against the user prompts, candidate brief, D-016, current handoff and phase plan.
 - **Human review** — Not requested for the log account. Decision approval is pending separately.
-- **Important user prompts** — “I want to follow the [task-brief.md](docs/task-brief.md). Shouldn't the llm detect that?” and “Make a plan to make these changes”
+- **Important user prompts** — `“I want to follow the [task-brief.md](docs/task-brief.md). Shouldn't the llm detect that?”` and “Make a plan to make these changes”. The referenced brief is [here](task-brief.md).
 - **Outcome** — Recorded [D-017](DECISIONS.md#d-017-carry-evidence-backed-field-interpretations-into-normalization) and the proposed Phase 02 revisions. The model would identify field meaning with evidence in one call. Listings would validate and normalize grounded tokens. Phase 02 would exercise the revised handoff through offline CLI fixtures.
 - **Verification** — Compared the proposed work with SC-08, SC-09, SC-11 and SC-13 and the current gateway and downstream assertion schemas. The preceding review reproduced sign loss, recurring-rate promotion and currency-first rejection through source checks and normalization. No implementation tests were run for this planning entry.
 - **Limitations** — Implementation and runtime validation depend on approval. Rental and currency-less price policy and live semantic evaluation remain separate checkpoints.

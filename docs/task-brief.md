@@ -2,6 +2,8 @@
 
 Source: https://app.notion.com/p/Dwello-task-4121b4ca63c980d482cde22eedfff233
 
+The source export used placeholder links for repository filenames. For working project links, use [AGENTS.md](../AGENTS.md), [PLAN.md](../PLAN.md), [DECISIONS.md](DECISIONS.md), [AI_LOG.md](AI_LOG.md), and [README.md](../README.md). `CLAUDE.md` was named as an example in the brief and is not present in this repository.
+
 Snapshot retrieved: 2026-11-08. The content below preserves the fetched candidate brief, including its source formatting. This is requirements evidence, distinct from the supplied GPT architecture handoff.
 
 # Part A: Candidate brief

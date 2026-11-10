@@ -10,7 +10,7 @@
 
 ## Commands
 
-Node.js 24 and pnpm 10.28.2 are required. Install with `corepack pnpm install --frozen-lockfile`. Use `pnpm start`, `pnpm run start:dev`, `pnpm run build`, `pnpm run typecheck`, and `pnpm test`. Database generation and migration scripts are prepared but domain schema work is deferred.
+Node.js 24 and pnpm 10.28.2 are required. Install with `corepack pnpm install --frozen-lockfile`. Use `pnpm start`, `pnpm run start:dev`, `pnpm run build`, `pnpm run typecheck`, and `pnpm test`. Use `pnpm run db:deploy` to apply committed SQLite migrations. The `start`, `start:dev`, `test`, `cli`, and `db:deploy` scripts require a POSIX-compatible shell directly or through another script.
 
 ## Working agreements
 
@@ -40,6 +40,6 @@ Node.js 24 and pnpm 10.28.2 are required. Install with `corepack pnpm install --
 - Preserve the original plan as historical evidence. Use the [roadmap](docs/roadmap.md) for phase order and [phase plans](docs/phase-plans/README.md) for tasks, exit checks and evidence. D-014 governs this structure. Obtain explicit authorization before committing PLAN.md.
 - Start planning with the root [plan](PLAN.md), relevant [success criteria](docs/success-criteria.md), roadmap and governing decisions. Refine only the near-term phases. Leave later outcomes as candidates.
 - Resolve consequential choices with the user and record approval before dependent implementation. Implement the authorized tasks in order. Follow each with focused verification under D-013, then continue dependent work.
-- Keep model execution and persistence testable offline. Record live-provider evidence separately. Integrate the direct tool-less Gemini API through the verified baseline CLI in Phase 02.0 under D-023 and D-024. Any workflow executing tools on untrusted input requires verified isolation under OPEN-08. Pair each Phase 02 task with offline verification and a separate manual live CLI check. Use Phase 03 for independent provider evaluation. Verify HTTP and SQLite offline in Phase 04.
+- Keep model execution and persistence testable offline. Record live-provider evidence separately. Phase 02.0 integrated a tool-less Gemini API path under D-023 and D-024; D-026 later selected the shared SDK gateway. Any workflow executing tools on untrusted input requires verified isolation under OPEN-08. The completed Phase 02 tasks pair offline verification with manual live CLI checks; Phase 03 records independent provider evaluation, and Phase 04 records offline HTTP and SQLite verification.
 - Record task outcomes, checks, limitations, dated criteria evidence and significant prompts. Mark a phase Verified after its exit checks pass. Review affected criteria and carry remaining decisions and checks forward at close-out. Keep verification, user review and commit authorization separate.
 - At plan finalization and submission, review the complete success checklist, including documentation and agent evidence.

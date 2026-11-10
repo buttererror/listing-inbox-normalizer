@@ -235,7 +235,7 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Validation** — Verify attempted reads and writes outside the permitted boundary, command execution restrictions, process and socket access, and actual provider connectivity through the same launcher. Record exact configuration and results, CLI version and model. Test failure paths offline and retain the Phase 03 gate until all checks pass.
 - **Review checkpoint** — Preserve the boundary while resolving authentication. Review any authentication or network exception before exposing it.
 - **Approval evidence** — User: “IMplement that” after the Bubblewrap approach was presented.
-- **References** — OPEN-08, D-024, D-029, D-036, [Phase 03 prerequisite](phase-plans/03-independent-provider-evaluation.md#prerequisite--verify-agy-isolation-open-08).
+- **References** — OPEN-08, D-024, D-029, D-036, [Phase 03 plan](phase-plans/03-independent-provider-evaluation.md).
 
 ### D-036: Use a frozen independent corpus and separate live measurement
 
@@ -593,23 +593,23 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 
 - **Incorrect action:** The initial 02.3 verifier required rigid whole-quote patterns and rejected `فيلا للبيع` for both property type and purpose.
 - **Caught by:** User raised the generalization concern: “Didn't we say that we are going to make the solution general, not focused only on the 10 examples?” The agent reproduced the example during follow-up.
-- **Correction and verification:** Replaced whole-quote patterns with targeted checks initially; subsequently under D-016, eliminated all application keyword cue lists and delegated semantic assessment to the extraction model call, backed by mechanical source integrity verification. A focused regression accepts the phrase for both fields. See [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks), [session log](AI_LOG.md#phase-02-revise-023-meaning-in-one-model-call--2026-11-09) and [tests](../test/extraction-field-meaning.spec.ts).
+- **Correction and verification:** Replaced whole-quote patterns with targeted checks initially; subsequently under D-016, eliminated all application keyword cue lists and delegated semantic assessment to the extraction model call, backed by mechanical source integrity verification. A focused regression accepts the phrase for both fields. See [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks), [session log](AI_LOG.md#phase-02-revise-023-meaning-in-one-model-call--2026-11-09) and [historical tests](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/test/extraction-field-meaning.spec.ts).
 - **Human review:** Requested for the attribution; user confirmation is not recorded.
 
 ### E-005: A trailing price qualifier was missed
 
 - **Incorrect action:** The initial verifier accepted `Asking 3.2M SAR` from a statement ending `per year` as a sale price.
 - **Caught by:** Agent inspection and reproduction during follow-up to the user's generalization concern.
-- **Correction and verification:** The initial revised checker considered trailing context via regex cues. Under D-016, instructions require the model to assess the full passage against non-total price terms and provide `context_quote`, while application code verifies source integrity mechanically. A focused regression rejects this example with `field_contradicted`. See [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks), [session log](AI_LOG.md#phase-02-revise-023-meaning-in-one-model-call--2026-11-09) and [tests](../test/extraction-field-meaning.spec.ts).
+- **Correction and verification:** The initial revised checker considered trailing context via regex cues. Under D-016, instructions require the model to assess the full passage against non-total price terms and provide `context_quote`, while application code verifies source integrity mechanically. A focused regression rejects this example with `field_contradicted`. See [D-016](#d-016-verify-meaning-in-one-model-call-with-mechanical-source-integrity-checks), [session log](AI_LOG.md#phase-02-revise-023-meaning-in-one-model-call--2026-11-09) and [historical tests](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/test/extraction-field-meaning.spec.ts).
 - **Human review:** Attribution review requested; no confirmation is recorded.
 
 ### E-006: Normalizer rejected common supported formats
 
 - **Incorrect action:** The initial 02.4 normalizer rejected attached units such as `3BR` and `380m2`, and rejected a negotiable asking price even though the brief includes these forms.
-- **Caught by:** Agent inspection prompted by the user's question “Does the normalization follow the [task-brief.md](docs/task-brief.md)?” The user requested the comparison; the available conversation does not show the user identifying the individual defects.
+- **Caught by:** Agent inspection prompted by the user's question `“Does the normalization follow the [task-brief.md](docs/task-brief.md)?”` The user requested the comparison; the available conversation does not show the user identifying the individual defects. The referenced brief is [here](task-brief.md).
 - **Correction:** Allowed attached room and area units and accepted negotiable asking prices while retaining their original evidence.
 - **Verification and limits:** The focused normalization suite passed 17 tests including these cases, and typecheck and build passed. This does not establish coverage of all wording or the end-to-end CLI.
-- **Evidence:** [Session log](AI_LOG.md#phase-02-normalization-follow-up--2026-11-09), [normalizer](../src/listings/normalize-supported-assertions.ts) and [tests](../test/listings-normalization.spec.ts).
+- **Evidence:** [Session log](AI_LOG.md#phase-02-normalization-follow-up--2026-11-09), [historical normalizer](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/src/listings/normalize-supported-assertions.ts) and [historical tests](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/test/listings-normalization.spec.ts).
 - **Human review:** Not requested.
 
 ### E-007: A per-area rate could become a total price
@@ -618,7 +618,7 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Caught by:** Agent inspection during the brief comparison requested by the user. The user did not identify this particular example in the available conversation.
 - **Correction:** Added rejection of tested per-area rate expressions in the normalizer, retaining a finding instead of a total price.
 - **Verification and limits:** The focused suite passed 17 tests, including complete `SAR/sqm` and `SAR per m2` quotes. A quote clipped before the rate qualifier still requires protection at the Extraction handoff; integration remains pending 02.3T.
-- **Evidence:** [Session log](AI_LOG.md#phase-02-normalization-follow-up--2026-11-09), [normalizer](../src/listings/normalize-supported-assertions.ts) and [tests](../test/listings-normalization.spec.ts).
+- **Evidence:** [Session log](AI_LOG.md#phase-02-normalization-follow-up--2026-11-09), [historical normalizer](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/src/listings/normalize-supported-assertions.ts) and [historical tests](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/test/listings-normalization.spec.ts).
 - **Human review:** Not requested.
 
 ### E-008: Mechanical verifier permitted false acceptances on context mismatch, trimmed context, and signed numbers
@@ -639,7 +639,7 @@ For each genuine incident record: incorrect action or claim; who caught it (user
   3. Added signs (`+`, `-`, `\u2212`) to `isClippedToken` boundaries to reject quotes cutting off leading signs.
   4. Added compound unit boundary checks for `/` (e.g. `SAR/sqm`) to reject quotes clipped before rate suffixes.
 - **Verification and limits:** Focused suite in `test/extraction-field-meaning.spec.ts` expanded with 8 new regression tests covering all four issues. 34 focused extraction tests and all 88 test suite tests passed; typecheck and build passed.
-- **Evidence:** [Session log](AI_LOG.md#phase-02-mechanical-verification-fixes--2026-11-09), [verifier](../src/extraction/verify-source-integrity.ts) and [tests](../test/extraction-field-meaning.spec.ts).
+- **Evidence:** [Session log](AI_LOG.md#phase-02-mechanical-verification-fixes--2026-11-09), [verifier](../src/extraction/verify-source-integrity.ts) and [historical tests](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/test/extraction-field-meaning.spec.ts).
 - **Human review:** Requested for attribution and error record confirmation.
 
 ### E-009: Listing resolver nullified verified asking price on rejected deposit and defaulted category on conflicting property types
@@ -657,7 +657,7 @@ For each genuine incident record: incorrect action or claim; who caught it (user
   1. Allowed unambiguous verified asking prices in `resolveListing` to be kept regardless of rejected assertions or findings for price; the rejected assertion remains preserved in `evidence.rejectedEvidence`.
   2. When `property_type` is unresolved (e.g. conflicting property types), compared the area selection under `'land'` and `'built'`. If the category changes the selected value, left `area_sqm = null` and added `area_sqm_conflict` to `review_reasons`.
 - **Verification and limits:** Added two regression tests to `test/listings-resolution.spec.ts`. All 11 resolution tests pass; offline test suite passed 99 tests across 11 suites; typecheck and build passed.
-- **Evidence:** [Session log](AI_LOG.md#phase-02-resolution-fixes--2026-11-09), [resolver](../src/listings/resolve-listing.ts) and [tests](../test/listings-resolution.spec.ts).
+- **Evidence:** [session log](AI_LOG.md#phase-02-resolution-follow-up--2026-11-09), [historical resolver](https://github.com/buttererror/listing-inbox-normalizer/blob/058e6bd114fa7c5822b318d91be950eca078b3ef/src/listings/resolve-listing.ts) and [tests](../test/listings-resolution.spec.ts).
 - **Human review:** Requested for attribution and error confirmation.
 
 ### E-010: Source edits during the v2 documentation update
@@ -725,7 +725,7 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Consequences** — CLI can run against supported sale messages and non-listing single intents. Multi-offer and mixed message public assembly is deferred to 02.6.
 - **Validation** — Offline CLI integration tests with Arabic and English sales, quote/value mismatch and fabricated quote checks, clean JSONL output, typecheck, build, and live Gemini CLI check with `test/fixtures/one-message.jsonl` verifying one `listing` offer, exact evidence, and public price 3,200,000 SAR total.
 - **Review checkpoint** — Remove the bridge in 02.6 when full Stage 6 assembly replaces the single-sale path.
-- **Later revision** — The user-supplied [Phase 02 plan](phase-plans/02-message-processing.md#remaining-tasks) moves bridge removal to 02.5, when Listings switches to `ValidationOutcome`. Full public assembly remains in 02.6.
+- **Later revision** — The user-supplied [Phase 02 task record](phase-plans/02-message-processing.md#completed-phase-tasks) moves bridge removal to 02.5, when Listings switches to `ValidationOutcome`. Full public assembly remains in 02.6.
 - **Approval evidence** — User prompt for Task 02.1: "Implement Stage 1 of the architecture under D-019. Exercise the full classification and offer-grouping contract at the Extraction boundary, then connect one supported sale through the shared processor and CLI as specified in the Phase 02 task plan."
 - **References** — D-019, D-023, Task 02.1 brief, [Phase 02 task plan](phase-plans/02-message-processing.md).
 

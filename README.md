@@ -2,13 +2,15 @@
 
 Dwelleo turns unstructured Saudi real-estate broker messages into structured listing records. It handles Arabic, English, and mixed-language messages, including Arabic-Indic digits, sales and rentals, multiple offers, off-plan projects, buyer requests, and unrelated messages.
 
-The CLI processes JSONL files and emits **one JSON result per nonblank input line, in input order**. A table view is available for manual review. The HTTP service exposes liveness (`GET /health`), persistent single-message ingestion (`POST /messages`), and listing reads (`GET /listings`); approval and deduplication are planned for subsequent tasks.
+The CLI processes JSONL files and emits **one JSON result per nonblank input line, in input order**. A table view is available for manual review. The HTTP service exposes liveness (`GET /health`), persistent single-message ingestion (`POST /messages`), listing reads (`GET /listings`), and listing approval (`POST /listings/{id}/approve`). Deduplication remains planned for Phase 05.
 
 > **Current stage:** Phase 03 evaluation and Phase 04 SQLite persistence, HTTP API, and approval completed (November 10, 2026); Phase 05 deduplication is next. **Offline tests require no API key; actual LLM extraction requires a configured API provider or an authenticated local CLI.**
 
 ## Quick start
 
 **Requirements:** Node.js 24 and pnpm 10.28.2.
+
+The `start`, `start:dev`, `test`, `cli`, and `db:deploy` scripts use POSIX shell syntax directly or through another script; run them in bash, WSL, or another POSIX-compatible shell.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -229,7 +231,7 @@ LLM_PROVIDER=agy LLM_MODEL=gemini-3.8-flash-low \
 
 This command requires a working, authenticated `agy` installation. The evaluator also accepts `--actual <path.jsonl>` to re-score previously saved CLI output **offline without model calls**.
 
-Recorded verification (November 10, 2026): `pnpm test` passed **228/228 tests across 20 suites** without an API key; type checking and build passed; the post-fix evaluation scored 20/20 cases with zero provider failures.
+Recorded Phase 03 verification (November 10, 2026): `pnpm test` passed **228/228 tests across 20 suites** without an API key; type checking and build passed; the post-fix evaluation scored 20/20 cases with zero provider failures. The later Phase 04 close-out passed **264/264 offline tests across 24 suites**, type checking, and build; see the [Phase 04 evidence](docs/phase-plans/04-sqlite-http-and-approval.md).
 
 ## Per-message cost and latency
 
