@@ -1,5 +1,15 @@
 # Key agent sessions
 
+## Phase 05 planning and scope correction — 2026-11-10
+
+- **Evidence status** — Evidence checked against the supplied Phase 05 plan, user correction prompt, `git status -s`, `docs/phase-plans/05-deduplication.md`, `docs/phase-plans/README.md`, `docs/roadmap.md`, `docs/DECISIONS.md`, and post-revert test/build/typecheck output.
+- **Human review** — Confirmed by direct user correction prompt.
+- **Objective** — Record the Phase 05 conservative deduplication plan and consequential policy decisions in the Phase 05 task record and decision register without modifying application code until implementation is approved.
+- **Important prompts** — User supplied the Phase 05 plan ending with: “Implement this plan. Update the phase with this plan”, and then corrected the scope with: “Revert all the changes. I told you to update the phase document only with this until later implementation”.
+- **Outcome** — Initially began implementing Tasks `05.1`–`05.4` in `src/`, `prisma/`, and `test/` after misinterpreting the appended instruction as code-implementation authorization (`E-018`). Immediately reverted all `src/`, `prisma/`, and `test/` edits back to `HEAD` and regenerated the Phase 04 Prisma client. Retained only the documentation updates: created `docs/phase-plans/05-deduplication.md` (status `Planned`), linked it in `docs/phase-plans/README.md`, set Phase 05 to `Planned` in `docs/roadmap.md`, recorded the five user-selected directions (`D-046`–`D-050`, addressing `OPEN-02` and `OPEN-06`), recorded the detailed Phase 05 rules as `Proposed` (`D-051`), and logged `E-018`.
+- **Verification and limits** — `git status -s` confirmed zero modified or untracked files outside `docs/`; `pnpm run typecheck`, `pnpm run build`, and `pnpm test` (`24` suites, `264` tests) passed on the restored Phase 04 baseline after all documentation and revert changes. Phase 05 implementation remains pending explicit approval.
+- **Related decisions and incident** — D-014, D-046–D-051, OPEN-02, OPEN-06, [E-018](DECISIONS.md#e-018-prematurely-implemented-phase-05-code-and-migration-during-a-phase-document-update).
+
 ## Task 04.6 Phase 04 verification and close-out — 2026-11-10
 
 - **Evidence status** — Evidence checked against `src/bootstrap.ts`, `src/cli.ts`, `test/cli.spec.ts`, `docs/phase-plans/04-sqlite-http-and-approval.md`, `docs/phase-plans/README.md`, `docs/roadmap.md`, `docs/success-criteria.md`, `docs/DECISIONS.md`, `docs/architecture.md`, `README.md`, and offline test/build/CLI outputs.

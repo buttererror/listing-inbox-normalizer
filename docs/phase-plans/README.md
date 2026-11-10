@@ -7,8 +7,9 @@ The [roadmap](../roadmap.md) orders the phases. Each phase records its own tasks
 - [02 revision — Message processing through CLI](02-message-processing.md)
 - [03 — Independent provider evaluation](03-independent-provider-evaluation.md)
 - [04 — SQLite persistence, HTTP integration, and human approval](04-sqlite-http-and-approval.md)
+- [05 — Conservative property deduplication](05-deduplication.md) (Planned; detailed rules `Proposed` pending implementation approval)
 
-Phases 05–06 remain roadmap candidates. Refine their tasks after reviewing the preceding phase evidence.
+Phase 06 remains a roadmap candidate. Refine its tasks after reviewing the preceding phase evidence.
 
 ## Phase format
 

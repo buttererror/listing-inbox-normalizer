@@ -16,11 +16,11 @@ This evidence is a user-supplied summary, not an exported GPT transcript. Origin
 | ID | Question | Review checkpoint |
 | --- | --- | --- |
 | OPEN-01 | D-026 uses the existing typed provider failure and timeout contract for configured providers. | Review any expanded production retry policy before use. |
-| OPEN-02 | Area comparison for property identity beyond the approved projection | Before deduplication |
+| OPEN-02 | [D-047](#d-047-area-comparability-policy-for-deduplication) settles the area-comparability policy for deduplication: automatic links require equal, explicitly comparable `land` or `built_up` measurements (`unspecified` and missing kinds do not satisfy this rule). Precise rule details remain [Proposed in D-051](#d-051-phase-05-precise-deduplication-rules-extraction-guards-and-persistence-flow) pending implementation approval. | Before Phase 05 matcher implementation |
 | OPEN-03 | D-019 classifies project announcements and excludes unit ranges and starting prices from independent offers. Project-specific fields are deferred. | Revisit if project-specific output enters scope |
 | OPEN-04 | D-019 and D-020 settle association, price, currency, and inference policy for v2. | Verify the approved rules in Phase 02. Review future inference before use. |
 | OPEN-05 | D-020 settles applicable fields for v2 listings. Project announcements have no listing-level review unless an independent offer is extracted. | Verify the approved rules in 02.5. Revisit if review scope expands. |
-| OPEN-06 | Duplicate confidence thresholds | Before deduplication |
+| OPEN-06 | [D-046](#d-046-strict-identity-based-linking-for-automatic-deduplication) through [D-050](#d-050-process-local-http-deduplication-concurrency-gate) settle the Phase 05 deduplication policy choices (strict identity-based linking, internal identity extraction, conflict policy, and process-local HTTP gate); precise matching and persistence rules remain [Proposed in D-051](#d-051-phase-05-precise-deduplication-rules-extraction-guards-and-persistence-flow) pending implementation approval. | Before Phase 05 matcher implementation |
 | OPEN-07 | D-043, D-044, D-045, and the Phase 04 OPEN-07 contract settle approval transition, optional approval note, and persisted review state vs immutable snapshot. | Verified in Phase 04; revisit only if reviewer identity, edit, or undo enters scope. |
 | OPEN-08 | D-024 selects a direct tool-less model call. Workflows executing tools on untrusted input require verified isolation. | Before enabling tool execution on untrusted input |
 
@@ -43,6 +43,90 @@ Supersedes / superseded by: Relevant ID, if applicable.
 ```
 
 ## Proposed and recently approved
+
+### D-046: Strict identity-based linking for automatic deduplication
+
+- **Status** — Accepted on 2026-11-10 for policy direction (resolves OPEN-06 direction; precise rule details remain `Proposed` in D-051 until implementation approval).
+- **Context** — Cross-broker Saudi real-estate messages frequently omit physical identifiers and describe distinct properties in the same district with identical bedroom counts, areas, or asking prices. Automatic `duplicate_of` linking based on attribute similarity alone risks falsely merging distinct properties.
+- **Options and tradeoffs** —
+  1. Score-based attribute matching with a numeric threshold: Might automatically link identifier-free reposts, but risks falsely linking similar distinct apartments or villas.
+  2. Strict identity-based linking (chosen): Automatic matching requires physical identity evidence; ordinary attribute similarity may justify review (`possible_duplicate`), never an automatic `duplicate_of` link.
+- **Recommendation and rationale** — Adopt strict identity-based linking to prioritize avoiding false links over higher automatic recall. A matching quote, broker advertisement code, contact number, price, or collection of ordinary attributes cannot establish physical identity alone.
+- **Consequences** — Resolves OPEN-06 policy direction. Identifier-free reposts such as the brief's villa repost (`m-001` vs `m-003`) are expected to become `possible_duplicate` rather than automatically linked; no numeric similarity score, fuzzy matching, or embedding system is planned.
+- **Validation** — Planned offline matcher and integration checks in Phase 05 (`05.2T`, `05.5T`).
+- **Review checkpoint** — Revisit only if verified parcel/deed registries or human-confirmed merge workflows enter scope beyond Phase 05.
+- **Approval evidence** — User selection recorded in the Phase 05 plan: “Strict identity-based linking: Automatic matching requires physical identity evidence. Ordinary attribute similarity may justify review, but cannot establish a duplicate.”
+- **References** — OPEN-06, D-051, [Phase 05](phase-plans/05-deduplication.md), [architecture](architecture.md), [processing policy](processing-resolution-policy.md).
+
+### D-047: Area comparability policy for deduplication
+
+- **Status** — Accepted on 2026-11-10 for policy direction (resolves OPEN-02 direction; precise rule details remain `Proposed` in D-051 until implementation approval).
+- **Context** — Stage 3 field resolution (D-020) projects one public `area_sqm` from typed `land`, `built_up`, or `unspecified` candidates, and earlier Phase 04 SQLite rows persisted only `{ listing }` without `selectedAreaKind`.
+- **Options and tradeoffs** —
+  1. Compare raw `area_sqm` regardless of kind, or infer area kind from `property_type`. Violates P-05 (no undocumented inference) and risks equating land plot size with built-up area.
+  2. Require equal, explicitly comparable `land` or `built_up` measurements for automatic links; missing and `unspecified` kinds do not satisfy this rule (chosen).
+- **Recommendation and rationale** — Adopt option 2. Never compare `land` directly against `built_up`, and never derive an area kind from `property_type` in the matcher.
+- **Consequences** — Resolves OPEN-02 policy direction. Pre-Phase-05 SQLite rows and messages with `unspecified` or missing area cannot satisfy automatic linking.
+- **Validation** — Planned offline matcher and persistence tests in Phase 05 (`05.2T`, `05.4T`, `05.5T`).
+- **Review checkpoint** — Revisit only if multi-area candidate comparisons or explicit area-kind tolerance policies are introduced later.
+- **Approval evidence** — User selection recorded in the Phase 05 plan: “Area policy: Automatic links require equal, explicitly comparable land or built-up measurements. Missing and unspecified kinds do not satisfy this rule.”
+- **References** — OPEN-02, D-020, D-051, [Phase 05](phase-plans/05-deduplication.md), [processing policy](processing-resolution-policy.md).
+
+### D-048: Optional internal identity extraction without extra LLM calls or public fields
+
+- **Status** — Accepted on 2026-11-10 for policy direction (precise schema/prompt/Stage 2 details remain `Proposed` in D-051 until implementation approval).
+- **Context** — Automatic linking under D-046 requires physical identity evidence without adding a public listing field or making a second model request per message.
+- **Options and tradeoffs** —
+  1. Parse identifiers with regex in the matcher or add a second LLM call. Violates Extraction-vs-Listings boundaries (P-02) or doubles LLM latency and token cost.
+  2. Capture a source-grounded optional internal reference within Extraction's existing single call without adding a public listing field (chosen).
+- **Recommendation and rationale** — Adopt option 2 so public `ListingResult` and `RawMessage` contracts remain stable and single-call latency/cost structure stays intact.
+- **Consequences** — Offers without references omit the optional candidate cleanly; invalid identity candidates fail independently without discarding otherwise valid offers.
+- **Validation** — Planned offline schema, prompt, and Stage 2 tests (`05.1T`) plus a separate manual synthetic live CLI check if a live provider is available.
+- **Review checkpoint** — Revisit prompt phrasing or label guards if live evaluation reveals systematic over-promotion or missed references.
+- **Approval evidence** — User selection recorded in the Phase 05 plan: “Optional internal identity extraction: Capture a source-grounded reference without adding a public listing field or another LLM call.”
+- **References** — D-019, D-033, D-046, D-051, [Phase 05](phase-plans/05-deduplication.md).
+
+### D-049: Conservative deduplication conflict policy
+
+- **Status** — Accepted on 2026-11-10 for policy direction (precise rule details remain `Proposed` in D-051 until implementation approval).
+- **Context** — Real-estate reposts may contain conflicting core attributes alongside matching references, or discrepancies in secondary attributes (such as price, broker phone, or missing room counts).
+- **Options and tradeoffs** —
+  1. Allow reference string matches to override location/type conflicts, or reject all matches on any secondary discrepancy. Either causes false links across districts/types or misses valid cross-broker reposts with changed prices.
+  2. Different known city, district, property type, building, unit, or parcel identifiers reject a match; other discrepancies may leave a physical-identifier match possible for review (chosen).
+- **Recommendation and rationale** — Adopt option 2 so hard core-identity conflicts always reject matches (even over equal reference strings or ordinary similarity), while non-core discrepancies remain reviewable via `possible_duplicate`.
+- **Consequences** — Keeps false links suppressed while preserving human-review visibility for ambiguous or incomplete physical matches.
+- **Validation** — Planned offline matcher tests in Phase 05 (`05.2T`).
+- **Review checkpoint** — Revisit explicit location aliases or conflict fields only with separate documented evidence.
+- **Approval evidence** — User selection recorded in the Phase 05 plan: “Conflict policy: Different known city, district, property type, building, unit, or parcel identifiers reject a match. Other discrepancies may leave a physical-identifier match possible for review.”
+- **References** — D-046, D-047, D-051, [Phase 05](phase-plans/05-deduplication.md).
+
+### D-050: Process-local HTTP deduplication concurrency gate
+
+- **Status** — Accepted on 2026-11-10 for policy direction (precise finalization and migration details remain `Proposed` in D-051 until implementation approval).
+- **Context** — Concurrent different-ID `POST /messages` requests against SQLite must observe newly committed listings before computing `duplicate_of`, while LLM preparation must stay outside database transactions.
+- **Options and tradeoffs** —
+  1. Unserialized matching before insert (races on concurrent different-ID submissions) or distributed locking beyond single-process SQLite scope.
+  2. Serialize the complete final candidate check and save within one application process and document the separate-process limitation (chosen).
+- **Recommendation and rationale** — Adopt option 2 to coordinate concurrent requests cleanly within one Node/Nest HTTP process without introducing distributed lock infrastructure.
+- **Consequences** — Different-ID submissions to one HTTP instance serialize through the final check-and-commit gate; separate application processes remain uncoordinated and are documented as an explicit limitation.
+- **Validation** — Planned offline HTTP concurrency, replay, conflict, and rollback tests in Phase 05 (`05.4T`).
+- **Review checkpoint** — Revisit only if multi-process HTTP deployment enters scope.
+- **Approval evidence** — User selection recorded in the Phase 05 plan: “HTTP concurrency: Serialize the complete final candidate check and save within one application process. Document the separate-process limitation.”
+- **References** — D-043, D-051, [Phase 05](phase-plans/05-deduplication.md).
+
+### D-051: Phase 05 precise deduplication rules, extraction guards, and persistence flow
+
+- **Status** — Proposed (pending explicit user approval of the complete Phase 05 plan for implementation).
+- **Context** — Implementing D-046 through D-050 requires exact contracts across Stage 1–6: `IdentityReferenceCandidate` variants, Stage 2 token/label guards, typed-tuple normalization, the 8-row compatibility matrix, ordinary-similarity criteria, the explicit 3-entry city/district alias table, defensive canonical-group root resolution, stateless `prepare`/finalizer splitting, per-invocation CLI batch state, non-destructive `duplicateOfId` migration, versioned internal provenance, and the FIFO transaction gate.
+- **Options and tradeoffs** —
+  1. Leave detailed thresholds and schema shapes ad hoc during coding (risks inconsistency across CLI, HTTP, and tests).
+  2. Specify the exact rules upfront in [Phase 05](phase-plans/05-deduplication.md) as a complete Proposed specification to review and approve prior to implementation (chosen).
+- **Recommendation and rationale** — Record all detailed Phase 05 extraction, matching, review, CLI batch, and HTTP persistence specifications in [docs/phase-plans/05-deduplication.md](phase-plans/05-deduplication.md) and review/approve them together before beginning Task 05.1 code changes.
+- **Consequences** — No source, Prisma schema, or test changes take effect until implementation is approved. A later user instruction approving the complete Phase 05 plan for implementation provides approval evidence for accepting these rules.
+- **Validation** — Offline verification suite across Tasks `05.1`–`05.6` (`pnpm test`, `pnpm run typecheck`, `pnpm run build`), plus separate manual live CLI schema check if a live provider is available.
+- **Review checkpoint** — Approve the complete Phase 05 plan before starting Task 05.1 matcher/schema/code implementation.
+- **Approval evidence** — Pending (the user clarified on 2026-11-10 that only the phase document should be updated until later implementation).
+- **References** — OPEN-02, OPEN-06, D-046–D-050, E-018, [Phase 05](phase-plans/05-deduplication.md), [AI log](AI_LOG.md).
 
 ### D-044: Store an optional internal approval note
 
@@ -440,6 +524,16 @@ The brief requires at least three genuine examples in this register before submi
 ### Error-record format
 
 For each genuine incident record: incorrect action or claim; who caught it (user, agent, automated check, or unknown); detection evidence and actual user correction prompt if available; correction; verification and remaining limits; links to session/files/tests/commit; and human-review status when requested. Present user-caught incidents as a short digest with the ID, issue, user detection, correction and any specific unresolved question.
+
+### E-018: Prematurely implemented Phase 05 code and migration during a phase-document update
+
+- **Incorrect action:** Interpreted the appended instruction “Implement this plan. Update the phase with this plan” on the Phase 05 plan as immediate code-implementation authorization, modifying `src/`, `prisma/schema.prisma`, `prisma/migrations/`, and `test/` and marking Phase 05 as `In progress` / `Accepted` even though the plan itself stated “Record the precise rule details below as Proposed until this complete plan is approved for implementation” and the user intended only to update the Phase 05 documentation until later implementation.
+- **Caught by:** User.
+- **Detection:** User correction: “Revert all the changes. I told you to update the phase document only with this until later implementation”
+- **Correction:** Reverted all modified and untracked files in `src/`, `prisma/`, and `test/` back to `HEAD`, regenerated the Phase 04 Prisma client, restored Phase 05 status to `Planned` (`D-051` recorded as `Proposed`), and kept only the Phase 05 planning and decision documentation updates.
+- **Verification and limits:** Verified `git status -s` shows changes strictly in `docs/` (`docs/phase-plans/05-deduplication.md`, `docs/phase-plans/README.md`, `docs/roadmap.md`, `docs/DECISIONS.md`, `docs/AI_LOG.md`), and ran `pnpm run typecheck`, `pnpm run build`, and `pnpm test` cleanly on the restored Phase 04 baseline. Phase 05 code implementation remains deferred pending explicit approval.
+- **Evidence:** [Phase 05 planning session](AI_LOG.md#phase-05-planning-and-scope-correction--2026-11-10), [Phase 05 plan](phase-plans/05-deduplication.md), and `E-010` precedent.
+- **Human review:** Confirmed by user correction prompt.
 
 ### E-015: Incorrectly required CLI database persistence
 
