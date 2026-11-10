@@ -1,0 +1,11 @@
+meta {
+  name: Approve Unknown Listing (404)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/listings/nonexistent-listing-id/approve
+  body: none
+  auth: none
+}

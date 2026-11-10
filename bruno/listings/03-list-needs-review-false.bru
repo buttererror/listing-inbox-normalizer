@@ -1,0 +1,15 @@
+meta {
+  name: List Approved / Clean Listings
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/listings?needs_review=false
+  body: none
+  auth: none
+}
+
+params:query {
+  needs_review: false
+}

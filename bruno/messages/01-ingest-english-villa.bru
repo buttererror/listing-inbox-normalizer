@@ -1,0 +1,27 @@
+meta {
+  name: Ingest English Villa (m-001)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-001",
+    "sender": "+966551234567",
+    "received_at": "2026-11-01T09:12:00+03:00",
+    "text": "For Sale – Villa in Al Malqa, Riyadh. 5 BR, 6 baths, 450 sqm land / 380 sqm BUA. Price 3.2M SAR negotiable. Call Ahmed 0551234567"
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  if (body?.listings?.length > 0) {
+    bru.setVar("cleanListingId", body.listings[0].id);
+  }
+}

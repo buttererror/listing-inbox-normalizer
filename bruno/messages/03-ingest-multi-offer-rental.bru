@@ -1,0 +1,20 @@
+meta {
+  name: Ingest Multi-Offer Rental (m-010)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-010",
+    "sender": "+966520202020",
+    "received_at": "2026-11-02T10:10:00+03:00",
+    "text": "Available now: 1) Studio Al Yasmin 35K/yr 2) 2BR Al Yasmin 55K/yr 3) 3BR Hittin 80K/yr. Call 0520202020"
+  }
+}

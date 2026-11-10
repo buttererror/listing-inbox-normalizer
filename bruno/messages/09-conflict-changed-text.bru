@@ -1,0 +1,20 @@
+meta {
+  name: Conflict Changed Text (409)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-001",
+    "sender": "+966551234567",
+    "received_at": "2026-11-01T09:12:00+03:00",
+    "text": "For Sale – Villa in Al Malqa, Riyadh. Asking 3.5M SAR."
+  }
+}

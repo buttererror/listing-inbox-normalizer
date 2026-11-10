@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Dwelleo Listing Inbox Normalizer",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

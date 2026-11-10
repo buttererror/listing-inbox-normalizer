@@ -1,0 +1,20 @@
+meta {
+  name: Invalid Input Timestamp (400)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-invalid-ts",
+    "sender": "+966551234567",
+    "received_at": "yesterday",
+    "text": "For Sale – Villa in Al Malqa, Riyadh."
+  }
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Ingest Arabic Apartment (m-002)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-002",
+    "sender": "+966509876543",
+    "received_at": "2026-11-01T09:40:00+03:00",
+    "text": "للبيع شقة في حي النرجس، الرياض. ٣ غرف نوم، ٢ دورة مياه، المساحة ١٦٥ م². السعر ٩٥٠ ألف ريال. للتواصل: ٠٥٠٩٨٧٦٥٤٣"
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Malformed JSON Body (400)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: text
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:text {
+  {not-valid-json
+}

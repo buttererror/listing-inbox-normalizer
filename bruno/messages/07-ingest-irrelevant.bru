@@ -1,0 +1,20 @@
+meta {
+  name: Ingest Irrelevant Greeting (m-009)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-009",
+    "sender": "+966501010101",
+    "received_at": "2026-11-02T07:30:00+03:00",
+    "text": "صباح الخير جميعاً 🌹 جمعة مباركة"
+  }
+}

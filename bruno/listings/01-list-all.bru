@@ -1,0 +1,23 @@
+meta {
+  name: List All Listings
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/listings
+  body: none
+  auth: none
+}
+
+script:post-response {
+  const body = res.getBody();
+  const flagged = body?.listings?.find((item) => item.needs_review === true);
+  if (flagged) {
+    bru.setVar("listingId", flagged.id);
+  }
+  const clean = body?.listings?.find((item) => item.needs_review === false);
+  if (clean) {
+    bru.setVar("cleanListingId", clean.id);
+  }
+}

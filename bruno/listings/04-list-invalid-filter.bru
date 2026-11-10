@@ -1,0 +1,15 @@
+meta {
+  name: List Invalid Filter (400)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/listings?needs_review=invalid
+  body: none
+  auth: none
+}
+
+params:query {
+  needs_review: invalid
+}

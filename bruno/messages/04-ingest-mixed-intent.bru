@@ -1,0 +1,27 @@
+meta {
+  name: Ingest Mixed Intent & Missing Fields (m-008)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-008",
+    "sender": "+966598887777",
+    "received_at": "2026-11-01T16:00:00+03:00",
+    "text": "شقة للإيجار – Al Rawdah, Jeddah – 3BR – السعر عند التواصل\nAlso looking for a villa in Abhur under 2M."
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  if (body?.listings?.length > 0) {
+    bru.setVar("listingId", body.listings[0].id);
+  }
+}

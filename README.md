@@ -76,6 +76,16 @@ curl -sS -X POST http://localhost:3000/messages \
 
 `GET /listings` and `POST /listings/{id}/approve` remain pending Tasks 04.4–04.5. The CLI processes each JSONL input without applying migrations or storing results. Use `pnpm run db:migrate` to author a migration and `pnpm run db:deploy` to apply committed migrations separately.
 
+#### Bruno API collection
+
+An offline-ready [Bruno](https://www.usebruno.com/) collection is included in [`bruno/`](bruno/) for interactive HTTP testing against the running server:
+
+1. Start the HTTP server with `pnpm start`.
+2. In Bruno, open the [`bruno/`](bruno/) directory as a collection and select the [`local`](bruno/environments/local.bru) environment (`baseUrl: http://localhost:3000`).
+3. Run [`01-health.bru`](bruno/01-health.bru), the sample ingestion/replay/error requests in [`bruno/messages/`](bruno/messages/), or the listing filter requests in [`bruno/listings/`](bruno/listings/).
+   - [`01-ingest-english-villa.bru`](bruno/messages/01-ingest-english-villa.bru), [`04-ingest-mixed-intent.bru`](bruno/messages/04-ingest-mixed-intent.bru), and [`01-list-all.bru`](bruno/listings/01-list-all.bru) capture `cleanListingId` and `listingId` after a successful response for downstream listing requests.
+   - The `approve` requests in [`bruno/listings/`](bruno/listings/) target the planned `POST /listings/{id}/approve` contract and will return `404` until Task 04.5 is implemented.
+
 ### 5. Run the live evaluation (optional)
 
 With an authenticated local `agy` installation, run the frozen 20-case evaluation corpus:

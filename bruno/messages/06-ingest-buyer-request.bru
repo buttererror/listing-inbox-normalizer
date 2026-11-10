@@ -1,0 +1,20 @@
+meta {
+  name: Ingest Buyer Request (m-005)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "m-005",
+    "sender": "+966567778888",
+    "received_at": "2026-11-01T13:00:00+03:00",
+    "text": "Looking for a 4BR villa in north Riyadh, budget up to 2.5M, cash buyer. Brokers welcome"
+  }
+}
