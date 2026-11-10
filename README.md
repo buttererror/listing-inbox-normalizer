@@ -56,6 +56,8 @@ Gemini has passed a live CLI check. Anthropic and OpenAI have offline mocked cov
 
 The evaluation runner captures per-message model, gateway duration, and token usage (from agy output envelopes or SDK usage) to `evaluation-results/telemetry.jsonl` when available. It enables capture only for the evaluation subprocess; telemetry is written to stderr, kept out of public JSONL, and contains no message text. Durations cover the model gateway request, not CLI startup or downstream resolution and review.
 
+For the complete Phase 03 baseline evaluation results, telemetry measurements, and stage-by-stage error analysis across 20 frozen cases (`agy` CLI `1.5.3` / `gemini-3.8-flash-low`), see the [Baseline Evaluation Analysis](docs/evaluation-baseline-analysis.md).
+
 ## With another day
 
 Evaluate the pipeline on independently labeled messages. Compare extracted values and review outcomes against those labels, and record per-message latency and token usage so provider quality and operating cost can be assessed.

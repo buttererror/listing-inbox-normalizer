@@ -1,0 +1,40 @@
+{
+  "run_date": "2026-11-10T04:32:27.003Z",
+  "dataset_version": "1.0.0",
+  "git_commit": "eebb2ef32c4a91358797f68e552f724572823d29",
+  "provider": "agy",
+  "cli_version": "1.5.3",
+  "model": "gemini-3.8-flash-low",
+  "total_cases": 20,
+  "scored_cases": 20,
+  "provider_failures": 0,
+  "telemetry_summary": {
+    "records_count": 20,
+    "duration_ms": {
+      "mean": 10758.51,
+      "median": 11637.33,
+      "min": 2768.57,
+      "max": 26817.27,
+      "total_s": 215.17
+    },
+    "input_tokens": {
+      "total": 591931,
+      "mean": 29596.5,
+      "median": 31825,
+      "min": 10008,
+      "max": 74682
+    },
+    "output_tokens": {
+      "total": 17510,
+      "mean": 875.5,
+      "median": 1058,
+      "min": 25,
+      "max": 2309
+    },
+    "total_tokens": {
+      "total": 609441,
+      "mean": 30472,
+      "median": 32688.5
+    }
+  }
+}

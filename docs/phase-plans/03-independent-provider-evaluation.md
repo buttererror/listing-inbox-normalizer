@@ -248,6 +248,35 @@ Prioritize:
 
 Record observed limitations separately from proposed improvements.
 
+**Baseline evaluation evidence — 2026-11-10 (Task 03.4):**
+
+- **Configuration:** Provider `agy` (CLI `1.5.3`), model `gemini-3.8-flash-low`, dataset `test/evaluation/cases.jsonl` (v1.0.0, 20 cases), baseline commit `eebb2ef32c4a91358797f68e552f724572823d29` + `AgyGateway` telemetry/response extraction updates, executed at `2026-11-10T04:32:27Z`.
+- **Full analysis & saved artifacts:** See the complete [Phase 03 Baseline Evaluation Analysis](../evaluation-baseline-analysis.md) and saved artifacts in `evaluation-results/baseline/{actual.jsonl, telemetry.jsonl, summary.json, metadata.json}`.
+- **Baseline metrics (20/20 scored, 0 provider failures, 0 malformed lines):**
+  - Classification accuracy: **20/20 (100.0%)**
+  - Detected-class accuracy: **20/20 (100.0%)**
+  - Offer-count accuracy: **20/20 (100.0%)** (`16/16` matched offers, 0 extra, 0 missing)
+  - Field accuracy (applicable): **137/171 (80.1%)**
+    - 100%: `purpose` (16/16), `property_type` (16/16), `city` (16/16), `district` (16/16), `bedrooms` (13/13), `bathrooms` (14/14), `price.currency` (16/16)
+    - Partial: `contact_phone` (14/16, 87.5%), `area_sqm` (8/16, 50.0%), `price.amount` (4/16, 25.0%), `price.period` (4/16, 25.0%)
+  - Unsupported-value acceptance: **0/26 (0.0%)**
+  - Supported-value omission: **34/150 (22.7%)**
+  - Review precision: **12/16 (75.0%)** (TP=12, FP=4, FN=0, TN=0)
+  - Review recall: **12/12 (100.0%)**
+- **Telemetry (20 calls):**
+  - Per-message gateway request duration: mean **10,758.51 ms**, median **11,637.33 ms**, min **2,768.57 ms**, max **26,817.27 ms** (total 215.17 s).
+  - Input tokens: total **591,931**, mean **29,596.5**, median **31,825**, min **10,008**, max **74,682** (note: `agy` wraps an agentic CLI prompt/system loop, elevating token volume compared to raw REST calls).
+  - Output tokens: total **17,510**, mean **875.5**, median **1,058**, min **25**, max **2,309**.
+- **Error analysis (by stage and priority):**
+  1. *Incorrect or invented asking prices / Unsupported values accepted:* **0 occurrences** (0/26). Per-sqm rates (`eval-004`) and unknown currencies (`eval-011`) were never published.
+  2. *Wrong-property associations:* **0 occurrences**. Multi-offer separation (`eval-003`, `eval-016`) associated shared vs local attributes cleanly.
+  3. *Supported-value omissions & review false positives (`price_unsupported` in 12/16 listings, `area_sqm_unsupported` in 8/16 listings):* **Responsible stages: LLM extraction (`agy`) + Mechanical validation (Stage 2).** Unlike direct Gemini REST `responseJsonSchema` decoding, `agy` does not enforce grammar-constrained JSON output during token sampling. Guided by the wording in `domain-prompt.ts` (`"price: Object containing amount, currency, period, and role"`), `gemini-3.8-flash-low` nested `role` inside `price.value` or duplicated `amount`/`currency`/`period` at top level, and similarly misplaced `kind` on `area_sqm`. `z.strictObject(...)` in Stage 2 strictly rejected these candidates (`invalid_numeric_constraint` / `invalid_schema`), turning valid extracted values into `null` with `price_unsupported`/`area_sqm_unsupported` flags.
+  4. *Contact phone omissions (`eval-015`, `eval-018`):* **Responsible stage: LLM extraction.** The model flagged synthetic `052...` prefixes as uncertain (`contact_phone_uncertain`), causing Stage 3 resolution to clear them.
+  5. *Purpose missing vs uncertain (`eval-020`):* **Responsible stage: LLM extraction.** The model emitted an explicit `uncertainty` finding rather than omitting the field, producing `purpose_uncertain` instead of `purpose_missing`.
+- **Observed limitations vs proposed improvements:**
+  - *Observed limitations:* Agentic `agy` CLI incurs ~30k input tokens/call and ~10.8 s/call even with `cwd: os.tmpdir()` and lacks native token-level schema grammar enforcement, leading to candidate key placement errors on `price` and `area_sqm`.
+  - *Proposed improvement candidate (for Task 03.5 review):* Align `domain-prompt.ts` wording and schema examples explicitly with `stage1GatewayWireSchema` (clarifying `role` and `kind` sit as siblings of `value`, not inside `value`).
+
 ## 6. Task 03.5 — Apply targeted improvements only if justified
 
 This task is optional.
@@ -310,12 +339,12 @@ Phase 03 is complete when:
 - [x] An independent, frozen evaluation dataset exists.
 - [x] Expected labels have been reviewed against the approved processing policies.
 - [x] A standalone deterministic evaluator has passing offline tests.
-- [ ] One complete live agy evaluation has run.
-- [ ] Classification, offer, field, and review metrics are reported with denominators.
-- [ ] Unsupported-value acceptance and supported-value omission are reported.
-- [ ] Latency and token usage are measured, or their limitations are explicitly documented.
+- [x] One complete live agy evaluation has run.
+- [x] Classification, offer, field, and review metrics are reported with denominators.
+- [x] Unsupported-value acceptance and supported-value omission are reported.
+- [x] Latency and token usage are measured, or their limitations are explicitly documented.
 - [ ] Cost estimates use attributable provider usage and documented pricing assumptions.
-- [ ] Significant failures have been investigated.
+- [x] Significant failures have been investigated.
 - [ ] README and roadmap include dated evaluation evidence.
 - [ ] Relevant offline tests, typecheck, and build pass.
 

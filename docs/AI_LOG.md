@@ -1,5 +1,16 @@
 # Key agent sessions
 
+## Task 03.4 baseline evaluation — 2026-11-10
+
+- **Evidence status** — Evidence checked against saved raw CLI outputs, evaluator summary, telemetry log, and Stage 2 validation diagnostics.
+- **Human review** — Not requested.
+- **Objective** — Execute the 20-case baseline evaluation through `agy` (`gemini-3.8-flash-low`) and investigate baseline failures.
+- **Important prompt** — User: “Implement task 3.4” and “Add the full analysis to its own file and reference it to readme file. The analysis inside the phase plan is not complete. Commit the last two tasks and any changes separately”.
+- **Outcome** — Added markdown/multi-line response extraction (`parseAgyResponseString`) and isolated working directory (`os.tmpdir()`) with explicit non-tool instruction in `AgyGateway` so `agy` runs reliably headless without tool permission denials. Executed the 20 frozen cases (`test/evaluation/cases.jsonl`) once via `scripts/evaluate.ts` and saved baseline artifacts in `evaluation-results/baseline/`. Scored 20/20 (100%) classification, 20/20 (100%) detected classes, 20/20 (100%) offer count, 137/171 (80.1%) applicable fields, 0/26 (0.0%) unsupported acceptance, 34/150 (22.7%) supported omission, 12/16 (75.0%) review precision, and 12/12 (100.0%) review recall. Diagnosed omitted prices (12/16) and areas (8/16) to Stage 2 strict-schema rejections caused by `agy` nesting `role`/`kind` inside `value` under `domain-prompt.ts` wording without token-level grammar constraint. Recorded the full analysis in `docs/evaluation-baseline-analysis.md` and referenced it from `README.md`, `docs/README.md`, and the Phase 03 plan.
+- **Verification and limits** — 20/20 live evaluation calls succeeded (mean latency 10.76 s, total 591,931 input tokens and 17,510 output tokens). Added unit test for `parseAgyResponseString` in `test/agy.gateway.spec.ts`. Expected labels were kept frozen without modification.
+- **Related decisions** — D-020, D-036, D-038.
+
+
 ## Phase 03.3 — Capture provider usage and latency — 2026-11-10
 
 - **Evidence status** — Evidence checked against AgyGateway and AI SDK gateway usage reporting, focused offline tests, and evaluator telemetry capture.

@@ -7,6 +7,7 @@
 - [Architecture, stage contracts, and implementation status](architecture.md)
 - [Development roadmap](roadmap.md)
 - [Phase plans](phase-plans/README.md)
+- [Phase 03 baseline evaluation analysis](evaluation-baseline-analysis.md) — full metrics, telemetry, mismatches, and stage-by-stage error analysis.
 - [Processing and resolution policy](processing-resolution-policy.md)
 - [Decision register](DECISIONS.md)
 - [Key agent sessions](AI_LOG.md)

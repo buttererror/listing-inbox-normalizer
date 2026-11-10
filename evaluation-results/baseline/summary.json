@@ -1,0 +1,672 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-11-10T04:32:27.003Z",
+  "total_cases": 20,
+  "scored_cases": 20,
+  "provider_failures": 0,
+  "malformed_lines": 0,
+  "missing_results": 0,
+  "metrics": {
+    "classification_accuracy": {
+      "numerator": 20,
+      "denominator": 20,
+      "percentage": 100,
+      "formatted": "20/20 (100.0%)"
+    },
+    "detected_class_accuracy": {
+      "numerator": 20,
+      "denominator": 20,
+      "percentage": 100,
+      "formatted": "20/20 (100.0%)"
+    },
+    "offer_count_accuracy": {
+      "numerator": 20,
+      "denominator": 20,
+      "percentage": 100,
+      "formatted": "20/20 (100.0%)"
+    },
+    "field_accuracy": {
+      "numerator": 137,
+      "denominator": 171,
+      "percentage": 80.1,
+      "formatted": "137/171 (80.1%)"
+    },
+    "unsupported_value_acceptance": {
+      "numerator": 0,
+      "denominator": 26,
+      "percentage": 0,
+      "formatted": "0/26 (0.0%)"
+    },
+    "supported_value_omission": {
+      "numerator": 34,
+      "denominator": 150,
+      "percentage": 22.7,
+      "formatted": "34/150 (22.7%)"
+    },
+    "review_precision": {
+      "numerator": 12,
+      "denominator": 16,
+      "percentage": 75,
+      "formatted": "12/16 (75.0%)"
+    },
+    "review_recall": {
+      "numerator": 12,
+      "denominator": 12,
+      "percentage": 100,
+      "formatted": "12/12 (100.0%)"
+    }
+  },
+  "offer_matching": {
+    "expected_offers": 16,
+    "actual_offers": 16,
+    "matched_offers": 16,
+    "extra_offers": 0,
+    "missing_offers": 0
+  },
+  "field_breakdown": {
+    "purpose": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "property_type": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "city": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "district": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "bedrooms": {
+      "total_comparisons": 13,
+      "correct": 13,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "bathrooms": {
+      "total_comparisons": 14,
+      "correct": 14,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "area_sqm": {
+      "total_comparisons": 16,
+      "correct": 8,
+      "accuracy_percentage": 50,
+      "unsupported_accepted": 0,
+      "supported_omitted": 8
+    },
+    "price.amount": {
+      "total_comparisons": 16,
+      "correct": 4,
+      "accuracy_percentage": 25,
+      "unsupported_accepted": 0,
+      "supported_omitted": 12
+    },
+    "price.period": {
+      "total_comparisons": 16,
+      "correct": 4,
+      "accuracy_percentage": 25,
+      "unsupported_accepted": 0,
+      "supported_omitted": 12
+    },
+    "price.currency": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "contact_phone": {
+      "total_comparisons": 16,
+      "correct": 14,
+      "accuracy_percentage": 87.5,
+      "unsupported_accepted": 0,
+      "supported_omitted": 2
+    }
+  },
+  "review_breakdown": {
+    "true_positives": 12,
+    "false_positives": 4,
+    "false_negatives": 0,
+    "true_negatives": 0
+  },
+  "mismatches": [
+    {
+      "message_id": "eval-001",
+      "type": "review_decision",
+      "offer_index": 0,
+      "description": "False positive review flag: listing was flagged for review when expected clean",
+      "expected": [],
+      "actual": [
+        "area_sqm_unsupported",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-001",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 450, received null",
+      "expected": 450,
+      "actual": null
+    },
+    {
+      "message_id": "eval-001",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 3200000, received null",
+      "expected": 3200000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-001",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    },
+    {
+      "message_id": "eval-002",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [], unexpected [price_unsupported]",
+      "expected": [
+        "district_missing",
+        "area_sqm_missing"
+      ],
+      "actual": [
+        "district_missing",
+        "area_sqm_missing",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-002",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 36000, received null",
+      "expected": 36000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-002",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"yearly\", received null",
+      "expected": "yearly",
+      "actual": null
+    },
+    {
+      "message_id": "eval-003",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [], unexpected [price_unsupported]",
+      "expected": [
+        "bedrooms_missing",
+        "bathrooms_missing"
+      ],
+      "actual": [
+        "bedrooms_missing",
+        "bathrooms_missing",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-003",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 2400000, received null",
+      "expected": 2400000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-003",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    },
+    {
+      "message_id": "eval-003",
+      "type": "review_reasons",
+      "offer_index": 1,
+      "description": "Review reasons mismatch: missing [], unexpected [price_unsupported]",
+      "expected": [
+        "bathrooms_missing",
+        "area_sqm_missing"
+      ],
+      "actual": [
+        "bathrooms_missing",
+        "area_sqm_missing",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-003",
+      "type": "field",
+      "offer_index": 1,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 30000, received null",
+      "expected": 30000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-003",
+      "type": "field",
+      "offer_index": 1,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"yearly\", received null",
+      "expected": "yearly",
+      "actual": null
+    },
+    {
+      "message_id": "eval-004",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [price_missing], unexpected [price_unsupported]",
+      "expected": [
+        "price_missing"
+      ],
+      "actual": [
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-008",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [], unexpected [price_unsupported]",
+      "expected": [
+        "bedrooms_conflict",
+        "bathrooms_missing",
+        "area_sqm_missing"
+      ],
+      "actual": [
+        "bedrooms_conflict",
+        "bathrooms_missing",
+        "area_sqm_missing",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-008",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 1800000, received null",
+      "expected": 1800000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-008",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    },
+    {
+      "message_id": "eval-009",
+      "type": "review_decision",
+      "offer_index": 0,
+      "description": "False positive review flag: listing was flagged for review when expected clean",
+      "expected": [],
+      "actual": [
+        "area_sqm_unsupported",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-009",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 55, received null",
+      "expected": 55,
+      "actual": null
+    },
+    {
+      "message_id": "eval-009",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 3500, received null",
+      "expected": 3500,
+      "actual": null
+    },
+    {
+      "message_id": "eval-009",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"monthly\", received null",
+      "expected": "monthly",
+      "actual": null
+    },
+    {
+      "message_id": "eval-010",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [], unexpected [area_sqm_unsupported, price_unsupported]",
+      "expected": [
+        "contact_phone_missing"
+      ],
+      "actual": [
+        "area_sqm_unsupported",
+        "price_unsupported",
+        "contact_phone_missing"
+      ]
+    },
+    {
+      "message_id": "eval-010",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 420, received null",
+      "expected": 420,
+      "actual": null
+    },
+    {
+      "message_id": "eval-010",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 2800000, received null",
+      "expected": 2800000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-010",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    },
+    {
+      "message_id": "eval-011",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [price_currency_unknown], unexpected [area_sqm_unsupported, price_unsupported]",
+      "expected": [
+        "price_currency_unknown"
+      ],
+      "actual": [
+        "area_sqm_unsupported",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-011",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 175, received null",
+      "expected": 175,
+      "actual": null
+    },
+    {
+      "message_id": "eval-015",
+      "type": "review_decision",
+      "offer_index": 0,
+      "description": "False positive review flag: listing was flagged for review when expected clean",
+      "expected": [],
+      "actual": [
+        "area_sqm_unsupported",
+        "price_unsupported",
+        "contact_phone_uncertain"
+      ]
+    },
+    {
+      "message_id": "eval-015",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 185, received null",
+      "expected": 185,
+      "actual": null
+    },
+    {
+      "message_id": "eval-015",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 920000, received null",
+      "expected": 920000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-015",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    },
+    {
+      "message_id": "eval-015",
+      "type": "field",
+      "offer_index": 0,
+      "field": "contact_phone",
+      "description": "Supported value omitted: field \"contact_phone\" expected \"+966521234567\", received null",
+      "expected": "+966521234567",
+      "actual": null
+    },
+    {
+      "message_id": "eval-016",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [], unexpected [area_sqm_unsupported, price_unsupported]",
+      "expected": [
+        "bathrooms_missing"
+      ],
+      "actual": [
+        "bathrooms_missing",
+        "area_sqm_unsupported",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-016",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 320, received null",
+      "expected": 320,
+      "actual": null
+    },
+    {
+      "message_id": "eval-016",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 1950000, received null",
+      "expected": 1950000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-016",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    },
+    {
+      "message_id": "eval-016",
+      "type": "review_reasons",
+      "offer_index": 1,
+      "description": "Review reasons mismatch: missing [], unexpected [price_unsupported]",
+      "expected": [
+        "area_sqm_missing"
+      ],
+      "actual": [
+        "area_sqm_missing",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-016",
+      "type": "field",
+      "offer_index": 1,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 42000, received null",
+      "expected": 42000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-016",
+      "type": "field",
+      "offer_index": 1,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"yearly\", received null",
+      "expected": "yearly",
+      "actual": null
+    },
+    {
+      "message_id": "eval-017",
+      "type": "review_decision",
+      "offer_index": 0,
+      "description": "False positive review flag: listing was flagged for review when expected clean",
+      "expected": [],
+      "actual": [
+        "area_sqm_unsupported",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-017",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 400, received null",
+      "expected": 400,
+      "actual": null
+    },
+    {
+      "message_id": "eval-017",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 3100000, received null",
+      "expected": 3100000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-017",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    },
+    {
+      "message_id": "eval-018",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [], unexpected [contact_phone_uncertain]",
+      "expected": [
+        "price_conflict"
+      ],
+      "actual": [
+        "price_conflict",
+        "contact_phone_uncertain"
+      ]
+    },
+    {
+      "message_id": "eval-018",
+      "type": "field",
+      "offer_index": 0,
+      "field": "contact_phone",
+      "description": "Supported value omitted: field \"contact_phone\" expected \"+966524567890\", received null",
+      "expected": "+966524567890",
+      "actual": null
+    },
+    {
+      "message_id": "eval-019",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [price_period_unknown], unexpected [price_unsupported]",
+      "expected": [
+        "price_period_unknown"
+      ],
+      "actual": [
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-020",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [purpose_missing], unexpected [purpose_uncertain, area_sqm_unsupported, price_unsupported]",
+      "expected": [
+        "purpose_missing"
+      ],
+      "actual": [
+        "purpose_uncertain",
+        "area_sqm_unsupported",
+        "price_unsupported"
+      ]
+    },
+    {
+      "message_id": "eval-020",
+      "type": "field",
+      "offer_index": 0,
+      "field": "area_sqm",
+      "description": "Supported value omitted: field \"area_sqm\" expected 350, received null",
+      "expected": 350,
+      "actual": null
+    },
+    {
+      "message_id": "eval-020",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.amount",
+      "description": "Supported value omitted: field \"price.amount\" expected 2200000, received null",
+      "expected": 2200000,
+      "actual": null
+    },
+    {
+      "message_id": "eval-020",
+      "type": "field",
+      "offer_index": 0,
+      "field": "price.period",
+      "description": "Supported value omitted: field \"price.period\" expected \"total\", received null",
+      "expected": "total",
+      "actual": null
+    }
+  ],
+  "excluded_from_denominators": []
+}
