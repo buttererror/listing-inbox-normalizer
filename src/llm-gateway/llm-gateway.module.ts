@@ -3,6 +3,7 @@ import { loadConfig } from '../config/env';
 import type { AppConfig } from '../config/env';
 import { AgyGateway } from './agy.gateway';
 import { AiSdkGateway } from './ai-sdk.gateway';
+import { ClaudeCliGateway } from './claude-cli.gateway';
 import { LLM_GATEWAY, ProviderError } from './llm-request';
 import type { LlmGateway } from './llm-request';
 
@@ -16,6 +17,13 @@ export async function createLlmGateway(config: AppConfig = loadConfig()): Promis
   if (config.LLM_PROVIDER === 'agy' || config.LLM_PROVIDER === 'antigravity') {
     return new AgyGateway({
       executable: config.AGY_EXECUTABLE,
+      model: config.LLM_MODEL,
+      timeoutMs: config.LLM_TIMEOUT_MS,
+    });
+  }
+  if (config.LLM_PROVIDER === 'claude-cli' || config.LLM_PROVIDER === 'claude') {
+    return new ClaudeCliGateway({
+      executable: config.CLAUDE_EXECUTABLE,
       model: config.LLM_MODEL,
       timeoutMs: config.LLM_TIMEOUT_MS,
     });
@@ -57,4 +65,3 @@ export async function createLlmGateway(config: AppConfig = loadConfig()): Promis
   exports: [LLM_GATEWAY],
 })
 export class LlmGatewayModule {}
-

@@ -1,5 +1,20 @@
 # Key agent sessions
 
+## Claude CLI gateway & environment config review — 2026-11-10
+
+- **Evidence status** — Evidence checked against `src/config/env.ts`, `src/llm-gateway/cli-process.ts`, `src/llm-gateway/claude-cli.gateway.ts`, `src/llm-gateway/agy.gateway.ts`, `src/llm-gateway/llm-gateway.module.ts`, `README.md`, `.env.example`, `docs/DECISIONS.md`, `docs/architecture.md`, and offline test/build output.
+- **Human review** — Confirmed by user approval of the implementation plan (`implementation_plan.md`).
+- **Objective** — Plan and implement Claude Code CLI (`claude`) support in the LLM Gateway, review and harden environment configuration in `src/config/env.ts`, and document providers and configuration thoroughly in `README.md`.
+- **Important prompt** — User: “Plan to extend the llm gateway to accept claude cli. Review config.ts. Document this well inside readme /plan”, followed by “It's @[src/config/env.ts] not config.ts Make sure to update the plan to update the readme file well /plan”, and plan approval.
+- **Outcome** —
+  - Hardened `src/config/env.ts`: normalized blank/whitespace-only strings before Zod validation/coercion (`PORT`, `DATABASE_URL`, `LLM_PROVIDER`, `AGY_EXECUTABLE`, `CLAUDE_EXECUTABLE`, `LLM_MODEL`, `LLM_TIMEOUT_MS`, `LLM_API_KEY`), parameterized `loadConfig(env = process.env)`, extended `LLM_PROVIDER` with `claude-cli` and alias `claude`, and unified binary lookup in `resolveDefaultCliExecutable` (`HOME`, `USERPROFILE`, `os.homedir()`, `.local/bin`).
+  - Extracted shared `runCliCommand` and `parseCliJsonResponseString` into `src/llm-gateway/cli-process.ts`, refactored `AgyGateway` to reuse them while keeping existing behavior/exports intact, and added `ClaudeCliGateway` (`src/llm-gateway/claude-cli.gateway.ts`) wired through `createLlmGateway` (`src/llm-gateway/llm-gateway.module.ts`).
+  - Configured `ClaudeCliGateway` for tool-less headless execution (`-p`, `--output-format json`, `--json-schema`, `--system-prompt`, `--tools ""`, `--strict-mcp-config`, `--disable-slash-commands`, `--no-session-persistence`, `cwd: os.tmpdir()`, `stdin` message delivery), without forwarding `LLM_API_KEY` into `ANTHROPIC_API_KEY`, and mapped telemetry (`provider: 'claude-cli'`, cached/uncached input tokens, output tokens, duration) and errors (`provider_unavailable`, `provider_timeout`, `error_max_structured_output_retries` -> `undefined`).
+  - Added offline tests in `test/env.spec.ts` and `test/claude-cli.gateway.spec.ts` (mocked `child_process.spawn` and isolated temporary SQLite DB) and updated `test/ai-sdk.gateway.spec.ts` config literals.
+  - Documented all API and CLI providers, environment variables, `claude-cli` setup/auth/isolation/troubleshooting, and status/limits in `README.md`, updated `.env.example` and `docs/architecture.md`, and recorded `D-041` in `docs/DECISIONS.md`.
+- **Verification and limits** — `pnpm run typecheck`, `pnpm run build`, focused gateway/config suites (`4` suites, `35` tests), and the full offline test suite (`22` suites, `248` tests) passed cleanly without credentials or network access. `claude` CLI is not installed in the execution environment, so live CLI qualification (`--tools ""` + `--json-schema` against a real `claude` binary) remains pending manual verification.
+- **Related decisions** — D-024, D-026, D-029, D-038, D-041, OPEN-08.
+
 ## Task 03.6 Phase 03 documentation & close-out — 2026-11-10
 
 - **Evidence status** — Evidence checked against `README.md`, `docs/roadmap.md`, `docs/success-criteria.md`, `docs/DECISIONS.md`, `docs/phase-plans/03-independent-provider-evaluation.md`, `docs/evaluation-baseline-analysis.md`, `PLAN.md`, and offline test/build output.

@@ -21,7 +21,7 @@ corepack pnpm install --frozen-lockfile
 
 ## CLI quick start
 
-Set `LLM_API_KEY` in your local, ignored `.env` file to use the default Gemini provider. The default model is `gemini-3.6-flash`.
+Set `LLM_API_KEY` in your local, ignored `.env` file to use the default Gemini provider (`gemini-3.6-flash`).
 
 ```sh
 pnpm run build
@@ -34,7 +34,81 @@ For human-friendly tabular inspection with formatted review explanations:
 node dist/cli.js process test/fixtures/fixture-a-valid.jsonl --format=table
 ```
 
-To use Anthropic or OpenAI, also set `LLM_PROVIDER` to `anthropic` or `openai`, and provide an explicit `LLM_MODEL`. Keep the provider API key in `LLM_API_KEY`.
+To switch to another API provider (`anthropic`, `openai`) or a local CLI provider (`claude-cli`, `agy`), see [LLM providers and configuration](#llm-providers-and-configuration) below.
+
+## LLM providers and configuration
+
+All environment configuration is validated by Zod in [`src/config/env.ts`](src/config/env.ts) (loading `.env` automatically when present). Blank or whitespace-only values (for example `LLM_MODEL=` in `.env`) are treated as unset so configured defaults still apply.
+
+### Supported providers
+
+| `LLM_PROVIDER` | Transport | Auth / credentials | `LLM_MODEL` | Structured output & tool posture | Current status |
+| --- | --- | --- | --- | --- | --- |
+| `gemini` *(default)* | Direct API ([`AiSdkGateway`](src/llm-gateway/ai-sdk.gateway.ts)) | `LLM_API_KEY` | Optional (defaults to `gemini-3.6-flash`) | Native JSON schema, tool-less | Live CLI check passed (`D-024`, `D-038`) |
+| `anthropic` | Direct API ([`AiSdkGateway`](src/llm-gateway/ai-sdk.gateway.ts)) | `LLM_API_KEY` | **Required** | Native `outputFormat` JSON schema, tool-less | Offline mocked tests; live check pending |
+| `openai` | Direct API ([`AiSdkGateway`](src/llm-gateway/ai-sdk.gateway.ts)) | `LLM_API_KEY` | **Required** | Strict JSON schema, tool-less | Offline mocked tests; live check pending |
+| `claude-cli` *(alias `claude`)* | Local `claude` CLI ([`ClaudeCliGateway`](src/llm-gateway/claude-cli.gateway.ts)) | Local `claude` auth (`claude /login` OAuth or `ANTHROPIC_API_KEY`; `LLM_API_KEY` ignored) | Optional (uses CLI default if omitted; e.g. `sonnet`, `haiku`, or model ID) | `--json-schema`, `--tools ""`, `--strict-mcp-config`, `--disable-slash-commands`, `--no-session-persistence`, `cwd: os.tmpdir()` | Offline mocked tests; live check pending (`D-041`) |
+| `agy` *(alias `antigravity`)* | Local `agy` CLI ([`AgyGateway`](src/llm-gateway/agy.gateway.ts)) | Local `agy` OAuth (`LLM_API_KEY` ignored) | Optional (uses CLI default if omitted) | `--sandbox`, `--json-schema`, `--disable-slash-commands`, `cwd: os.tmpdir()` | Phase 03 20-case evaluation verified (`1.5.3` / `gemini-3.8-flash-low`, `D-039`) |
+
+### Environment variables
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `PORT` | No | `3000` | HTTP server port (`1`–`65535`). |
+| `DATABASE_URL` | No | `file:./dev.db` | SQLite database path used by Prisma and [`DatabaseService`](src/database/database.service.ts). |
+| `LLM_PROVIDER` | No | `gemini` | One of `gemini`, `anthropic`, `openai`, `claude-cli`, `claude`, `agy`, `antigravity`. |
+| `LLM_MODEL` | `anthropic` / `openai` only | `gemini-3.6-flash` for `gemini`; omitted for CLI providers | Explicit model identifier (or Claude CLI alias such as `sonnet` / `opus` / `haiku`). |
+| `LLM_API_KEY` | API providers only | — | API credential for `gemini`, `anthropic`, and `openai`. Ignored by `claude-cli` and `agy`. |
+| `LLM_TIMEOUT_MS` | No | `45000` | Positive integer request/subprocess timeout in milliseconds. |
+| `CLAUDE_EXECUTABLE` | No | `~/.local/bin/claude` (or `.exe` on Windows) if present, else `claude` | Path or command name for the `claude` CLI binary. |
+| `AGY_EXECUTABLE` | No | `~/.local/bin/agy` (or `.exe` on Windows) if present, else `agy` | Path or command name for the `agy` CLI binary. |
+| `DWELLEO_TELEMETRY` | No | Unset | Set to `1` to emit single-line `DWELLEO_TELEMETRY` JSON diagnostics (provider, model, duration, tokens, errors) to `stderr` without modifying `stdout`. |
+
+### Direct API providers (`gemini`, `anthropic`, `openai`)
+
+API providers run through [`AiSdkGateway`](src/llm-gateway/ai-sdk.gateway.ts) with `maxRetries: 0`, no tools, and native schema constraints:
+
+```sh
+# Gemini (default)
+LLM_PROVIDER=gemini LLM_API_KEY=your_key node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+
+# Anthropic direct API
+LLM_PROVIDER=anthropic LLM_MODEL=claude-sonnet-4-6 LLM_API_KEY=your_key node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+
+# OpenAI direct API
+LLM_PROVIDER=openai LLM_MODEL=gpt-4.1-mini LLM_API_KEY=your_key node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+```
+
+### Claude Code CLI (`claude-cli` / `claude`)
+
+Use `LLM_PROVIDER=claude-cli` (or alias `claude`) to run extraction through a locally installed and authenticated Anthropic Claude Code CLI (`claude`) instead of the direct API (`LLM_PROVIDER=anthropic`).
+
+1. **Install & authenticate `claude` CLI**:
+   Verify `claude --version` works in your shell, then authenticate either via your Claude subscription (`claude` -> `/login` OAuth) or by exporting `ANTHROPIC_API_KEY` in your shell environment. Note that Claude CLI warns if both an active OAuth session and `ANTHROPIC_API_KEY` are set simultaneously.
+2. **Credential isolation (`LLM_API_KEY` vs `ANTHROPIC_API_KEY`)**:
+   `claude-cli` **ignores `LLM_API_KEY`** and never forwards it as `ANTHROPIC_API_KEY`. This keeps existing `.env` files containing a Gemini `LLM_API_KEY` safe when switching `LLM_PROVIDER=claude-cli`. Conversely, if you want API-key billing with `claude-cli`, set `ANTHROPIC_API_KEY` (or use `LLM_PROVIDER=anthropic` with `LLM_API_KEY`).
+3. **Run via CLI or `.env`**:
+
+   ```sh
+   # Uses local claude CLI default model
+   LLM_PROVIDER=claude-cli node dist/cli.js process test/fixtures/one-message.jsonl
+
+   # Override model and capture telemetry on stderr
+   LLM_PROVIDER=claude-cli LLM_MODEL=sonnet DWELLEO_TELEMETRY=1 node dist/cli.js process test/fixtures/one-message.jsonl
+
+   # Override executable path if claude is not on PATH
+   LLM_PROVIDER=claude-cli CLAUDE_EXECUTABLE=/custom/path/claude node dist/cli.js process test/fixtures/one-message.jsonl
+   ```
+
+4. **How `ClaudeCliGateway` executes safely & headlessly**:
+   - Invokes `claude -p ... --output-format json --json-schema <schema> --system-prompt <instructions> --tools "" --strict-mcp-config --disable-slash-commands --no-session-persistence` (plus `--model <LLM_MODEL>` when set) with `cwd: os.tmpdir()`.
+   - Pipes the untrusted broker message via `stdin` rather than CLI arguments, avoiding shell quoting/length issues on Windows and preventing messages starting with `-` from being interpreted as flags.
+   - Disables built-in tools (`--tools ""`), MCP discovery (`--strict-mcp-config`), slash commands/skills (`--disable-slash-commands`), and session persistence (`--no-session-persistence`) while preserving OAuth keychain auth (which `--bare` would skip).
+   - Maps spawn failures, non-zero exit codes, malformed JSON, and `is_error: true` responses to `provider_unavailable`; kills timed-out subprocesses (`SIGKILL`) as `provider_timeout`; and maps `error_max_structured_output_retries` (without `structured_output`) to `invalid_extraction` via Stage 2 validation.
+
+### Antigravity CLI (`agy` / `antigravity`)
+
+Use `LLM_PROVIDER=agy` (or `antigravity`) to invoke the local Antigravity CLI (`--sandbox`, `--json-schema`, `--disable-slash-commands`, `cwd: os.tmpdir()`) using its local OAuth session (`LLM_API_KEY` is ignored; override binary path with `AGY_EXECUTABLE` if needed).
 
 ## HTTP liveness
 
@@ -52,7 +126,7 @@ pnpm test
 
 ## Provider status and limits
 
-The direct tool-less Gemini API (`gemini-3.6-flash` default) has passed a live CLI check (`D-024`, `D-038`); Anthropic and OpenAI have offline mocked coverage with live qualification pending. The `agy` CLI gateway (`1.5.3` / `gemini-3.8-flash-low`) completed Phase 03 independent evaluation across 20 cases. Each message makes one model extraction request; SQLite persistence, HTTP ingestion endpoints, and duplicate detection remain scoped to Phases 04–05.
+The direct tool-less Gemini API (`gemini-3.6-flash` default) has passed a live CLI check (`D-024`, `D-038`); direct `anthropic`, `openai`, and local `claude-cli` currently have offline mocked coverage with live qualification pending (`D-026`, `D-041`). The `agy` CLI gateway (`1.5.3` / `gemini-3.8-flash-low`) completed Phase 03 independent evaluation across 20 cases. Each message makes one model extraction request; SQLite persistence, HTTP ingestion endpoints, and duplicate detection remain scoped to Phases 04–05.
 
 ## Independent evaluation (Phase 03)
 

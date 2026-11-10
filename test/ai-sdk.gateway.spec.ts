@@ -21,6 +21,7 @@ function providerConfig(provider: 'gemini' | 'anthropic' | 'openai', apiKey: str
     DATABASE_URL: 'file:./test.db',
     LLM_PROVIDER: provider,
     AGY_EXECUTABLE: 'agy',
+    CLAUDE_EXECUTABLE: 'claude',
     LLM_MODEL: model,
     LLM_TIMEOUT_MS: 1000,
   } as const;
@@ -203,6 +204,7 @@ describe('AiSdkGateway', () => {
       DATABASE_URL: 'file:./test.db',
       LLM_PROVIDER: 'openai',
       AGY_EXECUTABLE: 'agy',
+      CLAUDE_EXECUTABLE: 'claude',
       LLM_TIMEOUT_MS: 1000,
       LLM_API_KEY: 'test-key',
     });

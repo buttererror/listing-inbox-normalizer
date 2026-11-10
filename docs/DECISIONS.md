@@ -44,6 +44,20 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ## Proposed and recently approved
 
+### D-041: Support Claude Code CLI (claude-cli) in the LLM Gateway and harden environment config
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Developers and reviewers need to run Dwelleo's extraction pipeline through a locally installed Anthropic Claude Code CLI (`claude`) in addition to direct API providers (`gemini`, `anthropic`, `openai`) and the Antigravity CLI (`agy`). Reviewing [`src/config/env.ts`](../src/config/env.ts) also surfaced blank `.env` coercion/validation failures (`""` crashing `.min(1)` or coercing `PORT`/`LLM_TIMEOUT_MS` to `0`), POSIX-only `HOME` discovery, duplicated CLI binary lookup, and global `process.env` test coupling.
+- **Options and tradeoffs** —
+  1. Run `claude -p --bare`: Skips local hooks/memory, but also disables OS keychain / OAuth authentication (`claude /login`), breaking subscription users unless `ANTHROPIC_API_KEY` is exported.
+  2. Run `claude -p` with explicit isolation flags (`--tools ""`, `--strict-mcp-config`, `--disable-slash-commands`, `--no-session-persistence`, `--system-prompt`, `cwd: os.tmpdir()`, and `stdin` message delivery) while omitting `--bare`: Preserves both OAuth login and `ANTHROPIC_API_KEY`, separates domain instructions from untrusted source text, and shares child-process execution cleanly with `AgyGateway`.
+- **Decision and rationale** — Implement `ClaudeCliGateway` (`src/llm-gateway/claude-cli.gateway.ts`) using option 2 and shared CLI helper `src/llm-gateway/cli-process.ts`. Accept `LLM_PROVIDER=claude-cli` (canonical) and `claude` (alias) without requiring `LLM_API_KEY` or `LLM_MODEL`. Never forward `LLM_API_KEY` into `ANTHROPIC_API_KEY` so existing Gemini `.env` configurations do not interfere with `claude` CLI auth. Harden `src/config/env.ts` with `normalizeEnvInput`, parameterized `loadConfig(env)`, `CLAUDE_EXECUTABLE`, and shared `resolveDefaultCliExecutable`. Retain `LLM_PROVIDER=gemini` (`gemini-3.6-flash`) as the production default (`D-024`, `D-038`).
+- **Consequences** — Extraction can run locally via `claude` CLI with telemetry (`provider: 'claude-cli'`, duration, summed cached/uncached input and output tokens). Live behavior of `--tools ""` alongside `--json-schema` depends on the installed `claude` CLI version and remains to be confirmed in a live CLI check before using `claude-cli` on untrusted production inputs under `OPEN-08`.
+- **Validation** — Offline unit and CLI-wiring tests in `test/env.spec.ts`, `test/claude-cli.gateway.spec.ts`, `test/agy.gateway.spec.ts`, and `test/ai-sdk.gateway.spec.ts` (mocked `child_process.spawn`), full offline suite (`pnpm test`), `pnpm run typecheck`, and `pnpm run build`. Live `claude` CLI check remains separate/pending.
+- **Review checkpoint** — Verify `claude` CLI `--tools ""` + `--json-schema` behavior in a manual live check (`test/fixtures/one-message.jsonl`) before relying on `claude-cli` outside development/evaluation.
+- **Approval evidence** — User approved the `/plan` implementation plan specifying `ClaudeCliGateway`, `--tools ""` isolation (without `--bare`), `'claude-cli'`/`'claude'` aliases, `src/config/env.ts` hardening, and `README.md` documentation updates.
+- **References** — `D-024`, `D-026`, `D-029`, `D-038`, `OPEN-08`, [`src/config/env.ts`](../src/config/env.ts), [`src/llm-gateway/claude-cli.gateway.ts`](../src/llm-gateway/claude-cli.gateway.ts), [`README.md`](../README.md).
+
 ### D-039: Use Antigravity CLI (agy) for Phase 03 independent evaluation
 
 - **Status** — Accepted on 2026-11-10 (amends Phase 03 evaluation provider selection in D-038).
