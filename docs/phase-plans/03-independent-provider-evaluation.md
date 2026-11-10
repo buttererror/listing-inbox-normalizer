@@ -92,6 +92,8 @@ Record the dataset version and Git commit in the evaluation report.
 - Missing and inapplicable fields are distinguished.
 - Ambiguous expected values are resolved through documented policy or excluded from aggregate field scoring.
 
+**Implementation evidence — 2026-11-10:** Created and frozen `test/evaluation/cases.jsonl` (20 independently authored messages: 8 Arabic, 6 English, 6 Mixed) and `test/evaluation/expected.json` (version 1.0.0 with full public contracts, field-level traceability, inapplicable field tracking, and review reasons). Verified with 11 automated checks in `test/evaluation-dataset.spec.ts` covering raw message schema validation, classification constraints, public output schema, quote traceability in source text, and inapplicable field policies.
+
 ## 3. Task 03.2 — Implement a lightweight offline evaluator
 
 Create a standalone evaluation script that:
@@ -306,8 +308,8 @@ Do not claim that results on 20 synthetic examples establish production-level ac
 Phase 03 is complete when:
 
 - [ ] The agy isolation prerequisite has passed and evidence is recorded under OPEN-08.
-- [ ] An independent, frozen evaluation dataset exists.
-- [ ] Expected labels have been reviewed against the approved processing policies.
+- [x] An independent, frozen evaluation dataset exists.
+- [x] Expected labels have been reviewed against the approved processing policies.
 - [ ] A standalone deterministic evaluator has passing offline tests.
 - [ ] One complete live `agy` evaluation has run.
 - [ ] Classification, offer, field, and review metrics are reported with denominators.

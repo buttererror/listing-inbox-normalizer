@@ -1,5 +1,16 @@
 # Key agent sessions
 
+## Task 03.1 independent evaluation dataset — 2026-11-10
+
+- **Evidence status** — Evidence checked against raw message schema, public result schema, runtime review reasons, and dataset verification test suite.
+- **Human review** — Not requested.
+- **Objective** — Prepare the frozen independent evaluation dataset (Task 03.1).
+- **Important prompt** — User: “Implement Task 03.1 . PS: Prerequisite is underway”.
+- **Outcome** — Created `test/evaluation/cases.jsonl` containing 20 independently authored Saudi real estate messages across Arabic (8), English (6), and Mixed (6) languages covering sale/rent, multi-offer, shared attributes, buyer requests, project announcements, irrelevant messages, mixed intents, Arabic-Indic numbers, price abbreviations, missing fields, and conflicting attributes. Created `test/evaluation/expected.json` (version 1.0.0) with normalized public fields, inapplicable field tracking, and verbatim source quote traceability. Added `test/evaluation-dataset.spec.ts` with 11 automated verification tests.
+- **Verification and limits** — 11 dedicated tests in `test/evaluation-dataset.spec.ts` passed; TypeScript typecheck and build passed. No live model or evaluation calls were performed. The OPEN-08 isolation prerequisite remains underway separately.
+- **Related decisions** — [D-036](DECISIONS.md#d-036-use-a-frozen-independent-corpus-and-separate-live-measurement), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-019](DECISIONS.md#d-019-ground-offers-and-intents-in-one-self-checked-call).
+
+
 ## Phase 03 supplied plan and agy selection — 2026-11-10
 
 - **Evidence status** — Evidence checked against the supplied plan, gateway source and documented OPEN-08 history.

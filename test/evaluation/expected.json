@@ -1,0 +1,665 @@
+{
+  "version": "1.0.0",
+  "created_at": "2026-11-10T08:00:00+03:00",
+  "description": "Dwelleo Phase 03 Independent Evaluation Dataset (20 messages)",
+  "language_distribution": {
+    "arabic": 8,
+    "english": 6,
+    "mixed": 6,
+    "total": 20
+  },
+  "cases": [
+    {
+      "message_id": "eval-001",
+      "language": "arabic",
+      "scenario": "Sale listing with Arabic-Indic digits and written numbers",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "villa",
+          "city": "الخبر",
+          "district": "الشاطئ",
+          "bedrooms": 5,
+          "bathrooms": 4,
+          "area_sqm": 450,
+          "price": {
+            "amount": 3200000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": "+966501239876",
+          "needs_review": false,
+          "review_reasons": [],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للبيع",
+            "property_type": "فيلا",
+            "city": "مدينة الخبر",
+            "district": "حي الشاطئ",
+            "bedrooms": "خمس غرف نوم",
+            "bathrooms": "أربعة دورات مياه",
+            "area_sqm": "٤٥٠ متر مربع",
+            "price": "ثلاثة ملايين ومائتان ألف ريال",
+            "contact_phone": "٠٥٠١٢٣٩٨٧٦"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-002",
+      "language": "arabic",
+      "scenario": "Apartment rental with annual period and missing district and area",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "rent",
+          "property_type": "apartment",
+          "city": "الدمام",
+          "district": null,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "area_sqm": null,
+          "price": {
+            "amount": 36000,
+            "currency": "SAR",
+            "period": "yearly"
+          },
+          "contact_phone": "+966502345678",
+          "needs_review": true,
+          "review_reasons": ["district_missing", "area_sqm_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "عرض إيجار",
+            "property_type": "شقة",
+            "city": "الدمام",
+            "bedrooms": "٣ غرف",
+            "bathrooms": "حمامين",
+            "price": "36000 ريال سعودي",
+            "contact_phone": "0502345678"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-003",
+      "language": "arabic",
+      "scenario": "Multi-offer message (2 offers) with shared city and contact phone",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 2,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "villa",
+          "city": "جدة",
+          "district": "أبحر الشمالية",
+          "bedrooms": null,
+          "bathrooms": null,
+          "area_sqm": 350,
+          "price": {
+            "amount": 2400000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": "+966533445566",
+          "needs_review": true,
+          "review_reasons": ["bedrooms_missing", "bathrooms_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للبيع",
+            "property_type": "فيلا",
+            "city": "جدة",
+            "district": "حي أبحر الشمالية",
+            "area_sqm": "350 م2",
+            "price": "2400000 ريال",
+            "contact_phone": "٠٥٣٣٤٤٥٥٦٦"
+          }
+        },
+        {
+          "offer_index": 1,
+          "purpose": "rent",
+          "property_type": "apartment",
+          "city": "جدة",
+          "district": "الروضة",
+          "bedrooms": 2,
+          "bathrooms": null,
+          "area_sqm": null,
+          "price": {
+            "amount": 30000,
+            "currency": "SAR",
+            "period": "yearly"
+          },
+          "contact_phone": "+966533445566",
+          "needs_review": true,
+          "review_reasons": ["bathrooms_missing", "area_sqm_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للإيجار",
+            "property_type": "شقة",
+            "city": "جدة",
+            "district": "حي الروضة",
+            "bedrooms": "غرفتين نوم",
+            "price": "30 ألف ريال سنوياً",
+            "contact_phone": "٠٥٣٣٤٤٥٥٦٦"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-004",
+      "language": "arabic",
+      "scenario": "Land sale with per-sqm price only and inapplicable room counts",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "land",
+          "city": "الرياض",
+          "district": "القيروان",
+          "bedrooms": null,
+          "bathrooms": null,
+          "area_sqm": 600,
+          "price": {
+            "amount": null,
+            "currency": "SAR",
+            "period": null
+          },
+          "contact_phone": "+966544556677",
+          "needs_review": true,
+          "review_reasons": ["price_missing"],
+          "inapplicable_fields": ["bedrooms", "bathrooms"],
+          "traceability": {
+            "purpose": "للبيع",
+            "property_type": "أرض سكنية",
+            "city": "الرياض",
+            "district": "حي القيروان",
+            "area_sqm": "٦٠٠ متر مربع",
+            "contact_phone": "٠٥٤٤٥٥٦٦٧٧"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-005",
+      "language": "arabic",
+      "scenario": "Buyer request for commercial building in Mecca",
+      "classification": "buyer_request",
+      "detected_classes": ["buyer_request"],
+      "offer_count": 0,
+      "listings": []
+    },
+    {
+      "message_id": "eval-006",
+      "language": "arabic",
+      "scenario": "Off-plan community project announcement with unit ranges and starting prices",
+      "classification": "project",
+      "detected_classes": ["project"],
+      "offer_count": 0,
+      "listings": []
+    },
+    {
+      "message_id": "eval-007",
+      "language": "arabic",
+      "scenario": "Irrelevant furniture moving service advertisement",
+      "classification": "irrelevant",
+      "detected_classes": ["irrelevant"],
+      "offer_count": 0,
+      "listings": []
+    },
+    {
+      "message_id": "eval-008",
+      "language": "arabic",
+      "scenario": "Mixed message with townhouse listing (conflicting bedrooms) and buyer request",
+      "classification": "mixed",
+      "detected_classes": ["listing", "buyer_request"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "townhouse",
+          "city": "الرياض",
+          "district": "المونسية",
+          "bedrooms": null,
+          "bathrooms": null,
+          "area_sqm": null,
+          "price": {
+            "amount": 1800000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": "+966588899001",
+          "needs_review": true,
+          "review_reasons": ["bedrooms_conflict", "bathrooms_missing", "area_sqm_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للبيع",
+            "property_type": "تاون هاوس",
+            "city": "الرياض",
+            "district": "حي المونسية",
+            "price": "مليون وثمانمائة ألف ريال",
+            "contact_phone": "0588899001"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-009",
+      "language": "english",
+      "scenario": "Furnished studio rental with monthly rent and optional bedrooms",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "rent",
+          "property_type": "studio",
+          "city": "Jeddah",
+          "district": "Al Andalus",
+          "bedrooms": null,
+          "bathrooms": 1,
+          "area_sqm": 55,
+          "price": {
+            "amount": 3500,
+            "currency": "SAR",
+            "period": "monthly"
+          },
+          "contact_phone": "+966511223344",
+          "needs_review": false,
+          "review_reasons": [],
+          "inapplicable_fields": ["bedrooms"],
+          "traceability": {
+            "purpose": "for rent",
+            "property_type": "studio",
+            "city": "Jeddah",
+            "district": "Al Andalus district",
+            "bathrooms": "1 bathroom",
+            "area_sqm": "55 sqm",
+            "price": "3,500 SAR",
+            "contact_phone": "+966511223344"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-010",
+      "language": "english",
+      "scenario": "Standalone villa sale with shorthand magnitude 2.8M SAR and missing contact",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "villa",
+          "city": "Riyadh",
+          "district": "Al Malqa",
+          "bedrooms": 5,
+          "bathrooms": 6,
+          "area_sqm": 420,
+          "price": {
+            "amount": 2800000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": null,
+          "needs_review": true,
+          "review_reasons": ["contact_phone_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "for sale",
+            "property_type": "standalone villa",
+            "city": "Riyadh",
+            "district": "Al Malqa",
+            "bedrooms": "5 bedrooms",
+            "bathrooms": "6 bathrooms",
+            "area_sqm": "420 sqm",
+            "price": "2.8M SAR"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-011",
+      "language": "english",
+      "scenario": "Apartment rental missing explicit SAR currency with security deposit",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "rent",
+          "property_type": "apartment",
+          "city": "Al Khobar",
+          "district": "Al Hizam Al Thahabi",
+          "bedrooms": 3,
+          "bathrooms": 3,
+          "area_sqm": 175,
+          "price": {
+            "amount": null,
+            "currency": "SAR",
+            "period": null
+          },
+          "contact_phone": "+966513456789",
+          "needs_review": true,
+          "review_reasons": ["price_currency_unknown"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "for rent",
+            "property_type": "apartment",
+            "city": "Al Khobar",
+            "district": "Al Hizam Al Thahabi",
+            "bedrooms": "3 bedrooms",
+            "bathrooms": "3 bathrooms",
+            "area_sqm": "175 sqm",
+            "contact_phone": "0513456789"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-012",
+      "language": "english",
+      "scenario": "Buyer request for commercial plot in Dammam",
+      "classification": "buyer_request",
+      "detected_classes": ["buyer_request"],
+      "offer_count": 0,
+      "listings": []
+    },
+    {
+      "message_id": "eval-013",
+      "language": "english",
+      "scenario": "Gated community project announcement with townhouses and villas in Al Ahsa",
+      "classification": "project",
+      "detected_classes": ["project"],
+      "offer_count": 0,
+      "listings": []
+    },
+    {
+      "message_id": "eval-014",
+      "language": "english",
+      "scenario": "Irrelevant AC and HVAC maintenance services advertisement",
+      "classification": "irrelevant",
+      "detected_classes": ["irrelevant"],
+      "offer_count": 0,
+      "listings": []
+    },
+    {
+      "message_id": "eval-015",
+      "language": "mixed",
+      "scenario": "Code-switched apartment sale with 920k SAR abbreviation",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "apartment",
+          "city": "الرياض",
+          "district": "الياسمين",
+          "bedrooms": 3,
+          "bathrooms": 3,
+          "area_sqm": 185,
+          "price": {
+            "amount": 920000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": "+966521234567",
+          "needs_review": false,
+          "review_reasons": [],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للبيع",
+            "property_type": "شقة",
+            "city": "الرياض",
+            "district": "حي الياسمين",
+            "bedrooms": "3 bedrooms",
+            "bathrooms": "3 bathrooms",
+            "area_sqm": "185 sqm",
+            "price": "920k SAR",
+            "contact_phone": "0521234567"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-016",
+      "language": "mixed",
+      "scenario": "Multi-offer message (2 offers) across Arabic and English with shared city and contact",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 2,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "villa",
+          "city": "Al Khobar",
+          "district": "Al Rawabi",
+          "bedrooms": 4,
+          "bathrooms": null,
+          "area_sqm": 320,
+          "price": {
+            "amount": 1950000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": "+966522345678",
+          "needs_review": true,
+          "review_reasons": ["bathrooms_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "for sale",
+            "property_type": "Duplex villa",
+            "city": "Al Khobar",
+            "district": "Al Rawabi",
+            "bedrooms": "4 BR",
+            "area_sqm": "320 sqm",
+            "price": "1.95M SAR",
+            "contact_phone": "0522345678"
+          }
+        },
+        {
+          "offer_index": 1,
+          "purpose": "rent",
+          "property_type": "apartment",
+          "city": "الخبر",
+          "district": "العليا",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "area_sqm": null,
+          "price": {
+            "amount": 42000,
+            "currency": "SAR",
+            "period": "yearly"
+          },
+          "contact_phone": "+966522345678",
+          "needs_review": true,
+          "review_reasons": ["area_sqm_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للإيجار",
+            "property_type": "شقة",
+            "city": "الخبر",
+            "district": "حي العليا",
+            "bedrooms": "غرفتين نوم",
+            "bathrooms": "حمامين",
+            "price": "٤٢ ألف ريال سنوياً",
+            "contact_phone": "0522345678"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-017",
+      "language": "mixed",
+      "scenario": "Mixed message with ready villa sale listing and upcoming off-plan project",
+      "classification": "mixed",
+      "detected_classes": ["listing", "project"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "villa",
+          "city": "جدة",
+          "district": "المرجان",
+          "bedrooms": 5,
+          "bathrooms": 4,
+          "area_sqm": 400,
+          "price": {
+            "amount": 3100000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": "+966523456789",
+          "needs_review": false,
+          "review_reasons": [],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للبيع",
+            "property_type": "فيلا مستقلة",
+            "city": "جدة",
+            "district": "حي المرجان",
+            "bedrooms": "5 غرف نوم",
+            "bathrooms": "4 حمامات",
+            "area_sqm": "400 م2",
+            "price": "3.1 مليون ريال",
+            "contact_phone": "0523456789"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-018",
+      "language": "mixed",
+      "scenario": "Mixed message with English buyer request and Arabic land listing with conflicting prices",
+      "classification": "mixed",
+      "detected_classes": ["buyer_request", "listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "sale",
+          "property_type": "land",
+          "city": "الرياض",
+          "district": "النرجس",
+          "bedrooms": null,
+          "bathrooms": null,
+          "area_sqm": 400,
+          "price": {
+            "amount": null,
+            "currency": "SAR",
+            "period": null
+          },
+          "contact_phone": "+966524567890",
+          "needs_review": true,
+          "review_reasons": ["price_conflict"],
+          "inapplicable_fields": ["bedrooms", "bathrooms"],
+          "traceability": {
+            "purpose": "للبيع",
+            "property_type": "أرض سكنية",
+            "city": "الرياض",
+            "district": "حي النرجس",
+            "area_sqm": "٤٠٠ م٢",
+            "contact_phone": "0524567890"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-019",
+      "language": "mixed",
+      "scenario": "Rental listing with unspecified price period",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": "rent",
+          "property_type": "apartment",
+          "city": "خميس مشيط",
+          "district": "الروضة",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "area_sqm": 120,
+          "price": {
+            "amount": null,
+            "currency": "SAR",
+            "period": null
+          },
+          "contact_phone": "+966525678901",
+          "needs_review": true,
+          "review_reasons": ["price_period_unknown"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "purpose": "للإيجار",
+            "property_type": "شقة مؤثثة",
+            "city": "خميس مشيط",
+            "district": "حي الروضة",
+            "bedrooms": "2 bedrooms",
+            "bathrooms": "2 bathrooms",
+            "area_sqm": "120 sqm",
+            "contact_phone": "0525678901"
+          }
+        }
+      ]
+    },
+    {
+      "message_id": "eval-020",
+      "language": "mixed",
+      "scenario": "Listing with missing purpose (neither sale nor rent specified)",
+      "classification": "listing",
+      "detected_classes": ["listing"],
+      "offer_count": 1,
+      "listings": [
+        {
+          "offer_index": 0,
+          "purpose": null,
+          "property_type": "villa",
+          "city": "الرياض",
+          "district": "الندى",
+          "bedrooms": 4,
+          "bathrooms": 4,
+          "area_sqm": 350,
+          "price": {
+            "amount": 2200000,
+            "currency": "SAR",
+            "period": "total"
+          },
+          "contact_phone": "+966526789012",
+          "needs_review": true,
+          "review_reasons": ["purpose_missing"],
+          "inapplicable_fields": [],
+          "traceability": {
+            "property_type": "فيلا",
+            "city": "الرياض",
+            "district": "حي الندى",
+            "bedrooms": "4 bedrooms",
+            "bathrooms": "4 bathrooms",
+            "area_sqm": "350 sqm",
+            "price": "2,200,000 SAR",
+            "contact_phone": "+966526789012"
+          }
+        }
+      ]
+    }
+  ]
+}
