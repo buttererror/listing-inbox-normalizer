@@ -899,6 +899,22 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   - `pnpm run typecheck` and `pnpm run build` passed cleanly.
 - **Related decisions** — [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks).
 
+## Architectural Commitment: Stage 2 Regex Retirement and Task 02.5b — 2026-11-10
+
+- **Evidence status** — Evidence checked against architecture, phase plan, and decisions documents.
+- **Human review** — Confirmed by user prompt.
+- **Objective** — Commit to architectural boundary for Stage 2 Mechanical Validation (no regex-based semantic parsing, rely on Stage 1 LLM extraction) and schedule Task 02.5b after 02.5 to review and retire regex heuristics under D-032.
+- **Important prompt** — Verbatim: “Add a task after 2.5 to review the mechincal validation to remove regex and rely on llm, commit to architecture for mechanical validation”.
+- **Outcome** —
+  - Added architectural commitment in `docs/architecture.md` under Stage 2 — Mechanical Validation: deterministic code must never use regex heuristics to simulate NLP, magnitude parsing, or qualifier extraction; Stage 1 owns semantic interpretation, while Stage 2 strictly enforces structural schemas, finite bounds, verbatim substring existence, and offer scoping.
+  - Added Task `02.5b — Stage 2 Review: Retire Regex Parsers and Rely on LLM Grounding` to `docs/phase-plans/02-message-processing.md` immediately following Task 02.5.
+  - Recorded decision `D-032` in `docs/DECISIONS.md`.
+- **Verification and limits** —
+  - Markdown cross-references verified.
+  - Typecheck, tests (219/219), and build remain verified and passing.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks), [D-032](DECISIONS.md#d-032-commit-stage-2-mechanical-validation-to-structural-grounding-and-schedule-regex-retirement).
+
+
 
 
 

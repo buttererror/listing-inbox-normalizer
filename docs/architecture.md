@@ -222,9 +222,21 @@ type ValidationOutcome = {
 
 Keep rejected originals, offer association, and reasons. Carry source-grounded semantic findings with the offer through validation, resolution, and review. Exact source quotes and mechanical checks establish verifiable properties of the proposal. The model's in-call cross-check is a model judgment. Independent evaluation measures semantic accuracy and property association.
 
+### Architectural commitment on mechanical validation
+
+Deterministic mechanical validation must not accumulate fragile regular expressions or attempt natural language and shorthand parsing (such as regex heuristics for Arabic/English magnitude multipliers like `مليون` / `ألف` / `K` / `M`, price qualifier extraction like `عربون`, or complex token semantics).
+- **Stage 1 (LLM)** owns language interpretation, contextual qualifiers, abbreviation and shorthand expansion, and semantic evidence-to-value consistency.
+- **Stage 2 (Mechanical Validation)** commits strictly to verifiable structural constraints:
+  1. Envelope and candidate schema validity (Zod schemas, finite numeric constraints, enums).
+  2. Exact verbatim quote existence in the original source message (`sourceText.includes(quote)`).
+  3. Strict offer boundary containment and shared evidence scoping.
+  4. Token integrity (non-clipped boundaries) and arithmetic consistency between explicitly grounded numeric operands.
+Regex-based semantic heuristics are slated for review and retirement in Task 02.5b to rely cleanly on LLM extraction grounding and simple deterministic structural verification.
+
 ### Boundary constraints
 
-- Check only mechanically verifiable evidence and values. The model owns language interpretation and Listings owns conflict resolution.
+- Check only mechanically verifiable structural evidence and values. The model owns language interpretation, shorthand parsing, and semantic consistency; Listings owns conflict resolution.
+- Never use regex heuristics to simulate natural language comprehension or semantic parsing in deterministic code.
 - Preserve the original candidate on rejection and continue with usable evidence from a valid envelope.
 
 ---

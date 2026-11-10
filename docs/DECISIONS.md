@@ -543,5 +543,20 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Approval evidence** — User prompt: "Dwelleo — Tasks 02.3 and 02.4 Implementation Handoff... Complete Stage 2 — Mechanical Validation without introducing semantic interpretation into deterministic code... Task 02.4 must complete the remaining mechanical checks and establish the validated output contract used by the resolver in 02.5".
 - **References** — D-019, D-020, D-027, D-030, [Phase 02 plan](phase-plans/02-message-processing.md).
 
+### D-032: Commit Stage 2 Mechanical Validation to Structural Grounding and Schedule Regex Retirement
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — During Stage 2 implementation (02.4) and verification matrix testing, regex heuristics for shorthand prices (`M`/`K`/`مليون`/`ألف`) and word boundaries demonstrated fragility (such as ASCII `\b` failing on Arabic characters). Attempting to mechanically parse language shortcuts replicates LLM duties in brittle deterministic regex.
+- **Options and tradeoffs** —
+  1. Continue expanding regex in Stage 2 to handle more linguistic edge cases. (Rejected: brittle, maintenance burden, violates architectural boundaries between deterministic validation and model interpretation).
+  2. Remove all verification in Stage 2. (Rejected: allows ungrounded hallucinated facts and malformed envelopes into the resolver).
+  3. Commit architecture to strict structural grounding in Stage 2 (verbatim substring existence, offer scoping, Zod schemas, finite schema constraints) and schedule Task 02.5b immediately after 02.5 to review and retire regex heuristics in favor of Stage 1 LLM extraction and self-verification.
+- **Recommendation and rationale** — Implement option 3 per explicit user directive: "Add a task after 2.5 to review the mechincal validation to remove regex and rely on llm, commit to architecture for mechanical validation".
+- **Consequences** — Architectural commitment added to `docs/architecture.md`. Task 02.5b added to `docs/phase-plans/02-message-processing.md`. Stage 2 mechanical validation remains strictly focused on structural integrity and avoids simulating NLP in deterministic code.
+- **Validation** — Regression matrix tests in `test/stage2-verification-matrix.spec.ts` (all 30 tests pass) will guide the clean retirement of regex in Task 02.5b.
+- **Approval evidence** — User instruction: "Add a task after 2.5 to review the mechincal validation to remove regex and rely on llm, commit to architecture for mechanical validation".
+- **References** — D-019, D-020, D-030, D-031, [Phase 02 plan](phase-plans/02-message-processing.md), [Architecture](architecture.md).
+
+
 
 
