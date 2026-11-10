@@ -24,14 +24,13 @@ corepack pnpm install --frozen-lockfile
 Set `LLM_API_KEY` in your local, ignored `.env` file to use the default Gemini provider (`gemini-3.6-flash`).
 
 ```sh
-pnpm run build
-node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+pnpm --silent run cli process test/fixtures/fixture-a-valid.jsonl
 ```
 
 For human-friendly tabular inspection with formatted review explanations:
 
 ```sh
-node dist/cli.js process test/fixtures/fixture-a-valid.jsonl --format=table
+pnpm --silent run cli process test/fixtures/fixture-a-valid.jsonl --format=table
 ```
 
 To switch to another API provider (`anthropic`, `openai`) or a local CLI provider (`claude-cli`, `agy`), see [LLM providers and configuration](#llm-providers-and-configuration) below.
@@ -70,13 +69,13 @@ API providers run through [`AiSdkGateway`](src/llm-gateway/ai-sdk.gateway.ts) wi
 
 ```sh
 # Gemini (default)
-LLM_PROVIDER=gemini LLM_API_KEY=your_key node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+LLM_PROVIDER=gemini LLM_API_KEY=your_key pnpm --silent run cli process test/fixtures/fixture-a-valid.jsonl
 
 # Anthropic direct API
-LLM_PROVIDER=anthropic LLM_MODEL=claude-sonnet-4-6 LLM_API_KEY=your_key node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+LLM_PROVIDER=anthropic LLM_MODEL=claude-sonnet-4-6 LLM_API_KEY=your_key pnpm --silent run cli process test/fixtures/fixture-a-valid.jsonl
 
 # OpenAI direct API
-LLM_PROVIDER=openai LLM_MODEL=gpt-4.1-mini LLM_API_KEY=your_key node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+LLM_PROVIDER=openai LLM_MODEL=gpt-4.1-mini LLM_API_KEY=your_key pnpm --silent run cli process test/fixtures/fixture-a-valid.jsonl
 ```
 
 ### Claude Code CLI (`claude-cli` / `claude`)
@@ -91,13 +90,13 @@ Use `LLM_PROVIDER=claude-cli` (or alias `claude`) to run extraction through a lo
 
    ```sh
    # Uses local claude CLI default model
-   LLM_PROVIDER=claude-cli node dist/cli.js process test/fixtures/one-message.jsonl
+   LLM_PROVIDER=claude-cli pnpm --silent run cli process test/fixtures/one-message.jsonl
 
    # Override model and capture telemetry on stderr
-   LLM_PROVIDER=claude-cli LLM_MODEL=sonnet DWELLEO_TELEMETRY=1 node dist/cli.js process test/fixtures/one-message.jsonl
+   LLM_PROVIDER=claude-cli LLM_MODEL=sonnet DWELLEO_TELEMETRY=1 pnpm --silent run cli process test/fixtures/one-message.jsonl
 
    # Override executable path if claude is not on PATH
-   LLM_PROVIDER=claude-cli CLAUDE_EXECUTABLE=/custom/path/claude node dist/cli.js process test/fixtures/one-message.jsonl
+   LLM_PROVIDER=claude-cli CLAUDE_EXECUTABLE=/custom/path/claude pnpm --silent run cli process test/fixtures/one-message.jsonl
    ```
 
 4. **How `ClaudeCliGateway` executes safely & headlessly**:
@@ -116,7 +115,7 @@ Use `LLM_PROVIDER=agy` (or `antigravity`) to invoke the local Antigravity CLI (`
 pnpm start
 ```
 
-This command builds the application and starts the HTTP server. By default, `GET /health` listens on port `3000` and reports liveness; startup does not process messages. Set `PORT` to change the port.
+This command builds the application, applies committed SQLite migrations, and starts the HTTP server. The CLI command above likewise builds and applies migrations before processing, while preserving JSONL-only stdout. By default, `GET /health` listens on port `3000` and reports liveness; startup does not process messages. Set `PORT` to change the port. Use `pnpm run db:migrate` to author a migration and `pnpm run db:deploy` to apply committed migrations independently.
 
 Run the offline test suite with:
 
