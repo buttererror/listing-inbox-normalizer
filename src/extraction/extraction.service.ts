@@ -28,6 +28,7 @@ export class ExtractionService {
     let output: unknown;
     try {
       output = await this.gateway.execute({
+        messageId: message.id,
         instructions: DOMAIN_INSTRUCTIONS,
         sourceText: message.text,
         responseSchema: z.toJSONSchema(stage1GatewayWireSchema, { target: 'draft-7' }),

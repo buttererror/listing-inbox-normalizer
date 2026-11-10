@@ -162,6 +162,36 @@ export interface EvaluationSummary {
   excluded_from_denominators: string[];
 }
 
+export interface TelemetryRecord {
+  message_id?: string;
+  provider: string;
+  model: string;
+  duration_ms: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+  error_code?: string;
+}
+
+const TELEMETRY_PREFIX = 'DWELLEO_TELEMETRY ';
+
+export function parseTelemetry(stderr: string): TelemetryRecord[] {
+  const records: TelemetryRecord[] = [];
+  for (const line of stderr.split(/\r?\n/)) {
+    if (!line.startsWith(TELEMETRY_PREFIX)) continue;
+    try {
+      const value: unknown = JSON.parse(line.slice(TELEMETRY_PREFIX.length));
+      if (typeof value === 'object' && value !== null &&
+        typeof (value as TelemetryRecord).provider === 'string' &&
+        typeof (value as TelemetryRecord).model === 'string' &&
+        typeof (value as TelemetryRecord).duration_ms === 'number') {
+        records.push(value as TelemetryRecord);
+      }
+    } catch { /* Ignore malformed telemetry diagnostics. */ }
+  }
+  return records;
+}
+
 export const EVALUATED_FIELDS = [
   'purpose',
   'property_type',
@@ -652,7 +682,7 @@ export async function runEvaluation(options: EvaluateCliOptions = {}): Promise<E
     const res = spawnSync('node', [cliPath, 'process', casesPath], {
       cwd: rootDir,
       encoding: 'utf-8',
-      env: process.env,
+      env: { ...process.env, DWELLEO_TELEMETRY: '1' },
     });
 
     const rawStdout = res.stdout || '';
@@ -663,9 +693,14 @@ export async function runEvaluation(options: EvaluateCliOptions = {}): Promise<E
     fs.writeFileSync(actualOutputPath, rawStdout, 'utf-8');
     console.log(`Saved raw CLI results to ${actualOutputPath}`);
 
+    const telemetry = parseTelemetry(res.stderr || '');
+    const telemetryPath = path.join(outputDir, 'telemetry.jsonl');
+    fs.writeFileSync(telemetryPath, telemetry.map((record) => JSON.stringify(record)).join('\n') + (telemetry.length ? '\n' : ''), 'utf-8');
+    console.log(`Saved ${telemetry.length} per-message telemetry records to ${telemetryPath}`);
+
     if (res.status !== 0 && res.status !== 1) {
       console.warn(`CLI process exited with non-standard code ${res.status}`);
-      if (res.stderr) console.error(res.stderr);
+      if (res.stderr) console.error(res.stderr.split(/\r?\n/).filter((line) => !line.startsWith(TELEMETRY_PREFIX)).join('\n'));
     }
   }
 

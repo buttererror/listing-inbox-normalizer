@@ -3,10 +3,23 @@ import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
   evaluateResults,
+  parseTelemetry,
   runEvaluation,
   ExpectedDataset,
   ActualSuccess,
 } from '../scripts/evaluate';
+
+describe('Task 03.3 telemetry parsing', () => {
+  it('keeps valid telemetry events and ignores unrelated or malformed stderr lines', () => {
+    const records = parseTelemetry([
+      'ordinary stderr diagnostic',
+      'DWELLEO_TELEMETRY {"message_id":"m-1","provider":"agy","model":"default","duration_ms":1250,"input_tokens":120,"output_tokens":45,"total_tokens":165}',
+      'DWELLEO_TELEMETRY {invalid}',
+      'DWELLEO_TELEMETRY {"provider":"gemini","model":"gemini-test","duration_ms":"unknown"}',
+    ].join('\n'));
+    expect(records).toEqual([{ message_id: 'm-1', provider: 'agy', model: 'default', duration_ms: 1250, input_tokens: 120, output_tokens: 45, total_tokens: 165 }]);
+  });
+});
 
 describe('Offline Evaluator (Task 03.2)', () => {
   const expectedPath = path.resolve(__dirname, 'evaluation/expected.json');

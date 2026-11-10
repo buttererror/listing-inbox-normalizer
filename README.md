@@ -54,6 +54,8 @@ pnpm test
 
 Gemini has passed a live CLI check. Anthropic and OpenAI have offline mocked coverage; live qualification is pending. The current flow makes one model request per message. Representative latency and cost have not yet been measured.
 
+The evaluation runner captures per-message model, gateway duration, and token usage (from agy output envelopes or SDK usage) to `evaluation-results/telemetry.jsonl` when available. It enables capture only for the evaluation subprocess; telemetry is written to stderr, kept out of public JSONL, and contains no message text. Durations cover the model gateway request, not CLI startup or downstream resolution and review.
+
 ## With another day
 
 Evaluate the pipeline on independently labeled messages. Compare extracted values and review outcomes against those labels, and record per-message latency and token usage so provider quality and operating cost can be assessed.

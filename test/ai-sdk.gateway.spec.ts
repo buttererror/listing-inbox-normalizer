@@ -1,5 +1,6 @@
 import { AiSdkGateway } from '../src/llm-gateway/ai-sdk.gateway';
 import { createLlmGateway } from '../src/llm-gateway/llm-gateway.module';
+import { parseTelemetry } from '../scripts/evaluate';
 
 const extractionRequest = {
   instructions: 'Extract supported facts.',
@@ -65,8 +66,14 @@ function openAiResponse() {
 
 describe('AiSdkGateway', () => {
   const originalFetch = global.fetch;
+  const originalTelemetry = process.env.DWELLEO_TELEMETRY;
 
-  afterEach(() => { global.fetch = originalFetch; });
+  afterEach(() => {
+    jest.restoreAllMocks();
+    global.fetch = originalFetch;
+    if (originalTelemetry === undefined) delete process.env.DWELLEO_TELEMETRY;
+    else process.env.DWELLEO_TELEMETRY = originalTelemetry;
+  });
 
   it.each([
     ['gemini', 'test-key', 'gemini-test', googleResponse, 'generativelanguage.googleapis.com', 'x-goog-api-key'],
@@ -103,6 +110,34 @@ describe('AiSdkGateway', () => {
     expect(body.systemInstruction.parts[0].text).toBe(extractionRequest.instructions);
     expect(body.contents[0].parts[0].text).toBe(extractionRequest.sourceText);
     expect(body.generationConfig.responseJsonSchema).toEqual(extractionRequest.responseSchema);
+  });
+
+  it('emits model usage and latency to stderr telemetry without changing model output', async () => {
+    process.env.DWELLEO_TELEMETRY = '1';
+    const stderr = jest.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const fetchMock = jest.fn().mockResolvedValue(googleResponse());
+    global.fetch = fetchMock as typeof fetch;
+    const gateway = await AiSdkGateway.create({ provider: 'gemini', apiKey: 'test-key', model: 'gemini-test', timeoutMs: 1000 });
+
+    await expect(gateway.execute({ ...extractionRequest, messageId: 'm-telemetry' })).resolves.toEqual(extraction);
+    const telemetryLine = stderr.mock.calls.map(([chunk]) => String(chunk)).find((line) => line.startsWith('DWELLEO_TELEMETRY '));
+    expect(telemetryLine).toBeDefined();
+    expect(parseTelemetry(telemetryLine ?? '')[0]).toMatchObject({
+      message_id: 'm-telemetry', provider: 'gemini', model: 'gemini-test', input_tokens: 1, output_tokens: 1, total_tokens: 2,
+    });
+    expect(parseTelemetry(telemetryLine ?? '')[0].duration_ms).toEqual(expect.any(Number));
+  });
+
+  it('emits failure telemetry and safely omits unavailable token usage', async () => {
+    process.env.DWELLEO_TELEMETRY = '1';
+    const stderr = jest.spyOn(process.stderr, 'write').mockReturnValue(true);
+    global.fetch = jest.fn().mockResolvedValue(new Response('failure', { status: 500 })) as typeof fetch;
+    const gateway = await AiSdkGateway.create({ provider: 'gemini', apiKey: 'test-key', model: 'gemini-test', timeoutMs: 1000 });
+    await expect(gateway.execute({ ...extractionRequest, messageId: 'm-failed' })).rejects.toMatchObject({ code: 'provider_unavailable' });
+
+    const line = stderr.mock.calls.map(([chunk]) => String(chunk)).find((entry) => entry.startsWith('DWELLEO_TELEMETRY '));
+    expect(parseTelemetry(line ?? '')[0]).toMatchObject({ message_id: 'm-failed', error_code: 'provider_unavailable' });
+    expect(parseTelemetry(line ?? '')[0]).not.toHaveProperty('input_tokens');
   });
 
   it('forces Anthropic native structured output', async () => {

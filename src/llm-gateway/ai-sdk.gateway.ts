@@ -1,5 +1,5 @@
 import type * as AiSdk from 'ai';
-import { ProviderError } from './llm-request';
+import { ProviderError, writeLlmTelemetry } from './llm-request';
 import type { LlmGateway, LlmRequest } from './llm-request';
 
 type LanguageModel = Parameters<typeof AiSdk.generateText>[0]['model'];
@@ -36,6 +36,19 @@ export class AiSdkGateway implements LlmGateway {
   }
 
   async execute(request: LlmRequest): Promise<unknown> {
+    const startedAt = performance.now();
+    const report = (usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number }, errorCode?: ProviderError['code']) => {
+      writeLlmTelemetry({
+        ...(request.messageId ? { message_id: request.messageId } : {}),
+        provider: this.options.provider,
+        model: this.options.model,
+        duration_ms: Math.round((performance.now() - startedAt) * 100) / 100,
+        ...(usage?.inputTokens !== undefined ? { input_tokens: usage.inputTokens } : {}),
+        ...(usage?.outputTokens !== undefined ? { output_tokens: usage.outputTokens } : {}),
+        ...(usage?.totalTokens !== undefined ? { total_tokens: usage.totalTokens } : {}),
+        ...(errorCode ? { error_code: errorCode } : {}),
+      });
+    };
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.options.timeoutMs);
     let noObjectGeneratedError: { isInstance(error: unknown): boolean } | undefined;
@@ -53,10 +66,18 @@ export class AiSdkGateway implements LlmGateway {
           ? { providerOptions: { anthropic: { structuredOutputMode: 'outputFormat' } } }
           : {}),
       });
+      report(result.usage);
       return result.output;
     } catch (error) {
-      if (controller.signal.aborted) throw new ProviderError('provider_timeout', 'Provider timed out');
-      if (noObjectGeneratedError?.isInstance(error)) return undefined;
+      if (controller.signal.aborted) {
+        report(undefined, 'provider_timeout');
+        throw new ProviderError('provider_timeout', 'Provider timed out');
+      }
+      if (noObjectGeneratedError?.isInstance(error)) {
+        report();
+        return undefined;
+      }
+      report(undefined, 'provider_unavailable');
       throw new ProviderError('provider_unavailable', 'Provider request failed');
     } finally {
       clearTimeout(timer);

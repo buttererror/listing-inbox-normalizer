@@ -1,5 +1,15 @@
 # Key agent sessions
 
+## Phase 03.3 — Capture provider usage and latency — 2026-11-10
+
+- **Evidence status** — Evidence checked against AgyGateway and AI SDK gateway usage reporting, focused offline tests, and evaluator telemetry capture.
+- **Human review** — Not requested.
+- **Objective** — Capture model identity, per-message request latency, token usage where available, and provider failures for evaluation runs using `agy` as the Phase 03 evaluation provider.
+- **Important prompt** — “We will use agy instead here”.
+- **Outcome** — Added opt-in stderr telemetry in both `AgyGateway` (extracting `usage` and `duration_seconds` directly from `agy`'s JSON envelope) and `AiSdkGateway`; attached message IDs to gateway requests. The evaluator captures telemetry to `evaluation-results/telemetry.jsonl`. Public JSONL output remains clean.
+- **Verification and limits** — Focused unit tests in `test/agy.gateway.spec.ts` and `test/evaluator.spec.ts` passed; full test suite passed (227 tests); typecheck and build passed. Measured duration covers the provider request; CLI startup and downstream resolution/review are excluded.
+- **Related decisions** — D-036, D-038.
+
 ## Task 03.2 offline evaluator — 2026-11-10
 
 - **Evidence status** — Evidence checked against scripts/evaluate.ts, test/evaluator.spec.ts, and offline evaluation results.

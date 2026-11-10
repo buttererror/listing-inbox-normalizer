@@ -1,7 +1,7 @@
 # Dwelleo — Phase 03: Independent LLM Evaluation
 
 **Status:** Accepted plan — implementation pending
-**Target provider:** Gemini through the existing Vercel AI SDK gateway
+**Target provider:** Antigravity CLI through the existing `agy` gateway
 **Scope:** Evaluation, measurement, and reporting
 **Prerequisite:** Phase 02 completed
 
@@ -209,9 +209,11 @@ Confirm that instrumentation:
 - Handles missing token metadata safely.
 - Adds negligible processing overhead.
 
+**Implementation evidence — 2026-11-10:** Both the `agy` gateway and the AI SDK gateway emit opt-in `DWELLEO_TELEMETRY` records on stderr with message ID, configured provider/model, gateway request duration, input/output/total tokens when available, and typed provider failure codes. In `AgyGateway`, token usage and request duration are captured directly from `agy`'s JSON output envelope (`usage` and `duration_seconds`). The evaluator enables telemetry for its CLI subprocess and writes parsed events to `evaluation-results/telemetry.jsonl`; public JSONL is unchanged. Duration measures the single provider request per message, excluding CLI startup and post-extraction resolution/review. Offline tests verify telemetry parsing, usage, missing usage, failures and public result preservation. No live evaluation was run for this task.
+
 ## 5. Task 03.4 — Run the baseline evaluation
 
-Execute the complete frozen dataset once through the configured Gemini provider.
+Execute the complete frozen dataset once through the configured `agy` provider.
 
 Target approximately **20 live extraction calls**, one per message.
 
@@ -308,7 +310,7 @@ Phase 03 is complete when:
 - [x] An independent, frozen evaluation dataset exists.
 - [x] Expected labels have been reviewed against the approved processing policies.
 - [x] A standalone deterministic evaluator has passing offline tests.
-- [ ] One complete live Gemini evaluation has run.
+- [ ] One complete live agy evaluation has run.
 - [ ] Classification, offer, field, and review metrics are reported with denominators.
 - [ ] Unsupported-value acceptance and supported-value omission are reported.
 - [ ] Latency and token usage are measured, or their limitations are explicitly documented.
