@@ -1,0 +1,17 @@
+meta {
+  name: Approve Listing With Note
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/listings/{{noteListingId}}/approve
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "note": "Reviewed the incomplete details and accepted the listing as-is."
+  }
+}

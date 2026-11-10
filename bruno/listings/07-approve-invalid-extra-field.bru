@@ -1,0 +1,18 @@
+meta {
+  name: Approve Invalid Extra Field (400)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/listings/{{listingId}}/approve
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "note": "Valid note",
+    "unexpected": true
+  }
+}

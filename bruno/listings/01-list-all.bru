@@ -12,9 +12,10 @@ get {
 
 script:post-response {
   const body = res.getBody();
-  const flagged = body?.listings?.find((item) => item.needs_review === true);
-  if (flagged) {
-    bru.setVar("listingId", flagged.id);
+  const flagged = body?.listings?.filter((item) => item.needs_review === true) ?? [];
+  if (flagged.length > 0) {
+    bru.setVar("listingId", flagged[0].id);
+    bru.setVar("noteListingId", (flagged[1] ?? flagged[0]).id);
   }
   const clean = body?.listings?.find((item) => item.needs_review === false);
   if (clean) {

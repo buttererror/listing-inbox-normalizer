@@ -18,3 +18,10 @@ body:json {
     "text": "Available now: 1) Studio Al Yasmin 35K/yr 2) 2BR Al Yasmin 55K/yr 3) 3BR Hittin 80K/yr. Call 0520202020"
   }
 }
+
+script:post-response {
+  const body = res.getBody();
+  if (body?.listings?.length > 0) {
+    bru.setVar("noteListingId", body.listings[0].id);
+  }
+}
