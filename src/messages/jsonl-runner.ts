@@ -1,6 +1,6 @@
 import { MessageProcessor, MessageResult } from './message-processor';
 import { ProcessingFailure, processingFailureSchema } from './message-result.schema';
-import { rawMessageSchema } from './raw-message.schema';
+import { extractCandidateMessageId, rawMessageSchema } from './raw-message.schema';
 
 /** Process each nonblank JSONL line and write one result record in input order. */
 export async function runJsonl(
@@ -29,9 +29,7 @@ export async function runJsonl(
 
     const validated = rawMessageSchema.safeParse(parsed);
     if (!validated.success) {
-      const id = typeof parsed === 'object' && parsed !== null && 'id' in parsed && typeof parsed.id === 'string'
-        ? parsed.id : null;
-      result = { message_id: id, error: { code: 'invalid_input', message: 'Invalid message' } };
+      result = { message_id: extractCandidateMessageId(parsed), error: { code: 'invalid_input', message: 'Invalid message' } };
     } else {
       try {
         result = await processor.process(validated.data);

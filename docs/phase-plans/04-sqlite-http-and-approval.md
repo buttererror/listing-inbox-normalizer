@@ -1,6 +1,6 @@
 # Phase 04 — SQLite persistence, HTTP integration, and human approval
 
-**Status:** In progress. Task 04.1 is complete. Tasks 04.2 through 04.6 are pending.
+**Status:** In progress. Tasks 04.1 through 04.3 are complete. Tasks 04.4 through 04.6 are pending.
 
 ## Objective and scope
 
@@ -58,6 +58,15 @@ Concurrent identical requests may both invoke the model before either saves. The
 Connect `POST /messages` to PersistentIngestionService, which delegates processing to the same stateless processor used by the CLI. Return HTTP 200 for a new success or exact replay.
 
 **04.3T.** Verify successful ingestion, replay, malformed JSON, invalid input, each typed failure and status, and internal storage failure. Compare CLI and HTTP results against the same database.
+
+#### 04.3 progress — 2026-11-10
+
+- **Implemented behavior** — Added `MessagesController` (`POST /messages`, HTTP 200 on new success or exact replay) and `MessagesExceptionFilter` (`APP_FILTER` extending `BaseExceptionFilter`) in `MessagesModule`. Extracted shared `extractCandidateMessageId` in `src/messages/raw-message.schema.ts` for reuse across `runJsonl` and `MessagesController`, and added optional `{ logger: false }` to `createHttpApplication` in `src/bootstrap.ts`. `MessagesController` validates payloads with `rawMessageSchema`, delegates to `PersistentIngestionService`, maps typed `ProcessingFailure` results to their planned HTTP status codes, and catches unexpected exceptions into safe `internal_error` 500 responses. `MessagesExceptionFilter` intercepts pre-controller JSON body parsing errors on `POST /messages` into `invalid_input` 400 without changing `/health` or unknown-route 404 responses.
+- **Handled cases** — The focused offline suite in `test/http-messages.spec.ts` (10 tests against isolated temporary SQLite databases migrated from a `db:deploy` template) verifies multi-offer and zero-offer `POST /messages` ingestion with `StoredMessage`/`StoredListing` row order, extra-key stripping, sequential replay and post-restart replay via unconfigured `createHttpApplication` with stable listing IDs and zero gateway calls, changed `sender`/`received_at`/`text` conflict (409), concurrent identical (both 200) and concurrent conflicting (`200` + `409`) submissions, malformed JSON / scalar JSON / invalid `RawMessage` / missing `Content-Type` (400), `/health` (200) and `/unknown-route` (404) preservation, and CLI-vs-HTTP parity against the same SQLite database without CLI SQLite writes or replay side effects.
+- **Errors and failure handling** — Verified all `POST /messages` error matrix rows offline: `invalid_input` -> 400 (malformed JSON, scalar JSON, empty/array/missing-fields/invalid-timestamp/plain-text payloads, retaining non-empty `message_id` when available and `null` otherwise), `message_conflict` -> 409 (sequential and concurrent conflicts; existing DB rows intact), `invalid_extraction` -> 502 (no stored message), `provider_unavailable` -> 503 (both gateway double and real unconfigured `createHttpApplication`; no stored message), `provider_timeout` -> 504 (no stored message), and `internal_error` -> 500 (duplicate listing ID atomic rollback leaving 0 rows, plus unexpected DB errors with no leaked error/path details).
+- **Known gaps** — `GET /listings` and `POST /listings/{id}/approve` remain unimplemented pending Tasks 04.4 and 04.5. Replay after approval (`needs_review` snapshot vs current state) is deferred to Task 04.5T. Concurrent identical `POST /messages` requests can still issue duplicate model calls before the unique insert settles.
+- **Verification evidence** — On 2026-11-10, `pnpm test -- test/http-messages.spec.ts` passed (1 suite, 10 tests); the full offline suite `pnpm test` passed (24 suites, 262 tests); `pnpm run typecheck` and `pnpm run build` passed with zero errors.
+- **Follow-up** — Implement `GET /listings` in Task 04.4 and `POST /listings/{id}/approve` in Task 04.5, then complete Phase 04 exit verification in Task 04.6 (non-blocking for 04.3).
 
 ### 04.4 — Listing reads
 

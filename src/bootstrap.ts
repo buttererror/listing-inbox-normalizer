@@ -7,7 +7,7 @@ export async function createApplicationContext(options?: { logger: false }) {
   loadConfig();
   return NestFactory.createApplicationContext(AppModule, { ...options, abortOnError: false });
 }
-export async function createHttpApplication() {
+export async function createHttpApplication(options?: { logger: false }) {
   loadConfig();
-  return NestFactory.create(AppModule);
+  return NestFactory.create(AppModule, options);
 }

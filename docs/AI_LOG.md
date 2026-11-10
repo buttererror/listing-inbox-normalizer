@@ -1,5 +1,15 @@
 # Key agent sessions
 
+## Task 04.3 HTTP ingestion — 2026-11-10
+
+- **Evidence status** — Evidence checked against `src/messages/messages.controller.ts`, `src/messages/messages-exception.filter.ts`, `src/messages/messages.module.ts`, `src/messages/raw-message.schema.ts`, `src/messages/jsonl-runner.ts`, `src/bootstrap.ts`, `test/http-messages.spec.ts`, `docs/phase-plans/04-sqlite-http-and-approval.md`, `docs/success-criteria.md`, `docs/roadmap.md`, `README.md`, and offline test/typecheck/build output.
+- **Human review** — Not requested.
+- **Objective** — Implement Task 04.3 (`POST /messages`) and its offline verification `04.3T`.
+- **Important prompt** — User: “Implement task 04.3”.
+- **Outcome** — Added `MessagesController` (`POST /messages`, HTTP 200 on new success or exact replay) backed by `PersistentIngestionService`, mapped all `ProcessingFailure` error codes to their planned HTTP statuses (`400`, `409`, `502`, `503`, `504`, `500`), added `MessagesExceptionFilter` (`APP_FILTER`) to turn malformed JSON body errors on `POST /messages` into `400 invalid_input` without altering `/health` or unknown-route 404 responses, extracted `extractCandidateMessageId` into `src/messages/raw-message.schema.ts` for shared CLI/HTTP invalid-input ID reporting, and added `test/http-messages.spec.ts` (10 offline tests against isolated temporary SQLite databases).
+- **Verification and limits** — `pnpm run typecheck`, `pnpm run build`, `pnpm test -- test/http-messages.spec.ts` (10 tests), and the full offline test suite `pnpm test` (24 suites, 262 tests) passed after the implementation. Verified single/multi/zero-offer HTTP ingestion, sequential and restart replay with stable IDs and zero gateway calls, sequential and concurrent conflicts (`409`), malformed JSON and invalid payloads (`400`), `502`/`503`/`504`/`500` error mapping (including real unconfigured `createHttpApplication` and duplicate-ID rollback), and CLI-vs-HTTP parity against the same database without CLI SQLite writes. `GET /listings` and `POST /listings/{id}/approve` remain Tasks 04.4–04.5.
+- **Related decisions** — D-012 (`OPEN-01`), D-013, D-014, D-042, D-043.
+
 ## Phase 04 architecture correction — 2026-11-10
 
 - **Objective** — User supplied the Phase 04 Architecture Correction & Documentation Handoff and directed implementation.

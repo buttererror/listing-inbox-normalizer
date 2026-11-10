@@ -9,3 +9,10 @@ export const rawMessageSchema = z.object({
 });
 
 export type RawMessage = z.infer<typeof rawMessageSchema>;
+
+/** Extract a candidate non-empty string message ID from unvalidated input for error reporting. */
+export function extractCandidateMessageId(input: unknown): string | null {
+  if (typeof input !== 'object' || input === null || !('id' in input)) return null;
+  const id = (input as { id: unknown }).id;
+  return typeof id === 'string' && id.length > 0 ? id : null;
+}
