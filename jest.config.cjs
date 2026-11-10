@@ -3,5 +3,6 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['<rootDir>/test/**/*.spec.ts'],
   maxWorkers: 1,
+  moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
   transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: { module: 'NodeNext', moduleResolution: 'NodeNext', isolatedModules: true } }] },
 };

@@ -7,3 +7,44 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+model StoredMessage {
+  ingestionOrder  Int             @id @default(autoincrement())
+  id              String          @unique
+  sender          String
+  receivedAt      String
+  text            String
+  classification  String
+  detectedClasses String
+  resultSnapshot  String
+  createdAt       DateTime        @default(now())
+  listings        StoredListing[]
+}
+
+model StoredListing {
+  id                    String        @id
+  messageIngestionOrder Int
+  offerIndex            Int
+  purpose               String?
+  propertyType          String?
+  city                  String?
+  district              String?
+  bedrooms              Int?
+  bathrooms             Int?
+  areaSqm               Float?
+  priceAmount           Float?
+  priceCurrency         String
+  pricePeriod           String?
+  contactPhone          String?
+  needsReview           Boolean
+  originallyNeedsReview Boolean
+  reviewReasons         String
+  approvalState         String        @default("pending")
+  approvedAt            DateTime?
+  provenance            String
+  createdAt             DateTime      @default(now())
+  message               StoredMessage @relation(fields: [messageIngestionOrder], references: [ingestionOrder], onDelete: Cascade)
+
+  @@unique([messageIngestionOrder, offerIndex])
+  @@index([needsReview])
+}

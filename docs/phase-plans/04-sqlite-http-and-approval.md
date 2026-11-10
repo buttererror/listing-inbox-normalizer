@@ -1,6 +1,6 @@
 # Phase 04 — SQLite persistence, HTTP integration, and human approval
 
-**Status:** Planned. All implementation tasks and checks below are pending.
+**Status:** In progress. Task 04.1 is complete. Tasks 04.2 through 04.6 are pending.
 
 ## Objective and scope
 
@@ -30,6 +30,13 @@ Complete each focused check and record its result before dependent work. Use gat
 Use the existing Prisma and SQLite setup for the schema, committed migrations, and database lifecycle. Store original message fields, classification and detected classes, the immutable successful result, listing IDs and order, current review state, original review eligibility, approval state and timestamp or equivalent, and source provenance.
 
 **04.1T.** Verify fresh initialization and committed migrations through both entry points. Save and read messages and listings, close and reopen the database, and check order and review state.
+
+#### 04.1 progress — 2026-11-10
+
+- **Implemented behavior** — Added StoredMessage and StoredListing Prisma models and the committed SQLite migration. `pnpm run db:deploy` applies it through Prisma before `pnpm start`, `pnpm run start:dev`, or `pnpm --silent run cli process …`; DatabaseService owns only the Prisma connection lifecycle. The CLI redirects its build and migration diagnostics to stderr, preserving JSONL stdout. Listing rows retain ordered offers, the immutable message snapshot, current and original review state, approval fields, and provenance storage. postinstall generates the ignored Prisma client required by the application.
+- **Cases handled** — The focused test uses one temporary SQLite file, starts an application context, saves one message with two ordered listings and different review flags, closes it, then starts the HTTP application against the same file and reads the same rows. It verifies migration application, persistence, offer ordering, review flags, closure, and restart.
+- **Errors and limitations** — Prisma 7.10.1's SQLite migration command has an upstream schema-engine logging defect: it fails with an empty error unless `RUST_LOG=info`. `db:deploy` pins that documented workaround without changing dependencies. Runtime migration discovery requires the application to start from the repository root where prisma/migrations is available. Shared processor persistence, replay, HTTP listing routes, and approval remain in later tasks.
+- **Verification evidence** — On 2026-11-10, `db:deploy` applied the migration to fresh temporary HTTP and CLI databases; a second deploy preserved the existing migration history, including on a disposable copy initialized by the former runner. HTTP startup completed after migration (with loopback access). The CLI emitted JSONL results only to stdout while build and migration output remained on stderr. The focused restart test passed; the full offline suite passed 22 suites / 248 tests, and `pnpm run typecheck` and `pnpm run build` passed.
 
 ### 04.2 — Shared persistence and replay
 

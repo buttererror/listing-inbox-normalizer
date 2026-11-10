@@ -35,13 +35,16 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "start": "pnpm run build && node dist/main.js",
-    "start:dev": "ts-node src/main.ts",
+    "start": "pnpm run build && pnpm run db:deploy && node dist/main.js",
+    "start:dev": "pnpm run db:deploy && ts-node src/main.ts",
+    "cli": "pnpm run build 1>&2 && pnpm run db:deploy 1>&2 && node dist/cli.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "RUST_LOG=info prisma migrate deploy"
   },
   "packageManager": "pnpm@10.28.2",
   "pnpm": {
