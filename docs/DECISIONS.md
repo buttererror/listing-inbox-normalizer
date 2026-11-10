@@ -44,9 +44,31 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ## Proposed and recently approved
 
+### D-038: Keep custom sandbox infrastructure outside Dwelleo
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — The Bubblewrap experiment introduced custom process isolation and prevented the local `agy` profile from authenticating. Dwelleo’s production extraction path already uses the direct Gemini API through the Vercel AI SDK with no agent tools or shell execution.
+- **Decision and rationale** — Remove Bubblewrap from Dwelleo. Use the direct Gemini API for production extraction and Phase 03 evaluation. `agy` remains an optional development utility using its documented built-in sandbox and permission controls. Evaluate custom isolation only for a demonstrated untrusted-code execution path, with its required filesystem, credentials and network access recorded first.
+- **Consequences** — D-037 and the `agy` provider selection in D-036 are superseded. OPEN-08 does not gate the direct Gemini flow. No sandbox infrastructure is part of the assessment scope.
+- **Validation** — Remove the launcher and configuration, restore direct gateway tests, and verify the application suite, typecheck and build.
+- **Approval evidence** — User instruction: “Do not introduce a custom Bubblewrap integration into Dwelleo... The production extraction pipeline uses the direct Gemini API through Vercel AI SDK, without agent tools or shell execution.”
+- **References** — D-024, D-026, D-036, D-037, OPEN-08.
+
+### D-037: Isolate the agy evaluation process
+
+- **Status** — Superseded by D-038 on 2026-11-10.
+- **Context** — OPEN-08 requires verified isolation before Phase 03 cases reach `agy`. The current gateway auto-approves tool permissions. A sandbox flag alone has not established containment. Bubblewrap is installed; Docker daemon access failed in the current environment.
+- **Options and tradeoffs** — Use Bubblewrap with a minimal filesystem and restricted process capabilities, which avoids a new container service but requires careful treatment of authentication and network access; use a separately configured container, which adds a runtime dependency and daemon setup; or prove `agy` is tool-free, which would avoid tool containment but is not currently established.
+- **Recommendation and rationale** — Investigate an evaluation-only Bubblewrap launcher with a minimal runtime and isolated writable directories. Allow only the access necessary to contact the provider, and do not expose the project, user credentials or host sockets to agent tools. Fail closed when isolation or authentication cannot be established. Keep the existing public JSONL contract.
+- **Consequences** — Provider authentication or the installed agent architecture may require access that conflicts with isolation; if so, leave OPEN-08 unresolved rather than relax the boundary without review. Bubblewrap availability and host kernel support become evaluation prerequisites.
+- **Validation** — Verify attempted reads and writes outside the permitted boundary, command execution restrictions, process and socket access, and actual provider connectivity through the same launcher. Record exact configuration and results, CLI version and model. Test failure paths offline and retain the Phase 03 gate until all checks pass.
+- **Review checkpoint** — Preserve the boundary while resolving authentication. Review any authentication or network exception before exposing it.
+- **Approval evidence** — User: “IMplement that” after the Bubblewrap approach was presented.
+- **References** — OPEN-08, D-024, D-029, D-036, [Phase 03 prerequisite](phase-plans/03-independent-provider-evaluation.md#prerequisite--verify-agy-isolation-open-08).
+
 ### D-036: Use a frozen independent corpus and separate live measurement
 
-- **Status** — Accepted on 2026-11-10 for the supplied Phase 03 plan and `agy` provider. Isolation verification remains pending under OPEN-08.
+- **Status** — Superseded by D-038 for provider selection on 2026-11-10. The independent-corpus protocol remains the planning basis.
 - **Context** — Evaluate the public CLI using independent cases and report quality and operating measurements. The current `agy` gateway skips permission prompts and a tool-free mode has not been verified.
 - **Options and tradeoffs** — Existing smoke fixtures are inexpensive but biased; independent frozen cases require labeling but allow a reproducible evaluation. A separate evaluator measures the delivered CLI while preserving the public output contract.
 - **Decision and rationale** — Use the supplied approximately 20-case evaluation plan and configured `agy` gateway. Freeze independent labels before the baseline. Capture usage from the `agy` envelope when available and disclose unavailable usage or cost. Require verified isolation before processing evaluation cases.

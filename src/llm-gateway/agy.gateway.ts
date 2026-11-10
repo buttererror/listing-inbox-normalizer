@@ -21,7 +21,6 @@ export class AgyGateway implements LlmGateway {
   async execute(request: LlmRequest): Promise<unknown> {
     const prompt = `${request.instructions}\n\nSource text:\n${request.sourceText}`;
     const args = [
-      '--dangerously-skip-permissions',
       '-p',
       prompt,
       '--output-format',
@@ -40,7 +39,7 @@ export class AgyGateway implements LlmGateway {
       let stderr = '';
       let timedOut = false;
 
-      const child = spawn(this.executable, args);
+      const child = spawn(this.executable, ['--sandbox', ...args]);
 
       const timer = setTimeout(() => {
         timedOut = true;

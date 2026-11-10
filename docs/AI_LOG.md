@@ -1,5 +1,26 @@
 # Key agent sessions
 
+## Task 03.2 offline evaluator — 2026-11-10
+
+- **Evidence status** — Evidence checked against scripts/evaluate.ts, test/evaluator.spec.ts, and offline evaluation results.
+- **Human review** — Not requested.
+- **Objective** — Implement Task 03.2: Lightweight offline evaluator.
+- **Important prompt** — User: “Implement next task”.
+- **Outcome** — Created `scripts/evaluate.ts` providing standalone CLI execution and offline scoring against frozen `expected.json`. Implemented all 8 required metrics (classification, detected-class, offer-count, field accuracy, unsupported-value acceptance, supported-value omission, review precision, and review recall) with explicit denominators, distinct inapplicable field handling, and offer matching without UUID dependency. Generates `actual.jsonl` and `summary.json` with mismatch tracking. Created `test/evaluator.spec.ts` with 7 offline test scenarios.
+- **Verification and limits** — 7 dedicated offline tests in `test/evaluator.spec.ts` pass without an API key; full 20-suite test suite passes (224 tests); typecheck and build pass cleanly. Live model evaluation remains deferred to Task 03.4.
+- **Related decisions** — [D-036](DECISIONS.md#d-036-use-a-frozen-independent-corpus-and-separate-live-measurement), [D-038](DECISIONS.md#d-038-keep-custom-sandbox-infrastructure-outside-dwelleo), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review).
+
+
+## Production provider and sandbox correction — 2026-11-10
+
+- **Evidence status** — Evidence checked against the direct Gemini gateway and the Bubblewrap experiment.
+- **Human review** — Confirmed by direct user instruction.
+- **Objective** — Remove custom Bubblewrap integration and restore direct Gemini production extraction.
+- **Important prompt** — “Do not introduce a custom Bubblewrap integration into Dwelleo. The production extraction pipeline uses the direct Gemini API through Vercel AI SDK, without agent tools or shell execution.”
+- **Outcome** — Removed the Bubblewrap launcher, its configuration and related tests. The optional agy gateway uses its own `--sandbox` flag for development. Restored Gemini as the Phase 03 provider and recorded D-038.
+- **Verification and limits** — Focused Gemini and agy gateway tests passed; typecheck and build passed; the complete offline suite passed 217 tests across 19 suites when run with loopback access. The prior Bubblewrap authentication probe remains historical evidence only.
+- **Related decisions** — [D-038](DECISIONS.md#d-038-keep-custom-sandbox-infrastructure-outside-dwelleo), D-024, D-026.
+
 ## Task 03.1 independent evaluation dataset — 2026-11-10
 
 - **Evidence status** — Evidence checked against raw message schema, public result schema, runtime review reasons, and dataset verification test suite.
@@ -9,6 +30,17 @@
 - **Outcome** — Created `test/evaluation/cases.jsonl` containing 20 independently authored Saudi real estate messages across Arabic (8), English (6), and Mixed (6) languages covering sale/rent, multi-offer, shared attributes, buyer requests, project announcements, irrelevant messages, mixed intents, Arabic-Indic numbers, price abbreviations, missing fields, and conflicting attributes. Created `test/evaluation/expected.json` (version 1.0.0) with normalized public fields, inapplicable field tracking, and verbatim source quote traceability. Added `test/evaluation-dataset.spec.ts` with 11 automated verification tests.
 - **Verification and limits** — 11 dedicated tests in `test/evaluation-dataset.spec.ts` passed; TypeScript typecheck and build passed. No live model or evaluation calls were performed. The OPEN-08 isolation prerequisite remains underway separately.
 - **Related decisions** — [D-036](DECISIONS.md#d-036-use-a-frozen-independent-corpus-and-separate-live-measurement), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-019](DECISIONS.md#d-019-ground-offers-and-intents-in-one-self-checked-call).
+
+
+## Phase 03 isolation prerequisite review — 2026-11-10
+
+- **Evidence status** — Evidence checked against the gateway, Phase 03 plan, installed commands and local feasibility probes.
+- **Human review** — Not requested.
+- **Objective** — Implement the Phase 03 isolation prerequisite.
+- **Important prompt** — User: “Implement the prerequisite in phase 3”.
+- **Outcome** — Implemented D-037: `AgyGateway` now uses Bubblewrap by default, clears environment variables, uses separate user, PID, IPC, UTS and cgroup namespaces, keeps provider networking, and mounts only the agent executable, runtime libraries, certificates and DNS configuration. Removed `--dangerously-skip-permissions`; the CLI’s own sandbox mode is retained as a second boundary.
+- **Verification and limits** — Gateway unit tests passed (7 tests) and TypeScript typecheck passed. `agy --version` ran in Bubblewrap and reported 1.5.3. A shell invocation failed because `/bin/sh` is not mounted. A harmless schema-constrained provider probe reached agy but requested OAuth because no host profile is mounted. No evaluation cases or broker data were sent. OPEN-08 remains unresolved until authentication can operate without exposing credentials.
+- **Related decisions** — [D-037](DECISIONS.md#d-037-isolate-the-agy-evaluation-process), D-036, OPEN-08.
 
 
 ## Phase 03 supplied plan and agy selection — 2026-11-10

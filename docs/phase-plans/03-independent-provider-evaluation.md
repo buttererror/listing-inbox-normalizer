@@ -1,7 +1,7 @@
 # Dwelleo — Phase 03: Independent LLM Evaluation
 
 **Status:** Accepted plan — implementation pending
-**Target provider:** Antigravity CLI through the existing `agy` gateway
+**Target provider:** Gemini through the existing Vercel AI SDK gateway
 **Scope:** Evaluation, measurement, and reporting
 **Prerequisite:** Phase 02 completed
 
@@ -28,10 +28,6 @@ Keep evaluation outside the production processing pipeline.
 Phase 03 does not implement SQLite persistence, HTTP endpoints, approval workflows, or deduplication. These remain assigned to later phases.
 
 The existing offline tests remain separate from live model evaluation.
-
-## Prerequisite — Verify agy isolation (OPEN-08)
-
-The current gateway invokes `agy` with `--dangerously-skip-permissions`; a tool-free mode has not been verified. Before any evaluation case is sent through `agy`, establish and verify an isolation boundary. Test that attempted unintended file access and command execution are blocked while the provider connection remains usable. Record the setup, commands, results, limitations, CLI version and model under [OPEN-08](../DECISIONS.md#open-policy-checkpoints). Do not run evaluation cases until this gate passes. A sandbox flag alone is not evidence of effective isolation.
 
 ## 2. Task 03.1 — Prepare the evaluation dataset
 
@@ -162,6 +158,8 @@ Run offline tests against fabricated CLI output covering correct results, missin
 
 The evaluator must run its scoring tests without an API key.
 
+**Implementation evidence — 2026-11-10:** Implemented standalone offline evaluator in `scripts/evaluate.ts` supporting direct CLI execution and pre-computed JSONL evaluation, outputting `actual.jsonl` and `summary.json`. Implemented all 8 required metrics with explicit denominators, distinct inapplicable field scoring, order-sensitive offer matching, unsupported-value acceptance tracking, and review precision/recall. Verified with 7 dedicated offline tests in `test/evaluator.spec.ts` covering 100% agreement, extra/missing offers, unsupported value acceptance on per-sqm price, supported value omission, review false positives/negatives, malformed lines, provider failures with denominator exclusion, and file-based execution without an API key.
+
 ## 4. Task 03.3 — Capture token usage and latency
 
 Add minimal instrumentation around the existing model-processing path.
@@ -175,7 +173,7 @@ Add minimal instrumentation around the existing model-processing path.
 - Total tokens when available.
 - Provider errors and timeouts.
 
-Capture usage information from the `agy` JSON envelope when present. Record the actual `agy` model and CLI version for each run.
+Reuse usage information exposed by the Vercel AI SDK.
 
 Do not introduce a second LLM call or change the public listing schema.
 
@@ -189,7 +187,7 @@ Estimate cost from:
 
 Document the pricing source and snapshot date.
 
-If `agy` does not expose sufficient usage information, report the missing measurement rather than inventing a token count or cost.
+If the SDK or provider does not expose sufficient usage information, report the missing measurement rather than inventing a token count or cost.
 
 Document whether cached or reasoning tokens are included in the reported usage.
 
@@ -213,7 +211,7 @@ Confirm that instrumentation:
 
 ## 5. Task 03.4 — Run the baseline evaluation
 
-Execute the complete frozen dataset once through the configured `agy` provider.
+Execute the complete frozen dataset once through the configured Gemini provider.
 
 Target approximately **20 live extraction calls**, one per message.
 
@@ -307,11 +305,10 @@ Do not claim that results on 20 synthetic examples establish production-level ac
 
 Phase 03 is complete when:
 
-- [ ] The agy isolation prerequisite has passed and evidence is recorded under OPEN-08.
 - [x] An independent, frozen evaluation dataset exists.
 - [x] Expected labels have been reviewed against the approved processing policies.
-- [ ] A standalone deterministic evaluator has passing offline tests.
-- [ ] One complete live `agy` evaluation has run.
+- [x] A standalone deterministic evaluator has passing offline tests.
+- [ ] One complete live Gemini evaluation has run.
 - [ ] Classification, offer, field, and review metrics are reported with denominators.
 - [ ] Unsupported-value acceptance and supported-value omission are reported.
 - [ ] Latency and token usage are measured, or their limitations are explicitly documented.
