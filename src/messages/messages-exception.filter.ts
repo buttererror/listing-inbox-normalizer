@@ -11,7 +11,8 @@ import { ProcessingFailure, processingFailureSchema } from './message-result.sch
 
 /**
  * Formats pre-controller JSON body parsing failures and unexpected errors on
- * POST /messages into the shared ProcessingFailure envelope without altering other routes.
+ * POST /messages and approval requests into the shared ProcessingFailure envelope
+ * without altering unrelated routes.
  */
 @Catch()
 export class MessagesExceptionFilter extends BaseExceptionFilter {
@@ -21,7 +22,7 @@ export class MessagesExceptionFilter extends BaseExceptionFilter {
     const request = http.getRequest<unknown>();
     const response = http.getResponse<unknown>();
 
-    if (adapter && this.isPostMessagesRequest(adapter, request)) {
+    if (adapter && this.isHandledRequest(adapter, request)) {
       if (
         exception instanceof HttpException &&
         processingFailureSchema.safeParse(exception.getResponse()).success
@@ -63,7 +64,7 @@ export class MessagesExceptionFilter extends BaseExceptionFilter {
     super.catch(exception, host);
   }
 
-  private isPostMessagesRequest(adapter: HttpServer, request: unknown): boolean {
+  private isHandledRequest(adapter: HttpServer, request: unknown): boolean {
     if (
       typeof adapter.getRequestMethod !== 'function' ||
       typeof adapter.getRequestUrl !== 'function'
@@ -73,7 +74,7 @@ export class MessagesExceptionFilter extends BaseExceptionFilter {
     const method = String(adapter.getRequestMethod(request) ?? '').toUpperCase();
     const url = String(adapter.getRequestUrl(request) ?? '');
     const path = url.split('?')[0].replace(/\/+$/, '');
-    return method === 'POST' && path === '/messages';
+    return method === 'POST' && (path === '/messages' || /^\/listings\/[^/]+\/approve$/.test(path));
   }
 
   private reply(

@@ -1,5 +1,23 @@
 # Key agent sessions
 
+## Task 04.5 approval with optional note — 2026-11-10
+
+- **Evidence status** — Evidence checked against the supplied approval-note amendment, approval route and persistence code, committed SQLite migration, focused offline HTTP tests, and type checking.
+- **Human review** — Confirmed by direct task instruction and supplied amendment.
+- **Objective** — User: “Implement task 2.5 with the attatched modifications”, interpreted from the supplied “Task 04.5: Approval Note Extension”.
+- **Outcome** — Added optional, trimmed, maximum-1,000-character approval notes to the first approval of a flagged listing. Approval conditionally updates current state, preserving the first timestamp and note under repeated or concurrent requests. After the user reported missing notes on listing reads and approval responses, `GET /listings` and `POST /listings/{id}/approve` were amended to return nullable `approval_note`; message and CLI schemas remain unchanged. Added the SQLite migration, endpoint validation and error mapping, and supporting documentation.
+- **Verification and limits** — `pnpm test -- test/http-messages.spec.ts` passed 12 tests; `pnpm run typecheck` passed. Approval cannot edit fields, resolve uncertainty, identify reviewers, or provide approval history, rejection, or undo.
+- **Related decisions** — D-003, D-013, D-014, D-043, D-044, D-045, OPEN-07.
+
+## Task 04.4 listing reads — 2026-11-10
+
+- **Evidence status** — Evidence checked against the approved Phase 04 contract, persisted SQLite schema, `GET /listings` implementation, focused offline HTTP tests, and type checking.
+- **Human review** — Confirmed by direct task instruction.
+- **Objective** — User: “Implement task 04.4”.
+- **Outcome** — Added persisted listing reads through `ListingsController` and `StoredListingsService`. Reads return the existing public listing schema in stable ingestion then offer order and use current `needs_review` state. The optional query accepts only omitted, `true`, or `false`; malformed and repeated values return typed `invalid_input` 400.
+- **Verification and limits** — `pnpm test -- test/http-messages.spec.ts` passed 11 tests and `pnpm run typecheck` passed. Approval remains Task 04.5, which will change current review state and add its transition checks.
+- **Related decisions** — D-003, D-013, D-014, D-043, Phase 04 OPEN-07 contract.
+
 ## Task 04.3 HTTP ingestion — 2026-11-10
 
 - **Evidence status** — Evidence checked against `src/messages/messages.controller.ts`, `src/messages/messages-exception.filter.ts`, `src/messages/messages.module.ts`, `src/messages/raw-message.schema.ts`, `src/messages/jsonl-runner.ts`, `src/bootstrap.ts`, `test/http-messages.spec.ts`, `docs/phase-plans/04-sqlite-http-and-approval.md`, `docs/success-criteria.md`, `docs/roadmap.md`, `README.md`, and offline test/typecheck/build output.

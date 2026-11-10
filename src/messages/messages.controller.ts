@@ -15,6 +15,8 @@ const FAILURE_HTTP_STATUS: Record<ProcessingFailure['error']['code'], HttpStatus
   provider_unavailable: HttpStatus.SERVICE_UNAVAILABLE,
   provider_timeout: HttpStatus.GATEWAY_TIMEOUT,
   internal_error: HttpStatus.INTERNAL_SERVER_ERROR,
+  listing_not_found: HttpStatus.NOT_FOUND,
+  approval_conflict: HttpStatus.CONFLICT,
 };
 
 /** HTTP adapter for persistent single-message ingestion and replay. */

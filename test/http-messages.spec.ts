@@ -14,7 +14,7 @@ import { ExtractionService } from '../src/extraction/extraction.service';
 import { ListingsService } from '../src/listings/listings.service';
 import { LLM_GATEWAY, LlmGateway, ProviderError } from '../src/llm-gateway/llm-request';
 import { ListingMessageProcessor } from '../src/messages/listing-message-processor';
-import { messageSuccessSchema, processingFailureSchema } from '../src/messages/message-result.schema';
+import { listingResultSchema, messageSuccessSchema, processingFailureSchema } from '../src/messages/message-result.schema';
 import { RawMessage } from '../src/messages/raw-message.schema';
 
 const englishMessage: RawMessage = {
@@ -94,7 +94,7 @@ function deployTemplateDatabase(databasePath: string): void {
   });
 }
 
-describe('04.3T — HTTP ingestion (POST /messages)', () => {
+describe('Phase 04 HTTP ingestion and listing reads', () => {
   let templateDir: string;
   let templateDbPath: string;
   let testDir: string;
@@ -707,5 +707,208 @@ describe('04.3T — HTTP ingestion (POST /messages)', () => {
 
     const storedAfter = await database.storedMessage.findUniqueOrThrow({ where: { id: projectMessage.id } });
     expect(storedAfter.text).toBe(projectMessage.text);
+  });
+
+  it('lists current stored listings in ingestion and offer order with strict needs_review filters', async () => {
+    const execute = jest.fn(async (request: { sourceText: string }) => ({
+      classification: 'listing',
+      detected_classes: ['listing'],
+      listings: request.sourceText.includes('Villa') && request.sourceText.includes('شقة')
+        ? [englishOffer, arabicOffer]
+        : [englishOffer],
+    }));
+    const app = await createTestHttpApp({ execute });
+
+    const multi = messageSuccessSchema.parse(
+      (await request(app.getHttpServer()).post('/messages').send(multiOfferMessage).expect(200)).body,
+    );
+    const later = messageSuccessSchema.parse(
+      (await request(app.getHttpServer())
+        .post('/messages')
+        .send({ ...englishMessage, id: 'http-msg-003' })
+        .expect(200)).body,
+    );
+
+    const all = await request(app.getHttpServer()).get('/listings').expect(200);
+    expect(all.body.listings.map((listing: { id: string }) => listing.id)).toEqual([
+      multi.listings[0].id,
+      multi.listings[1].id,
+      later.listings[0].id,
+    ]);
+    expect(all.body.listings).toEqual([
+      multi.listings[0],
+      multi.listings[1],
+      later.listings[0],
+    ].map((listing) => ({ ...listing, approval_note: null })));
+
+    const flagged = await request(app.getHttpServer()).get('/listings?needs_review=true').expect(200);
+    expect(flagged.body.listings).toEqual([{ ...multi.listings[1], approval_note: null }]);
+
+    const clear = await request(app.getHttpServer()).get('/listings?needs_review=false').expect(200);
+    expect(clear.body.listings).toEqual([
+      { ...multi.listings[0], approval_note: null },
+      { ...later.listings[0], approval_note: null },
+    ]);
+
+    for (const query of ['needs_review=yes', 'needs_review=True', 'needs_review=true&needs_review=false']) {
+      const invalid = await request(app.getHttpServer()).get(`/listings?${query}`).expect(400);
+      expect(processingFailureSchema.parse(invalid.body)).toEqual({
+        message_id: null,
+        error: { code: 'invalid_input', message: 'Invalid needs_review filter' },
+      });
+    }
+
+    await app.close();
+    activeApps = [];
+    const restarted = await createTestHttpApp({ execute: jest.fn() });
+    const afterRestart = await request(restarted.getHttpServer()).get('/listings').expect(200);
+    expect(afterRestart.body.listings).toEqual(all.body.listings);
+  });
+
+  it('approves flagged listings with an optional note while preserving snapshots and the first decision', async () => {
+    const execute = jest.fn(async (request: { sourceText: string }) => ({
+      classification: 'listing',
+      detected_classes: ['listing'],
+      listings: [request.sourceText.includes('Villa') ? englishOffer : arabicOffer],
+    }));
+    const app = await createTestHttpApp({ execute });
+    const database = app.get(DatabaseService);
+    const ingest = async (id: string) => messageSuccessSchema.parse(
+      (await request(app.getHttpServer())
+        .post('/messages')
+        .send({ ...arabicMessage, id })
+        .expect(200)).body,
+    );
+
+    const noNote = await ingest('approval-no-note');
+    const noNoteApproved = await request(app.getHttpServer())
+      .post(`/listings/${noNote.listings[0].id}/approve`)
+      .expect(200);
+    expect(listingResultSchema.parse(noNoteApproved.body)).toEqual({
+      ...noNote.listings[0],
+      needs_review: false,
+      approval_note: null,
+    });
+    expect(noNoteApproved.body).toMatchObject({ approval_note: null });
+    expect(noNoteApproved.body).not.toHaveProperty('approvedAt');
+    const noNoteStored = await database.storedListing.findUniqueOrThrow({ where: { id: noNote.listings[0].id } });
+    expect(noNoteStored).toMatchObject({ needsReview: false, approvalState: 'approved', approvalNote: null });
+    expect(noNoteStored.approvedAt).not.toBeNull();
+
+    const withNote = await ingest('approval-with-note');
+    const firstApproval = await request(app.getHttpServer())
+      .post(`/listings/${withNote.listings[0].id}/approve`)
+      .send({ note: '  Reviewed incomplete details and accepted as-is.  ' })
+      .expect(200);
+    const firstStored = await database.storedListing.findUniqueOrThrow({ where: { id: withNote.listings[0].id } });
+    expect(firstStored.approvalNote).toBe('Reviewed incomplete details and accepted as-is.');
+    expect(firstStored.approvedAt).not.toBeNull();
+    expect(firstApproval.body).toMatchObject({ approval_note: 'Reviewed incomplete details and accepted as-is.' });
+
+    const repeated = await request(app.getHttpServer())
+      .post(`/listings/${withNote.listings[0].id}/approve`)
+      .send({ note: 'A later note must not replace the original.' })
+      .expect(200);
+    expect(repeated.body).toEqual(firstApproval.body);
+    const repeatedStored = await database.storedListing.findUniqueOrThrow({ where: { id: withNote.listings[0].id } });
+    expect(repeatedStored.approvalNote).toBe(firstStored.approvalNote);
+    expect(repeatedStored.approvedAt).toEqual(firstStored.approvedAt);
+
+    const empty = await ingest('approval-empty-note');
+    await request(app.getHttpServer())
+      .post(`/listings/${empty.listings[0].id}/approve`)
+      .send({ note: '   ' })
+      .expect(200);
+    expect((await database.storedListing.findUniqueOrThrow({ where: { id: empty.listings[0].id } })).approvalNote).toBeNull();
+
+    const blank = await ingest('approval-blank-note');
+    await request(app.getHttpServer())
+      .post(`/listings/${blank.listings[0].id}/approve`)
+      .send({ note: '' })
+      .expect(200);
+    expect((await database.storedListing.findUniqueOrThrow({ where: { id: blank.listings[0].id } })).approvalNote).toBeNull();
+
+    const invalid = await ingest('approval-invalid-note');
+    for (const body of [{ note: 7 }, { note: 'x'.repeat(1001) }, { note: 'valid', extra: true }]) {
+      const response = await request(app.getHttpServer())
+        .post(`/listings/${invalid.listings[0].id}/approve`)
+        .send(body)
+        .expect(400);
+      expect(processingFailureSchema.parse(response.body)).toEqual({
+        message_id: null,
+        error: { code: 'invalid_input', message: 'Invalid approval request' },
+      });
+    }
+    const malformed = await request(app.getHttpServer())
+      .post(`/listings/${invalid.listings[0].id}/approve`)
+      .set('Content-Type', 'application/json')
+      .send('{invalid-json')
+      .expect(400);
+    expect(processingFailureSchema.parse(malformed.body)).toEqual({
+      message_id: null,
+      error: { code: 'invalid_input', message: 'Invalid JSON body' },
+    });
+    expect(await database.storedListing.findUniqueOrThrow({ where: { id: invalid.listings[0].id } })).toMatchObject({
+      needsReview: true,
+      approvalState: 'pending',
+      approvalNote: null,
+    });
+
+    const neverFlagged = await request(app.getHttpServer())
+      .post('/messages')
+      .send(englishMessage)
+      .expect(200);
+    const neverFlaggedId = messageSuccessSchema.parse(neverFlagged.body).listings[0].id;
+    const conflict = await request(app.getHttpServer())
+      .post(`/listings/${neverFlaggedId}/approve`)
+      .send({})
+      .expect(409);
+    expect(processingFailureSchema.parse(conflict.body).error.code).toBe('approval_conflict');
+
+    const missing = await request(app.getHttpServer())
+      .post('/listings/missing-listing/approve')
+      .send({})
+      .expect(404);
+    expect(processingFailureSchema.parse(missing.body).error.code).toBe('listing_not_found');
+
+    const concurrent = await ingest('approval-concurrent');
+    const [concurrentA, concurrentB] = await Promise.all([
+      request(app.getHttpServer()).post(`/listings/${concurrent.listings[0].id}/approve`).send({ note: 'first candidate' }),
+      request(app.getHttpServer()).post(`/listings/${concurrent.listings[0].id}/approve`).send({ note: 'second candidate' }),
+    ]);
+    expect([concurrentA.status, concurrentB.status]).toEqual([200, 200]);
+    expect(concurrentA.body).toEqual(concurrentB.body);
+    const concurrentStored = await database.storedListing.findUniqueOrThrow({ where: { id: concurrent.listings[0].id } });
+    expect(['first candidate', 'second candidate']).toContain(concurrentStored.approvalNote);
+    expect(concurrentStored.approvedAt).not.toBeNull();
+
+    const flagged = await request(app.getHttpServer()).get('/listings?needs_review=true').expect(200);
+    expect(flagged.body.listings.map((listing: { id: string }) => listing.id)).toEqual([invalid.listings[0].id]);
+    const clear = await request(app.getHttpServer()).get('/listings?needs_review=false').expect(200);
+    expect(clear.body.listings.find((listing: { id: string }) => listing.id === withNote.listings[0].id))
+      .toMatchObject({ approval_note: 'Reviewed incomplete details and accepted as-is.' });
+    expect(clear.body.listings.find((listing: { id: string }) => listing.id === noNote.listings[0].id))
+      .toMatchObject({ approval_note: null });
+    expect(clear.body.listings.map((listing: { id: string }) => listing.id)).toEqual([
+      noNote.listings[0].id,
+      withNote.listings[0].id,
+      empty.listings[0].id,
+      blank.listings[0].id,
+      neverFlaggedId,
+      concurrent.listings[0].id,
+    ]);
+
+    await app.close();
+    activeApps = [];
+    const restarted = await createTestHttpApp({ execute: jest.fn() });
+    const afterRestart = await request(restarted.getHttpServer()).get('/listings?needs_review=false').expect(200);
+    expect(afterRestart.body.listings).toEqual(clear.body.listings);
+    const replay = await request(restarted.getHttpServer())
+      .post('/messages')
+      .send({ ...arabicMessage, id: withNote.message_id })
+      .expect(200);
+    const replayResult = messageSuccessSchema.parse(replay.body);
+    expect(replayResult.listings).toEqual(withNote.listings);
+    expect(replayResult.listings[0].needs_review).toBe(true);
   });
 });

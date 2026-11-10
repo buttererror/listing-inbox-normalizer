@@ -2,7 +2,7 @@
 
 Dwelleo turns unstructured Saudi real-estate broker messages into structured listing records. It handles Arabic, English, and mixed-language messages, including Arabic-Indic digits, sales and rentals, multiple offers, off-plan projects, buyer requests, and unrelated messages.
 
-The CLI processes JSONL files and emits **one JSON result per nonblank input line, in input order**. A table view is available for manual review. The HTTP service exposes liveness (`GET /health`) and persistent single-message ingestion (`POST /messages`); listing reads, approval, and deduplication are planned for subsequent tasks.
+The CLI processes JSONL files and emits **one JSON result per nonblank input line, in input order**. A table view is available for manual review. The HTTP service exposes liveness (`GET /health`), persistent single-message ingestion (`POST /messages`), and listing reads (`GET /listings`); approval and deduplication are planned for subsequent tasks.
 
 > **Current stage:** Phase 03 extraction and independent evaluation completed (November 10, 2026). Phase 04 implementation is underway. **Offline tests require no API key; actual LLM extraction requires a configured API provider or an authenticated local CLI.**
 
@@ -74,7 +74,17 @@ curl -sS -X POST http://localhost:3000/messages \
   -d '{"id":"m-001","sender":"+966551234567","received_at":"2026-11-01T09:12:00+03:00","text":"For sale: Villa in Riyadh. Asking 3.2M SAR."}'
 ```
 
-`GET /listings` and `POST /listings/{id}/approve` remain pending Tasks 04.4–04.5. The CLI processes each JSONL input without applying migrations or storing results. Use `pnpm run db:migrate` to author a migration and `pnpm run db:deploy` to apply committed migrations separately.
+`GET /listings?needs_review=true|false` returns persisted listings in stable ingestion and offer order; omit the filter to return all listings. The approval endpoint accepts an empty body or an optional note:
+
+```sh
+curl -sS -X POST http://localhost:3000/listings/LISTING_ID/approve
+
+curl -sS -X POST http://localhost:3000/listings/LISTING_ID/approve \
+  -H 'content-type: application/json' \
+  -d '{"note":"Reviewed the incomplete details and accepted the listing as-is."}'
+```
+
+Approval accepts the current extracted listing without editing its fields or review reasons, then sets its current `needs_review` flag to `false`. Notes are trimmed, optional, and limited to 1,000 characters. `GET /listings` and approval responses include the stored `approval_note` (`null` when absent); ingestion and CLI schemas remain unchanged. Repeated approval retains the first timestamp and note. Invalid approval bodies return `400 invalid_input`; an unknown listing returns `404 listing_not_found`; a listing that never needed review returns `409 approval_conflict`. Exact message replay still returns the original ingestion snapshot and original review flag. The CLI processes each JSONL input without applying migrations or storing results. Use `pnpm run db:migrate` to author a migration and `pnpm run db:deploy` to apply committed migrations separately.
 
 #### Bruno API collection
 
@@ -82,9 +92,9 @@ An offline-ready [Bruno](https://www.usebruno.com/) collection is included in [`
 
 1. Start the HTTP server with `pnpm start`.
 2. In Bruno, open the [`bruno/`](bruno/) directory as a collection and select the [`local`](bruno/environments/local.bru) environment (`baseUrl: http://localhost:3000`).
-3. Run [`01-health.bru`](bruno/01-health.bru), the sample ingestion/replay/error requests in [`bruno/messages/`](bruno/messages/), or the listing filter requests in [`bruno/listings/`](bruno/listings/).
-   - [`01-ingest-english-villa.bru`](bruno/messages/01-ingest-english-villa.bru), [`04-ingest-mixed-intent.bru`](bruno/messages/04-ingest-mixed-intent.bru), and [`01-list-all.bru`](bruno/listings/01-list-all.bru) capture `cleanListingId` and `listingId` after a successful response for downstream listing requests.
-   - The `approve` requests in [`bruno/listings/`](bruno/listings/) target the planned `POST /listings/{id}/approve` contract and will return `404` until Task 04.5 is implemented.
+3. Run [`01-health.bru`](bruno/01-health.bru), the sample ingestion/replay/error requests in [`bruno/messages/`](bruno/messages/), or the listing filter and approval requests in [`bruno/listings/`](bruno/listings/).
+   - [`01-ingest-english-villa.bru`](bruno/messages/01-ingest-english-villa.bru), [`03-ingest-multi-offer-rental.bru`](bruno/messages/03-ingest-multi-offer-rental.bru), [`04-ingest-mixed-intent.bru`](bruno/messages/04-ingest-mixed-intent.bru), and [`01-list-all.bru`](bruno/listings/01-list-all.bru) capture `cleanListingId`, `noteListingId`, and `listingId` after a successful response for downstream listing and approval requests.
+   - [`06-approve-listing-with-note.bru`](bruno/listings/06-approve-listing-with-note.bru), [`07-approve-invalid-extra-field.bru`](bruno/listings/07-approve-invalid-extra-field.bru), and [`08-approve-malformed-json.bru`](bruno/listings/08-approve-malformed-json.bru) exercise optional approval notes and `400 invalid_input` error handling, while [`12-replay-mixed-after-approval.bru`](bruno/messages/12-replay-mixed-after-approval.bru) checks that replay retains the original ingestion snapshot.
 
 ### 5. Run the live evaluation (optional)
 
@@ -115,7 +125,8 @@ See [Evaluation and quality](#evaluation-and-quality) for prerequisites, results
 | `GET /health` | Implemented |
 | SQLite message & listing persistence (HTTP) | Implemented (Tasks 04.1–04.2) |
 | `POST /messages` (ingestion, replay, conflicts) | Implemented (Task 04.3) |
-| `GET /listings`, `POST /listings/{id}/approve` | Planned — Tasks 04.4–04.5 |
+| `GET /listings` with current `approval_note` | Implemented (Task 04.4) |
+| `POST /listings/{id}/approve` with optional note | Implemented (Task 04.5) |
 | Cross-broker duplicate detection | Planned — Phase 05 |
 
 The primary rule is **never invent listing data**. Missing or insufficiently supported values remain `null` and are flagged for review instead of being guessed. An LLM response is treated as untrusted input, not accepted as an authoritative record.
@@ -244,14 +255,21 @@ The durations cover the provider call, including any internal `agy` retries; the
 
 **For direct API providers**, estimate per-message API cost by multiplying *actual input and output token counts* by the selected model's published per-token rates. This README does not claim a fixed dollar price because model rates and message usage vary. Local CLI OAuth usage also must not be represented as a zero-cost or guaranteed-offline service.
 
-## Known limitations and next steps
+## Known limitations
 
 - **No offline inference mode:** offline tests and rescoring work without credentials; fresh extraction still requires a reachable API or authenticated CLI that may use remote models.
-- **No listing read or approval endpoints yet:** `GET /listings` and `POST /listings/{id}/approve` remain pending Tasks 04.4–04.5.
+- **Approval does not correct extracted fields:** it records a human decision and optional context; field edits, reviewer identity, approval history, rejection, and undo are not available.
+- **Approval timestamps remain internal:** listing reads and approval responses expose `approval_note`, while message and CLI output do not expose approval metadata.
 - **No cross-broker deduplication yet:** duplicate detection remains a Phase 05 responsibility.
 - **Model/provider variability:** the evaluation figures are specific to one model, CLI version, and corpus; other providers are not equally live-qualified.
 - **Uncertain data remains reviewable:** incorrect or incomplete evidence may yield `null` values and review reasons instead of authoritative listing fields.
 
-**With another day:** complete Phase 04 `GET /listings?needs_review=true|false` and `POST /listings/{id}/approve` (Tasks 04.4–04.5); then implement Phase 05 cross-broker deduplication and qualify the default direct Gemini API against the evaluation cases.
+## Gaps
+
+- **Approval notes cannot be revised:** repeated `POST /listings/{id}/approve` requests return the first approved state and ignore a different note. There is no endpoint to amend an approval decision or its note.
+
+## Next steps
+
+**With another day:** finish Phase 04 close-out verification; then implement Phase 05 cross-broker deduplication and qualify the default direct Gemini API against the evaluation cases.
 
 For deeper project context, see the [documentation index](docs/README.md), [roadmap](docs/roadmap.md), and [evaluation analysis](docs/evaluation-baseline-analysis.md).

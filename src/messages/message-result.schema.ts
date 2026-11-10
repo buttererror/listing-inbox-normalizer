@@ -37,6 +37,11 @@ export const listingResultSchema = z.looseObject({
   duplicate_of: z.string().nullable(),
 });
 
+/** Current persisted-listing representation returned only by GET /listings. */
+export const storedListingResultSchema = listingResultSchema.extend({
+  approval_note: z.string().nullable(),
+});
+
 export const messageSuccessSchema = z.looseObject({
   message_id: z.string(),
   classification: messageClassificationSchema,
@@ -57,11 +62,14 @@ export const processingFailureSchema = z.object({
       'invalid_extraction',
       'provider_timeout',
       'internal_error',
+      'listing_not_found',
+      'approval_conflict',
     ]),
     message: z.string(),
   }),
 });
 
 export type ListingResult = z.infer<typeof listingResultSchema>;
+export type StoredListingResult = z.infer<typeof storedListingResultSchema>;
 export type MessageSuccess = z.infer<typeof messageSuccessSchema>;
 export type ProcessingFailure = z.infer<typeof processingFailureSchema>;

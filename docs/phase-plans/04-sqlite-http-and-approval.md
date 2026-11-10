@@ -1,6 +1,6 @@
 # Phase 04 — SQLite persistence, HTTP integration, and human approval
 
-**Status:** In progress. Tasks 04.1 through 04.3 are complete. Tasks 04.4 through 04.6 are pending.
+**Status:** In progress. Tasks 04.1 through 04.5 are complete. Task 04.6 is pending.
 
 ## Objective and scope
 
@@ -14,8 +14,8 @@ Phase 05 owns cross-message property deduplication. Phase 04 scope covers the th
 
 - Replay compares the original `id`, `sender`, `received_at`, and `text` exactly. An exact replay returns the original successful ingestion result with stable listing IDs. Sequential replay skips the gateway. A changed payload under the same ID returns `message_conflict` with HTTP 409.
 - Store the ingestion snapshot separately from current listing state. If ingestion returned `needs_review: true` and the listing was later approved, an exact replay still returns `true`, while listing reads return `false`.
-- `GET /listings` returns `{ "listings": [...] }` in stable ingestion and offer order. An omitted `needs_review` filter returns all listings. The literal query values `true` and `false` filter the current flag. Malformed values return 400.
-- `POST /listings/{id}/approve` returns the updated listing. First approval of an originally flagged listing records approval and sets current `needs_review` to `false`. A repeat returns the existing approved state. Preserve extracted fields, original `review_reasons`, source provenance, and the ingestion snapshot.
+- `GET /listings` returns `{ "listings": [...] }` in stable ingestion and offer order. An omitted `needs_review` filter returns all listings. The literal query values `true` and `false` filter the current flag. Each listing includes current `approval_note` (`null` when absent). Malformed values return 400.
+- `POST /listings/{id}/approve` returns the updated listing. First approval of an originally flagged listing records approval, sets current `needs_review` to `false`, and stores an optional trimmed reviewer note. A repeat returns the existing approved state and preserves its timestamp and note. Preserve extracted fields, original `review_reasons`, source provenance, and the ingestion snapshot. Listing reads and approval responses expose the stored note; message ingestion and CLI schemas remain unchanged.
 - Approval errors use `{ "message_id": null, "error": { "code", "message" } }`. An unknown ID returns 404 `listing_not_found`. A listing that never required review returns 409 `approval_conflict`.
 - HTTP startup applies committed SQLite migrations. CLI startup does not require SQLite or migrations.
 
@@ -74,11 +74,25 @@ Project persisted listings through the existing public listing schema. Return th
 
 **04.4T.** Verify unfiltered and both filtered reads, malformed filters, ordering across messages and offers, and persistence after restart. Verify filtering after approval in 04.5T.
 
-### 04.5 — Human approval
+#### 04.4 progress — 2026-11-10
 
-Apply the approved state transition to the stored listing. Keep the original review eligibility available to distinguish an already approved listing from one that never needed review. Approval changes workflow state while preserving the stored property values and all ingestion evidence.
+- **Implemented behavior** — Added `GET /listings` through `ListingsController` and `StoredListingsService`. The service maps persisted rows to the existing public listing schema, exposes the current `needs_review` state, and orders records by ingestion then offer index.
+- **Filter behavior** — Omitted `needs_review` returns every listing; only the literal values `true` and `false` filter the current review flag. Other values, including repeated query parameters, return the typed `invalid_input` envelope with HTTP 400.
+- **Verification evidence** — `pnpm test -- test/http-messages.spec.ts` passed 11 tests, including unfiltered and filtered reads, malformed filters, ordering across messages and offers, and restart persistence. `pnpm run typecheck` passed.
+- **Follow-up** — Task 04.5 changes current review state on approval and verifies that this filter reflects the transition while the ingestion snapshot stays unchanged.
 
-**04.5T.** Verify first and repeated approval, a missing ID, and a listing that never required review. Check both review filters after approval and verify the approval survives restart. Replay the original message and confirm the ingestion snapshot, listing IDs, and original review flag are unchanged.
+### 04.5 — Human approval with optional note
+
+Apply the approved state transition to a stored listing, accepting an optional reviewer note that documents why the extracted information was accepted. Preserve original review eligibility to distinguish already-approved listings from listings that never required review. Approval updates current workflow state and saves the first approval note while preserving extracted property values, original review reasons, source evidence, and the immutable ingestion snapshot. Repeated approval is idempotent and does not overwrite the original timestamp or note.
+
+**04.5T.** Verify first approval with and without a note; trimming, empty notes, invalid types, oversized notes, and unexpected properties; repeated approval with a different note; missing and ineligible listings; both review filters after approval; restart persistence; concurrent approval; and replay preserving the original snapshot, IDs, and review flag. Use isolated temporary SQLite and no live LLM calls.
+
+#### 04.5 progress — 2026-11-10
+
+- **Implemented behavior** — Added `POST /listings/{id}/approve` with an optional `note`. The strict request schema accepts an empty body or `{ "note": string }`, trims whitespace, treats blank notes as absent, and limits stored notes to 1,000 characters. `GET /listings` exposes the persisted note as `approval_note`; ingestion, CLI, and approval responses remain unchanged.
+- **State and concurrency** — The first approval conditionally updates a flagged pending listing, sets current `needs_review` to `false`, records `approvedAt`, and stores the note. Concurrent callers reread the winning record; repeated approval preserves the original timestamp and note. Original eligibility, review reasons, provenance, and ingestion snapshot stay unchanged.
+- **Errors and gaps** — Invalid bodies return `invalid_input` 400; missing IDs return `listing_not_found` 404; listings that never required review return `approval_conflict` 409. Approval does not edit extracted fields or resolve their uncertainties. Reviewer identity is not recorded, and edit, reject, and undo workflows remain out of scope.
+- **Verification evidence** — `pnpm test -- test/http-messages.spec.ts` passed 12 offline tests, including approval notes, validation, idempotence, filters, restart persistence, concurrency, and replay. `pnpm run typecheck` passed.
 
 ### 04.6 — Verification and close-out
 

@@ -44,6 +44,29 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ## Proposed and recently approved
 
+### D-044: Store an optional internal approval note
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Approval without an explanation can be ambiguous when a listing retains missing, uncertain, or conflicting extracted values.
+- **Alternatives and tradeoffs** — Keep approval without a note, require a note for every approval, or allow property editing alongside approval. No-note approval loses human context; mandatory notes add friction; editable fields require field-level correction and validation policies beyond Phase 04.
+- **Decision and rationale** — Accept an optional plain-text note on the first approval. Trim it, treat blank text as absent, and limit it to 1,000 characters. Persist it with the current listing state without adding it to the public result contract.
+- **Consequences** — Reviewers can explain acceptance while extracted values, review reasons, provenance, and ingestion snapshots remain unchanged. The first concurrent approval wins; repeated approvals retain its timestamp and note. Notes are not structured corrections and carry no reviewer identity.
+- **Validation** — Verify note validation, first and repeated approval, restart persistence, concurrent approval, filter behavior, and replay with isolated SQLite tests.
+- **Review checkpoint** — Revisit only if an authenticated reviewer identity, approval history, or field-correction workflow enters scope.
+- **Approval evidence** — User supplied “Dwelleo — Task 04.5: Approval Note Extension” and instructed: “Implement task 2.5 with the attatched modifications”.
+- **References** — OPEN-07, D-043, [Phase 04](phase-plans/04-sqlite-http-and-approval.md), [architecture](architecture.md), [AI log](AI_LOG.md).
+
+### D-045: Expose approval notes in persisted listing reads and approval responses
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — D-044 initially kept notes out of every public response. The user reported that the note was absent from `GET /listings` and then from the approval response.
+- **Alternatives and tradeoffs** — Keep notes internal, expose notes in every listing response, or expose them only through persisted listing reads and approval responses. Exposing every response would alter ingestion and CLI contracts; keeping notes hidden prevents a reviewer from seeing the stored decision context.
+- **Decision and rationale** — Add nullable `approval_note` to `GET /listings` and `POST /listings/{id}/approve`. It reports current stored approval context without changing message ingestion or CLI schemas.
+- **Consequences** — Listing-read and approval consumers must accept `approval_note: string | null`. The note remains immutable after first approval and replay continues to return the original ingestion snapshot.
+- **Validation** — Verify an approved listing read and approval response return the trimmed note and a no-note approval returns `null`.
+- **Approval evidence** — User instructions: “The note doesn't exist on get listings after approval.” and “The note doesn't exist in the post approval response”.
+- **References** — D-044, OPEN-07, [Phase 04](phase-plans/04-sqlite-http-and-approval.md).
+
 ### D-043: Keep CLI stateless and assign persistence to HTTP ingestion
 
 - **Status** — Accepted on 2026-11-10.
@@ -425,6 +448,24 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Correction:** D-043 makes CLI stateless and assigns replay and atomic persistence to HTTP PersistentIngestionService.
 - **Verification and limits:** Focused CLI and temporary-SQLite tests pass; HTTP controller routing remains Task 04.3. Phase 05 must assess batch-local CLI deduplication separately from HTTP replay.
 - **Human review:** Confirmed by the supplied architecture-correction handoff.
+
+### E-016: Omitted approval note from listing reads
+
+- **Incorrect action:** Implemented the Task 04.5 note as internal-only metadata, leaving it absent from `GET /listings`.
+- **Caught by:** User.
+- **Detection:** User correction: “The note doesn't exist on get listings after approval.”
+- **Correction:** Added nullable `approval_note` to `GET /listings`, including `null` for listings without a note, and updated the listing-read schema, tests, and documentation.
+- **Verification and limits:** The focused HTTP suite verifies a trimmed stored note appears in listing reads and a no-note approval produces `null`; `pnpm run typecheck` passes. This correction initially left the approval response without the note, which E-017 records.
+- **Human review:** Confirmed by the user correction.
+
+### E-017: Omitted approval note from the approval response
+
+- **Incorrect action:** After adding `approval_note` to `GET /listings`, the approval endpoint still returned the older listing response shape without the note.
+- **Caught by:** User.
+- **Detection:** User correction: “The note doesn't exist in the post approval response”.
+- **Correction:** Changed `POST /listings/{id}/approve` to return the persisted-listing representation with nullable `approval_note`; first, repeated, and no-note approvals now return the stored value.
+- **Verification and limits:** The focused HTTP suite verifies a trimmed note in the approval response, preserves it on repeat approval, and returns `null` for no-note approval; `pnpm run typecheck` passes. Approval timestamps, reviewer identity, and approval history remain unavailable.
+- **Human review:** Confirmed by the user correction.
 
 ### E-001: An implemented dependency decision was classified as open
 

@@ -41,6 +41,7 @@ model StoredListing {
   reviewReasons         String
   approvalState         String        @default("pending")
   approvedAt            DateTime?
+  approvalNote          String?
   provenance            String
   createdAt             DateTime      @default(now())
   message               StoredMessage @relation(fields: [messageIngestionOrder], references: [ingestionOrder], onDelete: Cascade)

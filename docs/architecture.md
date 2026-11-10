@@ -403,7 +403,7 @@ Review result for the price finding shown. Other findings depend on the complete
 2. **Assign IDs:** Use application-generated listing identifiers.
 3. **Validate final contract:** Ensure every output satisfies the public result schema.
 4. **Persist:** Starting in Phase 04, atomically save the message, successful result snapshot, listing rows, and provenance. On a competing same-ID insert, reread the winner and apply the replay or conflict rule.
-5. **Preserve state:** Store review and approval state alongside the original source and provenance. Human approval updates the stored state while preserving the ingestion snapshot.
+5. **Preserve state:** Store review and approval state alongside the original source and provenance. Human approval updates the stored state while preserving the ingestion snapshot. An optional approval note is current listing metadata exposed only by persisted listing reads; it does not alter ingestion or CLI results.
 6. **Return result:** Provide the final response to the HTTP or CLI adapter.
 
 For CLI processing, retain the brief's required JSONL-to-stdout behavior; persistence must not create unwanted output or diverging processing logic.
@@ -444,7 +444,7 @@ The approved `mixed` classification is an intentional extension to the brief's f
 ### Boundary constraints
 
 - Preserve the values, classification, and review decisions supplied by prior stages.
-- Return the same public result structure through both transports. Human approval updates persisted review state independently.
+- Return the same public result structure through both transports. Human approval updates persisted review state independently. Listing reads and approval responses add current `approval_note`; ingestion and CLI results retain the established public contract.
 
 ---
 

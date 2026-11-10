@@ -8,13 +8,16 @@ import { DatabaseModule } from '../database/database.module';
 import { PersistentIngestionService } from './persistent-ingestion.service';
 import { MessagesController } from './messages.controller';
 import { MessagesExceptionFilter } from './messages-exception.filter';
+import { ListingsController } from './listings.controller';
+import { StoredListingsService } from './stored-listings.service';
 
 @Module({
   imports: [ExtractionModule, ListingsModule, DatabaseModule],
-  controllers: [MessagesController],
+  controllers: [MessagesController, ListingsController],
   providers: [
     ListingMessageProcessor,
     PersistentIngestionService,
+    StoredListingsService,
     { provide: MESSAGE_PROCESSOR, useExisting: ListingMessageProcessor },
     { provide: APP_FILTER, useClass: MessagesExceptionFilter },
   ],
@@ -22,6 +25,7 @@ import { MessagesExceptionFilter } from './messages-exception.filter';
     MESSAGE_PROCESSOR,
     ListingMessageProcessor,
     PersistentIngestionService,
+    StoredListingsService,
   ],
 })
 export class MessagesModule {}
