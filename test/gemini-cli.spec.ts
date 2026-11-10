@@ -67,19 +67,7 @@ describe('AI SDK Gemini CLI wiring', () => {
       ],
     });
 
-    let legacyStdout = '';
-    const exitLegacy = await runCli(['process-legacy', join(__dirname, 'fixtures/one-message.jsonl')], {
-      createContext: createCliContext,
-      stdout: (text) => { legacyStdout += text; },
-      stderr: (text) => { stderr += text; },
-    });
-    expect(exitLegacy).toBe(0);
-    expect(JSON.parse(legacyStdout)).toMatchObject({
-      message_id: 'example-001',
-      classification: 'listing',
-      listings: [{ property_type: 'villa', price: { amount: 3200000, currency: 'SAR', period: 'total' } }],
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const request = JSON.parse(String(init.body));
     expect(url).toContain('/models/test-model:generateContent');

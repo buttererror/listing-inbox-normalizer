@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createCliContext, runCli } from '../src/cli';
 import { stage1ExtractionResultSchema } from '../src/extraction/extraction-result.schema';
 import { LlmGateway } from '../src/llm-gateway/llm-request';
-import { messageSuccessSchema, processingFailureSchema } from '../src/messages/message-result.schema';
+import { processingFailureSchema } from '../src/messages/message-result.schema';
 
 const arabicMessage = {
   id: 'm-arabic-01',
@@ -72,14 +72,14 @@ const englishGatewayResponse = {
   ],
 };
 
-describe('02.1T / 02.6T — Offline CLI integration', () => {
+describe('02.1T / 02.4T — Offline CLI integration', () => {
   let directory: string;
   let path: string;
   let stdout: string;
   let stderr: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'listing-026-'));
+    directory = await mkdtemp(join(tmpdir(), 'listing-cli-int-'));
     path = join(directory, 'messages.jsonl');
     stdout = '';
     stderr = '';
@@ -89,18 +89,15 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     await rm(directory, { recursive: true, force: true });
   });
 
-  const runWithGateway = async (
-    gateway: LlmGateway,
-    command: 'process' | 'process-legacy' = 'process-legacy',
-  ): Promise<0 | 1> => {
-    return runCli([command, path], {
+  const runWithGateway = async (gateway: LlmGateway): Promise<0 | 1> => {
+    return runCli(['process', path], {
       createContext: () => createCliContext({ gateway }),
       stdout: (text: string) => { stdout += text; },
       stderr: (text: string) => { stderr += text; },
     });
   };
 
-  it('processes one Arabic sale message and outputs a compliant record with review reasons', async () => {
+  it('processes one Arabic sale message and outputs a compliant extraction envelope', async () => {
     await writeFile(path, `${JSON.stringify(arabicMessage)}\n`);
     const gateway: LlmGateway = {
       execute: async () => arabicGatewayResponse,
@@ -114,26 +111,20 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     expect(lines).toHaveLength(1);
 
     const parsed = JSON.parse(lines[0]);
-    const validated = messageSuccessSchema.parse(parsed);
-    expect(validated.message_id).toBe('m-arabic-01');
+    const validated = stage1ExtractionResultSchema.parse(parsed);
     expect(validated.classification).toBe('listing');
     expect(validated.listings).toHaveLength(1);
 
-    const listing = validated.listings[0];
-    expect(listing.id).toEqual(expect.any(String));
-    expect(listing.purpose).toBe('sale');
-    expect(listing.property_type).toBe('apartment');
-    expect(listing.bedrooms).toBe(3);
-    expect(listing.bathrooms).toBeNull();
-    expect(listing.city).toBeNull();
-    expect(listing.district).toBeNull();
-    expect(listing.area_sqm).toBeNull();
-    expect(listing.price).toEqual({ amount: 950000, currency: 'SAR', period: 'total' });
-    expect(listing.contact_phone).toBe('+966551234567');
-    expect(listing.duplicate_of).toBeNull();
-    expect(listing.needs_review).toBe(true);
-    expect(listing.review_reasons).toEqual(
-      expect.arrayContaining(['city_missing', 'district_missing', 'bathrooms_missing', 'area_sqm_missing']),
+    const offer = validated.listings[0];
+    expect(offer.offer_quote).toContain('للبيع شقة');
+    expect(offer.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'purpose', value: 'sale' }),
+        expect.objectContaining({ field: 'property_type', value: 'apartment' }),
+        expect.objectContaining({ field: 'bedrooms', value: 3 }),
+        expect.objectContaining({ field: 'price', value: { amount: 950000, currency: 'SAR', period: 'total' } }),
+        expect.objectContaining({ field: 'contact_phone', value: '+966551234567' }),
+      ]),
     );
   });
 
@@ -158,31 +149,34 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     const lines = stdout.trim().split('\n');
     expect(lines).toHaveLength(2);
 
-    const [first, second] = lines.map((l) => messageSuccessSchema.parse(JSON.parse(l)));
+    const [first, second] = lines.map((l) => stage1ExtractionResultSchema.parse(JSON.parse(l)));
 
     // First: Arabic sale
-    expect(first.message_id).toBe('m-arabic-01');
-    expect(first.listings[0].property_type).toBe('apartment');
-    expect(first.listings[0].price).toEqual({ amount: 950000, currency: 'SAR', period: 'total' });
-    expect(first.listings[0].needs_review).toBe(true);
-    expect(first.listings[0].duplicate_of).toBeNull();
+    expect(first.classification).toBe('listing');
+    expect(first.listings[0].candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'property_type', value: 'apartment' }),
+        expect.objectContaining({ field: 'price', value: { amount: 950000, currency: 'SAR', period: 'total' } }),
+      ]),
+    );
 
     // Second: English villa
-    expect(second.message_id).toBe('m-english-01');
-    expect(second.listings[0].property_type).toBe('villa');
-    expect(second.listings[0].city).toBe('Riyadh');
-    expect(second.listings[0].district).toBe('Al Malqa');
-    expect(second.listings[0].bedrooms).toBe(5);
-    expect(second.listings[0].bathrooms).toBe(6);
-    expect(second.listings[0].area_sqm).toBe(380);
-    expect(second.listings[0].price).toEqual({ amount: 3200000, currency: 'SAR', period: 'total' });
-    expect(second.listings[0].contact_phone).toBe('+966551234567');
-    expect(second.listings[0].needs_review).toBe(false);
-    expect(second.listings[0].review_reasons).toEqual([]);
-    expect(second.listings[0].duplicate_of).toBeNull();
+    expect(second.classification).toBe('listing');
+    expect(second.listings[0].candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'property_type', value: 'villa' }),
+        expect.objectContaining({ field: 'city', value: 'Riyadh' }),
+        expect.objectContaining({ field: 'district', value: 'Al Malqa' }),
+        expect.objectContaining({ field: 'bedrooms', value: 5 }),
+        expect.objectContaining({ field: 'bathrooms', value: 6 }),
+        expect.objectContaining({ field: 'area_sqm', value: 380 }),
+        expect.objectContaining({ field: 'price', value: { amount: 3200000, currency: 'SAR', period: 'total' } }),
+        expect.objectContaining({ field: 'contact_phone', value: '+966551234567' }),
+      ]),
+    );
   });
 
-  it('rejects a fabricated quote and leaves the field unresolved on the review path', async () => {
+  it('rejects a fabricated quote and drops the candidate from extraction output', async () => {
     await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
 
     const responseWithFabricatedPrice = {
@@ -210,13 +204,12 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     const lines = stdout.trim().split('\n');
     expect(lines).toHaveLength(1);
 
-    const parsed = messageSuccessSchema.parse(JSON.parse(lines[0]));
-    expect(parsed.listings[0].price).toEqual({ amount: null, currency: 'SAR', period: null });
-    expect(parsed.listings[0].needs_review).toBe(true);
-    expect(parsed.listings[0].review_reasons).toContain('price_unsupported');
+    const parsed = stage1ExtractionResultSchema.parse(JSON.parse(lines[0]));
+    const priceCandidates = parsed.listings[0].candidates.filter((c) => c.field === 'price');
+    expect(priceCandidates).toHaveLength(0);
   });
 
-  it('rejects a candidate with quote/value mismatch and leaves the field unresolved', async () => {
+  it('rejects a candidate with quote/value mismatch and drops it from extraction output', async () => {
     await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
 
     const responseWithMismatch = {
@@ -244,10 +237,9 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     const lines = stdout.trim().split('\n');
     expect(lines).toHaveLength(1);
 
-    const parsed = messageSuccessSchema.parse(JSON.parse(lines[0]));
-    expect(parsed.listings[0].bedrooms).toBeNull();
-    expect(parsed.listings[0].needs_review).toBe(true);
-    expect(parsed.listings[0].review_reasons).toContain('bedrooms_unsupported');
+    const parsed = stage1ExtractionResultSchema.parse(JSON.parse(lines[0]));
+    const bedroomCandidates = parsed.listings[0].candidates.filter((c) => c.field === 'bedrooms');
+    expect(bedroomCandidates).toHaveLength(0);
   });
 
   it('continues after an invalid extraction envelope and exits 1 without diagnostic logs', async () => {
@@ -281,9 +273,12 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
     });
 
     const successRecord = JSON.parse(lines[1]);
-    expect(messageSuccessSchema.safeParse(successRecord).success).toBe(true);
-    expect(successRecord.message_id).toBe('m-english-01');
-    expect(successRecord.listings[0].price.amount).toBe(3200000);
+    expect(stage1ExtractionResultSchema.safeParse(successRecord).success).toBe(true);
+    expect(successRecord.listings[0].candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'property_type', value: 'villa' }),
+      ]),
+    );
   });
 
   it('continues after an invalid JSONL line and exits 1', async () => {
@@ -307,89 +302,76 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
       message_id: null,
       error: { code: 'invalid_input', message: 'Invalid JSONL record' },
     });
-    const second = messageSuccessSchema.parse(JSON.parse(lines[1]));
-    expect(second.message_id).toBe('m-english-01');
+    const second = stage1ExtractionResultSchema.parse(JSON.parse(lines[1]));
+    expect(second.listings[0].candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'property_type', value: 'villa' }),
+      ]),
+    );
   });
 
-  describe('process command outputs internal Stage 1 ExtractionEnvelope', () => {
-    it('outputs the internal Stage 1 ExtractionEnvelope for a listing message', async () => {
-      await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
-      const gateway: LlmGateway = {
-        execute: async () => englishGatewayResponse,
-      };
+  it('outputs the internal Stage 1 ExtractionEnvelope for multi-offer messages', async () => {
+    const multiOfferResponse = {
+      classification: 'listing' as const,
+      detected_classes: ['listing' as const],
+      listings: [
+        englishGatewayResponse.listings[0],
+        arabicGatewayResponse.listings[0],
+      ],
+    };
+    const multiOfferMessage = {
+      ...englishMessage,
+      text: `${englishGatewayResponse.listings[0].offer_quote}\n${arabicGatewayResponse.listings[0].offer_quote}`,
+    };
+    await writeFile(path, `${JSON.stringify(multiOfferMessage)}\n`);
+    const gateway: LlmGateway = {
+      execute: async () => multiOfferResponse,
+    };
 
-      const exitCode = await runWithGateway(gateway, 'process');
-      expect(exitCode).toBe(0);
-      expect(stderr).toBe('');
+    const exitCode = await runWithGateway(gateway);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe('');
 
-      const parsed = JSON.parse(stdout.trim());
-      expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
-      expect(parsed).toEqual(englishGatewayResponse);
-    });
+    const parsed = JSON.parse(stdout.trim());
+    expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
+    expect(parsed.listings).toHaveLength(2);
+  });
 
-    it('outputs the internal Stage 1 ExtractionEnvelope for multi-offer messages', async () => {
-      const multiOfferResponse = {
-        classification: 'listing' as const,
-        detected_classes: ['listing' as const],
-        listings: [
-          englishGatewayResponse.listings[0],
-          arabicGatewayResponse.listings[0],
-        ],
-      };
-      const multiOfferMessage = {
-        ...englishMessage,
-        text: `${englishGatewayResponse.listings[0].offer_quote}\n${arabicGatewayResponse.listings[0].offer_quote}`,
-      };
-      await writeFile(path, `${JSON.stringify(multiOfferMessage)}\n`);
-      const gateway: LlmGateway = {
-        execute: async () => multiOfferResponse,
-      };
+  it('outputs the internal Stage 1 ExtractionEnvelope for non-listing classification', async () => {
+    const buyerRequestResponse = {
+      classification: 'buyer_request' as const,
+      detected_classes: ['buyer_request' as const],
+      listings: [],
+    };
+    await writeFile(path, `${JSON.stringify({ ...englishMessage, text: 'Looking for a 3 BR apartment in Riyadh' })}\n`);
+    const gateway: LlmGateway = {
+      execute: async () => buyerRequestResponse,
+    };
 
-      const exitCode = await runWithGateway(gateway, 'process');
-      expect(exitCode).toBe(0);
-      expect(stderr).toBe('');
+    const exitCode = await runWithGateway(gateway);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe('');
 
-      const parsed = JSON.parse(stdout.trim());
-      expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
-      expect(parsed.listings).toHaveLength(2);
-    });
+    const parsed = JSON.parse(stdout.trim());
+    expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
+    expect(parsed.classification).toBe('buyer_request');
+    expect(parsed.listings).toEqual([]);
+  });
 
-    it('outputs the internal Stage 1 ExtractionEnvelope for non-listing classification', async () => {
-      const buyerRequestResponse = {
-        classification: 'buyer_request' as const,
-        detected_classes: ['buyer_request' as const],
-        listings: [],
-      };
-      await writeFile(path, `${JSON.stringify({ ...englishMessage, text: 'Looking for a 3 BR apartment in Riyadh' })}\n`);
-      const gateway: LlmGateway = {
-        execute: async () => buyerRequestResponse,
-      };
+  it('outputs failure for invalid extraction response in process', async () => {
+    await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
+    const gateway: LlmGateway = {
+      execute: async () => ({ invalid: 'envelope' }),
+    };
 
-      const exitCode = await runWithGateway(gateway, 'process');
-      expect(exitCode).toBe(0);
-      expect(stderr).toBe('');
+    const exitCode = await runWithGateway(gateway);
+    expect(exitCode).toBe(1);
+    expect(stderr).toBe('');
 
-      const parsed = JSON.parse(stdout.trim());
-      expect(stage1ExtractionResultSchema.safeParse(parsed).success).toBe(true);
-      expect(parsed.classification).toBe('buyer_request');
-      expect(parsed.listings).toEqual([]);
-    });
-
-    it('outputs failure for invalid extraction response in process', async () => {
-      await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
-      const gateway: LlmGateway = {
-        execute: async () => ({ invalid: 'envelope' }),
-      };
-
-      const exitCode = await runWithGateway(gateway, 'process');
-      expect(exitCode).toBe(1);
-      expect(stderr).toBe('');
-
-      const parsed = JSON.parse(stdout.trim());
-      expect(parsed).toEqual({
-        message_id: 'm-english-01',
-        error: { code: 'invalid_extraction', message: 'Invalid extraction response' },
-      });
+    const parsed = JSON.parse(stdout.trim());
+    expect(parsed).toEqual({
+      message_id: 'm-english-01',
+      error: { code: 'invalid_extraction', message: 'Invalid extraction response' },
     });
   });
 });

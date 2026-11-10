@@ -863,6 +863,24 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   - Live CLI smoke check with `test/fixtures/task24-smoke.jsonl` verified Arabic-Indic quantities, qualified deposit, shorthand millions, and Saudi mobile.
 - **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks).
 
+## Retire process-legacy and Unify CLI on process Command — 2026-11-10
+
+- **Evidence status** — Evidence checked against unit tests, typecheck, build, and user instruction.
+- **Human review** — Confirmed by user prompt.
+- **Objective** — Retire `process-legacy`, delete legacy single-sale bridge files, and unify all CLI execution and tests exclusively on `process <input.jsonl>`.
+- **Important prompt** — Verbatim: “Forget procces legacy”.
+- **Outcome** —
+  - Removed `process-legacy` subcommand from `src/cli.ts`, establishing `process <input.jsonl>` as the sole CLI command.
+  - Deleted `src/messages/legacy-listing-message-processor.ts`, `src/messages/bridge-stage1-sale.ts`, and `test/legacy-listing-message-processor.spec.ts`.
+  - Removed `LEGACY_MESSAGE_PROCESSOR` from `src/messages/message-processor.ts` and `src/messages/messages.module.ts`.
+  - Updated `test/cli.spec.ts`, `test/gemini-cli.spec.ts`, and `test/cli-integration.spec.ts` to test exclusively against `process`.
+- **Verification and limits** —
+  - `pnpm run typecheck` passed cleanly.
+  - `pnpm test` passed 189 tests across 17 suites (after removing legacy test suite).
+  - `pnpm run build` succeeded without errors.
+- **Related decisions** — [D-027](DECISIONS.md#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline), [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli).
+
+
 
 
 
