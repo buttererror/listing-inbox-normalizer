@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -87,19 +88,25 @@ describe('process command', () => {
     expect(closed).toBe(true);
   });
 
-  it('runs the production entry point with an unavailable provider failure', async () => {
+  it('runs the production entry point with an unavailable provider failure without opening SQLite', async () => {
     await writeFile(path, JSON.stringify(message));
     const originalKey = process.env.LLM_API_KEY;
     const originalProvider = process.env.LLM_PROVIDER;
+    const originalDatabaseUrl = process.env.DATABASE_URL;
+    const missingDbDir = join(directory, 'nonexistent-sqlite-dir');
     process.env.LLM_PROVIDER = 'gemini';
     process.env.LLM_API_KEY = '';
+    process.env.DATABASE_URL = `file:${join(missingDbDir, 'cli.db')}`;
     try {
       expect(await runCli(['process', path], { ...dependencies(), createContext: createCliContext })).toBe(1);
+      expect(existsSync(missingDbDir)).toBe(false);
     } finally {
       if (originalKey === undefined) delete process.env.LLM_API_KEY;
       else process.env.LLM_API_KEY = originalKey;
       if (originalProvider === undefined) delete process.env.LLM_PROVIDER;
       else process.env.LLM_PROVIDER = originalProvider;
+      if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = originalDatabaseUrl;
     }
     expect(stderr).toBe('');
     expect(JSON.parse(stdout)).toEqual({

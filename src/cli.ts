@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { createApplicationContext } from './bootstrap';
+import { createCliApplicationContext } from './bootstrap';
 import { ExtractionService } from './extraction/extraction.service';
 import { ListingsService } from './listings/listings.service';
 import { LlmGateway } from './llm-gateway/llm-request';
@@ -59,7 +59,7 @@ export async function runCli(args: string[], dependencies: CliDependencies): Pro
 }
 
 export async function createCliContext(options?: { gateway?: LlmGateway }): Promise<CliContext> {
-  const app = await createApplicationContext({ logger: false });
+  const app = await createCliApplicationContext({ logger: false });
   const extractionService = options?.gateway
     ? new ExtractionService(options.gateway)
     : app.get(ExtractionService);
