@@ -4,7 +4,7 @@ Dwelleo turns unstructured Saudi real-estate broker messages into structured lis
 
 The CLI processes JSONL files and emits **one JSON result per nonblank input line, in input order**. A table view is available for manual review. The HTTP service exposes liveness (`GET /health`), persistent single-message ingestion (`POST /messages`), and listing reads (`GET /listings`); approval and deduplication are planned for subsequent tasks.
 
-> **Current stage:** Phase 03 extraction and independent evaluation completed (November 10, 2026). Phase 04 implementation is underway. **Offline tests require no API key; actual LLM extraction requires a configured API provider or an authenticated local CLI.**
+> **Current stage:** Phase 03 evaluation and Phase 04 SQLite persistence, HTTP API, and approval completed (November 10, 2026); Phase 05 deduplication is next. **Offline tests require no API key; actual LLM extraction requires a configured API provider or an authenticated local CLI.**
 
 ## Quick start
 
@@ -270,6 +270,6 @@ The durations cover the provider call, including any internal `agy` retries; the
 
 ## Next steps
 
-**With another day:** finish Phase 04 close-out verification; then implement Phase 05 cross-broker deduplication and qualify the default direct Gemini API against the evaluation cases.
+**With another day:** implement Phase 05 cross-broker deduplication and qualify the default direct Gemini API against the evaluation cases.
 
 For deeper project context, see the [documentation index](docs/README.md), [roadmap](docs/roadmap.md), and [evaluation analysis](docs/evaluation-baseline-analysis.md).

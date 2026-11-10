@@ -1,6 +1,6 @@
 # Phase 04 — SQLite persistence, HTTP integration, and human approval
 
-**Status:** In progress. Tasks 04.1 through 04.5 are complete. Task 04.6 is pending.
+**Status:** Verified on 2026-11-10. Tasks 04.1 through 04.6 and all Phase 04 exit checks passed.
 
 ## Objective and scope
 
@@ -98,13 +98,22 @@ Apply the approved state transition to a stored listing, accepting an optional r
 
 Review all focused results and run the HTTP, SQLite restart, and shared CLI/HTTP integration checks. Run `pnpm test`, `pnpm run typecheck`, and `pnpm run build`. Keep the automated suite offline and independent of Gemini calls and API keys. Confirm Phase 02 processing behavior still passes its regression checks.
 
+#### 04.6 progress — 2026-11-10
+
+- **Implemented / verified scope** — Reviewed all Phase 04 implementations and documentation across `04.1`–`04.5`. During exit verification of stateless CLI execution against an unreachable `DATABASE_URL`, caught that `createCliContext` in `src/cli.ts` still booted `AppModule` (connecting `DatabaseService` on startup). Added `CliAppModule` / `createCliApplicationContext` in `src/bootstrap.ts` (importing `LlmGatewayModule`, `ExtractionModule`, and `ListingsModule` without `DatabaseModule`) and switched `createCliContext` to it, plus added a regression check in `test/cli.spec.ts`. Aligned `docs/architecture.md`, `docs/phase-plans/README.md`, `docs/DECISIONS.md` (`OPEN-07`), `docs/roadmap.md`, `docs/success-criteria.md`, and `README.md`.
+- **Handled cases** — Verified stateless built CLI execution with `DATABASE_URL` targeting a nonexistent directory (exited `1` with typed `provider_unavailable` on stdout, empty stderr, and zero SQLite files created), `db:deploy` migrations, `POST /messages` ingestion/replay/conflict/concurrency, `GET /listings` ordering/filtering/`approval_note`, `POST /listings/{id}/approve` (no note, trimmed note, idempotent repeat, concurrent approval, restart persistence, replay snapshot preservation), shared CLI/HTTP parity, and Phase 02 regression suites offline without API keys.
+- **Errors and failure handling** — All 8 error matrix entries are verified offline across `04.2T`–`04.5T`: `invalid_input` (400), `message_conflict` (409), `invalid_extraction` (502), `provider_unavailable` (503), `provider_timeout` (504), `internal_error` (500), `listing_not_found` (404), and `approval_conflict` (409).
+- **Known gaps** — Concurrent identical `POST /messages` submissions can both call the gateway before one wins the unique insert. Cross-broker deduplication (`duplicate_of`) belongs to Phase 05. Reviewer identity, field editing, rejection, undo, and approval history remain outside Phase 04 scope (`D-044`, `D-045`). Fresh-clone setup, live-extension readiness, and final submission checks belong to Phase 06 (`SC-15`, `SC-17`, `SC-18`, `PC-04`).
+- **Verification evidence** — On 2026-11-10, after the final edit: `pnpm run typecheck` passed, `pnpm run build` passed, `pnpm test` passed (**24/24** suites, **264/264** tests offline without Gemini calls or API keys, including `foundation.spec.ts`, `persistence-replay.spec.ts`, `http-messages.spec.ts`, `cli.spec.ts`, `cli-integration.spec.ts`, and all Phase 02/03 regression suites), and direct `node dist/cli.js process test/fixtures/one-message.jsonl` with an unreachable `DATABASE_URL` and blank `LLM_API_KEY` emitted `{ "message_id": "example-001", "error": { "code": "provider_unavailable", "message": "Extraction is not configured" } }` on stdout with empty stderr and zero SQLite artifacts.
+- **Follow-up** — Phase 05: resolve `OPEN-02` / `OPEN-06` and implement cross-broker deduplication; Phase 06: submission readiness and fresh-checkout verification (none block Phase 04 close-out).
+
 ## Planned error matrix
 
 Verify the type, status, public response, and database state for each case. The coverage column identifies a planned check.
 
 | Error code | Trigger | HTTP | Public response and database effect | Coverage |
 | --- | --- | --- | --- | --- |
-| `invalid_input` | Malformed JSON, invalid message, or malformed listing filter | 400 | Typed input error. No state change. | 04.3T, 04.4T |
+| `invalid_input` | Malformed JSON, invalid message, invalid approval body, or malformed listing filter | 400 | Typed input error. No state change. | 04.3T, 04.4T, 04.5T |
 | `message_conflict` | Existing ID with a different original payload | 409 | Typed conflict. Existing ingestion and listings remain intact. | 04.2T, 04.3T |
 | `invalid_extraction` | Unusable extraction response | 502 | Typed extraction error. No successful ingestion is stored. | 04.2T, 04.3T |
 | `provider_unavailable` | Configured provider is unavailable | 503 | Typed provider error. No successful ingestion is stored. | 04.2T, 04.3T |
@@ -128,11 +137,11 @@ During implementation, use the existing project documents for their respective e
 
 ## Definition of done
 
-- [ ] CLI remains stateless and works without SQLite; HTTP startup applies committed migrations. SQLite data and approval state survive restart.
-- [ ] Both transports use the same processing pipeline. HTTP replay returns the original snapshot without a model call, and changed payloads conflict.
-- [ ] Multi-offer and zero-offer successes persist correctly. Concurrent same-ID writes retain one winner, and failed writes leave no partial success.
-- [ ] All three endpoints work with the documented error contracts. Listing filters use current review state, and approval is idempotent and preserves replay history.
-- [ ] Focused offline checks, the full offline suite, typecheck, and build pass.
-- [ ] Dated evidence covers SC-02 through SC-05 and PC-01. Each task records implemented behavior, handled cases, errors, known gaps, and actual verification. Remaining items have an owner and an explicit blocking status.
+- [x] CLI remains stateless and works without SQLite; HTTP startup applies committed migrations. SQLite data and approval state survive restart.
+- [x] Both transports use the same processing pipeline. HTTP replay returns the original snapshot without a model call, and changed payloads conflict.
+- [x] Multi-offer and zero-offer successes persist correctly. Concurrent same-ID writes retain one winner, and failed writes leave no partial success.
+- [x] All three endpoints work with the documented error contracts. Listing filters use current review state, and approval is idempotent and preserves replay history.
+- [x] Focused offline checks, the full offline suite, typecheck, and build pass.
+- [x] Dated evidence covers SC-02 through SC-05 and PC-01. Each task records implemented behavior, handled cases, errors, known gaps, and actual verification. Remaining items have an owner and an explicit blocking status.
 
 Mark the phase **Verified** after all exit checks pass.

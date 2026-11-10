@@ -21,7 +21,7 @@ This evidence is a user-supplied summary, not an exported GPT transcript. Origin
 | OPEN-04 | D-019 and D-020 settle association, price, currency, and inference policy for v2. | Verify the approved rules in Phase 02. Review future inference before use. |
 | OPEN-05 | D-020 settles applicable fields for v2 listings. Project announcements have no listing-level review unless an independent offer is extracted. | Verify the approved rules in 02.5. Revisit if review scope expands. |
 | OPEN-06 | Duplicate confidence thresholds | Before deduplication |
-| OPEN-07 | Approval transition and persisted review state | Before Phase 04 approval implementation |
+| OPEN-07 | D-043, D-044, D-045, and the Phase 04 OPEN-07 contract settle approval transition, optional approval note, and persisted review state vs immutable snapshot. | Verified in Phase 04; revisit only if reviewer identity, edit, or undo enters scope. |
 | OPEN-08 | D-024 selects a direct tool-less model call. Workflows executing tools on untrusted input require verified isolation. | Before enabling tool execution on untrusted input |
 
 ## Decision format

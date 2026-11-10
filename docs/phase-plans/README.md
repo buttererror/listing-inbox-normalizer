@@ -6,8 +6,9 @@ The [roadmap](../roadmap.md) orders the phases. Each phase records its own tasks
 - [02 — Extraction through CLI baseline](02-extraction-through-cli.md)
 - [02 revision — Message processing through CLI](02-message-processing.md)
 - [03 — Independent provider evaluation](03-independent-provider-evaluation.md)
+- [04 — SQLite persistence, HTTP integration, and human approval](04-sqlite-http-and-approval.md)
 
-Phases 04–06 remain roadmap candidates. Refine their tasks after reviewing the preceding phase evidence.
+Phases 05–06 remain roadmap candidates. Refine their tasks after reviewing the preceding phase evidence.
 
 ## Phase format
 

@@ -1,5 +1,15 @@
 # Key agent sessions
 
+## Task 04.6 Phase 04 verification and close-out — 2026-11-10
+
+- **Evidence status** — Evidence checked against `src/bootstrap.ts`, `src/cli.ts`, `test/cli.spec.ts`, `docs/phase-plans/04-sqlite-http-and-approval.md`, `docs/phase-plans/README.md`, `docs/roadmap.md`, `docs/success-criteria.md`, `docs/DECISIONS.md`, `docs/architecture.md`, `README.md`, and offline test/build/CLI outputs.
+- **Human review** — Not requested.
+- **Objective** — Implement Task 04.6 verification and close out Phase 04.
+- **Important prompt** — User: “Implement task 04.6  to close the phase”.
+- **Outcome** — Audited Phase 04 implementation, error matrix, and documentation; discovered during direct built-CLI verification that `createCliContext` still instantiated `AppModule` (connecting `DatabaseService` to `DATABASE_URL` on CLI startup) and isolated CLI behind `CliAppModule` / `createCliApplicationContext` in `src/bootstrap.ts` without `DatabaseModule`. Updated `test/cli.spec.ts`, marked Phase 04 Verified across `docs/phase-plans/04-sqlite-http-and-approval.md`, `docs/roadmap.md`, `docs/phase-plans/README.md`, `docs/DECISIONS.md` (`OPEN-07`), `docs/success-criteria.md`, `docs/architecture.md`, and `README.md`.
+- **Verification and limits** — `pnpm run typecheck`, `pnpm run build`, `pnpm test` (`24` suites, `264` offline tests including Phase 02 regression suites and Phase 04 HTTP/SQLite suites), and direct built-CLI execution with an unreachable `DATABASE_URL` passed after the final edit. Cross-broker deduplication remains Phase 05 and fresh-checkout submission checks remain Phase 06.
+- **Related decisions** — D-013, D-014, D-042, D-043, D-044, D-045, OPEN-07.
+
 ## Task 04.5 approval with optional note — 2026-11-10
 
 - **Evidence status** — Evidence checked against the supplied approval-note amendment, approval route and persistence code, committed SQLite migration, focused offline HTTP tests, and type checking.
