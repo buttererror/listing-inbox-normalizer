@@ -822,5 +822,29 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   - Verified markdown diff in `docs/processing-resolution-policy.md` against user specification.
 - **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review).
 
+## Stage 1 Domain Prompt Aligned with Normalization Policies — 2026-11-10
+
+- **Evidence status** — Evidence checked against source, tests, typecheck, build, and test suite.
+- **Human review** — Not requested.
+- **Objective** — Update `DOMAIN_INSTRUCTIONS` in `src/extraction/domain-prompt.ts` to reflect the complete Stage 1 Step 6 normalization policies.
+- **Important prompt** — Verbatim: “Update the prompt to meet the normalization policy”.
+- **Outcome** —
+  - Expanded Step 6 in `DOMAIN_INSTRUCTIONS` with all canonical normalization rules:
+    - purpose: mapping to "sale" | "rent" without inferring from unrelated fields.
+    - property_type: specific vs generic enum constraints without unrelated inference.
+    - city & district: original language/spelling preservation, whitespace trimming, stripping administrative labels (حي, District:, مدينة) only when functional, no translation or geographical inference.
+    - bedrooms & bathrooms: non-negative integers without rounding or estimating.
+    - area_sqm: positive numeric sqm value with kind ("land", "built_up", "unspecified") without property-type assumption.
+    - price tuple: amount numeric conversion, explicit SAR requirement, period ("yearly", "monthly", "total", null), role ("asking_price", "deposit", "installment", "per_sqm_rate", "other").
+    - contact_phone: Saudi E.164 ("+9665XXXXXXXX") normalization with digit conversion and omission on low confidence.
+    - numeric conversion: Arabic-Indic / Eastern Arabic-Indic digits, written numbers, shorthand magnitudes (K, M, ألف, مليون), contextual separator parsing, uncertainty findings for approximate quantities.
+    - evidence preservation: verbatim quotes without rewriting, preserving competing candidates for downstream resolution.
+  - Added representative examples for location/area normalization and digit/magnitude conversions.
+  - Updated `test/extraction.service.spec.ts` asserting prompt coverage of the new normalization rules and examples.
+- **Verification and limits** —
+  - `pnpm run typecheck` and `pnpm test` passed cleanly (18 test suites, 186 tests).
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review).
+
+
 
 

@@ -101,6 +101,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
     expect(instructions).toContain('العربون 50 ألف ريال');
     expect(instructions).toContain('2500 ريال للمتر');
     expect(instructions).toContain('85,000/yr');
+    expect(instructions).toContain('+9665XXXXXXXX');
+    expect(instructions).toContain('Numeric normalization:');
+    expect(instructions).toContain('الرياض، حي النرجس');
+    expect(instructions).toContain('Built-up area: 250 sqm');
   });
 
   describe('classification matrix rows', () => {
