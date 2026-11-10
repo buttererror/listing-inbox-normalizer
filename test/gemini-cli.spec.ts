@@ -51,18 +51,20 @@ describe('AI SDK Gemini CLI wiring', () => {
     expect(exit).toBe(0);
     expect(stderr).toBe('');
     expect(JSON.parse(stdout)).toMatchObject({
+      message_id: 'example-001',
       classification: 'listing',
       detected_classes: ['listing'],
       listings: [
         expect.objectContaining({
-          offer_quote: expect.stringContaining('For sale'),
-          candidates: expect.arrayContaining([
-            expect.objectContaining({ field: 'property_type', value: 'villa' }),
-            expect.objectContaining({
-              field: 'price',
-              value: { amount: 3200000, currency: 'SAR', period: 'total' },
-            }),
-          ]),
+          purpose: 'sale',
+          property_type: 'villa',
+          price: {
+            amount: 3200000,
+            currency: 'SAR',
+            period: 'total',
+          },
+          needs_review: true,
+          duplicate_of: null,
         }),
       ],
     });

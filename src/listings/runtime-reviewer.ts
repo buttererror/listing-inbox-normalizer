@@ -22,8 +22,6 @@ function reasonForFinding(offer: ResolvedOffer, finding: ResolutionFinding): str
     case 'currency_unknown':
     case 'period_unknown':
       return `${finding.field}_${finding.issue}`;
-    case 'arithmetic_inconsistent':
-      return `${finding.field}_arithmetic_inconsistent`;
     case 'offer_uncertain':
     case 'offer_missing_context':
       return null;

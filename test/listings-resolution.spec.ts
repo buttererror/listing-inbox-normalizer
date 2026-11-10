@@ -250,7 +250,7 @@ describe('02.5T — Stage 3 field resolution (R01–R14)', () => {
       field: 'bedrooms',
       quote: '3 BR',
       scope: 'local',
-      reason: 'quote_value_mismatch',
+      reason: 'wrong_offer',
     };
     const validCandidate = candidate({ field: 'bedrooms', value: 4, quote: '4 BR', scope: 'local' });
 

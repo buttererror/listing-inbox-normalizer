@@ -557,6 +557,31 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Approval evidence** — User instruction: "Add a task after 2.5 to review the mechincal validation to remove regex and rely on llm, commit to architecture for mechanical validation".
 - **References** — D-019, D-020, D-030, D-031, [Phase 02 plan](phase-plans/02-message-processing.md), [Architecture](architecture.md).
 
+### D-033: Simplify Stage 2 to a structural safety boundary
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — The 02.5b handoff found that Stage 2 still duplicated Stage 1 language interpretation through quote/value comparisons, price shorthand and qualifier parsing, phone-digit matching, repeated-occurrence rejection, shared-position inference, and arithmetic checks.
+- **Options and tradeoffs** — Retain and expand the deterministic semantic checks (more brittle language rules); remove all Stage 2 checks (would lose structural safety); or retain only deterministic structural checks and assign semantic consistency to Stage 1.
+- **Decision and rationale** — Choose the structural boundary. Stage 2 retains envelope/candidate/finding schemas, verbatim grounding, local offer association, objective clipping, numeric constraints, canonical formats, typed failures, and partial recovery. It preserves grounded repeated and shared evidence unless mechanically invalid. It does not interpret quote meaning, compare normalized values to quotes, parse price shorthand or qualifiers, compare phone digits, or calculate arithmetic.
+- **Consequences** — A source-grounded, schema-valid value may remain semantically wrong (for example `٣ غرف نوم` with value `4`); this is an explicit Stage 1 limitation to evaluate separately. Original raw offer indexes are retained after partial recovery. This supersedes the quote/value and arithmetic portions of D-031 and the deferred-retirement language in D-032.
+- **Validation and review checkpoint** — Focused offline Stage 2, resolver, and reviewer suites verify the boundary, two-offer isolation, and original indexes. Live-provider evaluation remains separate; review false acceptance during Phase 03.
+- **Approval evidence** — Direct user instruction with the supplied “Dwelleo — Stage 2 Validation Simplification Handoff”: “Implement this”.
+- **References** — D-019, D-020, D-030, D-031, D-032, [Architecture](architecture.md), [Phase 02 plan](phase-plans/02-message-processing.md).
+
+### D-034: Complete CLI Result Assembly and Revert Process Command to Public Listing Contract
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Under D-028, the `process <input.jsonl>` CLI command temporarily outputted the internal Stage 1 extraction envelope while Tasks 02.2–02.5 were in flight. Task 02.6 completes the CLI processing path, connecting Stage 0 Input Validation, Stage 1 LLM Extraction, Stage 2 Mechanical Validation, Stage 3 Field Resolution, Stage 5 Runtime Reviewer, and Stage 6 Result Assembly.
+- **Options and tradeoffs** —
+  1. Continue outputting internal extraction envelopes via CLI and defer public assembly to Phase 04. (Rejected: CLI must deliver contract-compliant public listing JSONL per the assessment brief).
+  2. Implement database persistence and deduplication alongside CLI assembly. (Rejected: out of scope for Phase 02; persistence belongs to Phase 04 and deduplication to Phase 05).
+  3. Revert `process` CLI output to the assembled public result contract (`MessageSuccess | ProcessingFailure`), assembling resolved property offers, distinct listing IDs, reviewer status and reasons, setting `duplicate_of: null`, preserving `classification: 'mixed'` and source-ordered `detected_classes`, while emitting typed failures for invalid input, provider errors, and invalid extraction without leaking internal candidates.
+- **Decision and rationale** — Implement option 3 in `ListingMessageProcessor` (`src/messages/listing-message-processor.ts`), fulfilling D-028's review checkpoint. Each grounded offer is independently resolved and reviewed. Each nonblank JSONL input line produces exactly one ordered contract-compliant JSON result.
+- **Consequences** — Reverts the temporary D-028 output format. `MessageResult` unifies on `MessageSuccess | ProcessingFailure`. All 5 message classifications (`listing`, `project`, `buyer_request`, `irrelevant`, `mixed`) flow through the shared processor. Legacy single-sale bridge is fully retired.
+- **Validation** — Focused offline suites in `test/listing-message-processor.spec.ts` (14 tests) and `test/cli-integration.spec.ts` (11 tests); full 17-suite offline test suite passing (191 tests); clean typecheck and build; and manual live CLI checks with Gemini API on Fixture A (all valid batch, exit 0) and Fixture B (mixed multi-offer + malformed line batch, exit 1).
+- **Approval evidence** — Direct user instruction: “Implement Task 02.6 — Input Validation and CLI Result Assembly... Connect the existing processing stages so that Dwelleo accepts a JSONL file containing multiple broker messages and produces exactly one contract-compliant JSON result per nonblank input line, preserving input order.”
+- **References** — D-019, D-020, D-028, D-030, D-031, D-033, [Architecture](architecture.md), [Phase 02 plan](phase-plans/02-message-processing.md).
+
 
 
 

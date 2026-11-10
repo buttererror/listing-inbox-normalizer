@@ -1,5 +1,22 @@
 import { z } from 'zod';
 
+export const baseClassificationSchema = z.enum([
+  'listing',
+  'project',
+  'buyer_request',
+  'irrelevant',
+]);
+export type BaseClassification = z.infer<typeof baseClassificationSchema>;
+
+export const messageClassificationSchema = z.enum([
+  'listing',
+  'project',
+  'buyer_request',
+  'irrelevant',
+  'mixed',
+]);
+export type MessageClassification = z.infer<typeof messageClassificationSchema>;
+
 export const listingResultSchema = z.looseObject({
   id: z.string(),
   purpose: z.enum(['sale', 'rent']).nullable(),
@@ -22,7 +39,8 @@ export const listingResultSchema = z.looseObject({
 
 export const messageSuccessSchema = z.looseObject({
   message_id: z.string(),
-  classification: z.enum(['listing', 'project', 'buyer_request', 'irrelevant']),
+  classification: messageClassificationSchema,
+  detected_classes: z.array(baseClassificationSchema),
   listings: z.array(listingResultSchema),
 }).refine(
   (result) => !['buyer_request', 'irrelevant'].includes(result.classification) || result.listings.length === 0,

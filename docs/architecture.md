@@ -170,12 +170,11 @@ Conceptually, the `ExtractionEnvelope` groups `ExtractedOffer[]` under the class
 1. **Parse:** Parse the model response and check that the overall message and listing envelope is structurally usable.
 2. **Validate candidate schemas independently:** Check each field candidate against its expected types and enum values.
 3. **Verify source evidence:** Confirm that every supporting quote exists verbatim in the original message.
-4. **Check evidence integrity:** Detect clipped words and numbers and repeated occurrences that remain ambiguous after scoping. Check offer-local containment and explicitly shared evidence.
+4. **Check evidence integrity:** Detect clipped words and numbers. Check offer-local containment; preserve a grounded shared or repeated quote when source position alone cannot disprove its association.
 5. **Validate numerical constraints:** Require appropriate integers, finite numeric values, and justified ranges.
 6. **Validate formats:** Check canonical phone numbers, currency, price periods, and other field-specific formats.
-7. **Cross-check mechanical consistency:** Compare explicit, machine-readable quantities with proposed values where a reliable comparison is possible. Perform arithmetic checks when sufficient structured operands exist.
-8. **Separate accepted and rejected candidates:** Preserve usable candidates and record failures individually.
-9. **Return validated candidates and findings** to the resolver.
+7. **Separate accepted and rejected candidates:** Preserve usable candidates and record failures individually.
+8. **Return validated candidates and findings** to the resolver.
 
 ### Example
 
@@ -229,9 +228,9 @@ Deterministic mechanical validation must not accumulate fragile regular expressi
 - **Stage 2 (Mechanical Validation)** commits strictly to verifiable structural constraints:
   1. Envelope and candidate schema validity (Zod schemas, finite numeric constraints, enums).
   2. Exact verbatim quote existence in the original source message (`sourceText.includes(quote)`).
-  3. Strict offer boundary containment and shared evidence scoping.
-  4. Token integrity (non-clipped boundaries) and arithmetic consistency between explicitly grounded numeric operands.
-Regex-based semantic heuristics are slated for review and retirement in Task 02.5b to rely cleanly on LLM extraction grounding and simple deterministic structural verification.
+3. Strict offer-local boundary containment; shared applicability remains a Stage 1 association judgment unless mechanically disproven.
+4. Token integrity (non-clipped boundaries).
+Stage 2 does not parse quote meaning, compare a quote to a normalized value, or calculate cross-field arithmetic. A grounded `٣ غرف نوم` candidate with value `4`, for example, is structurally valid but semantically unverified; Stage 1 owns that verification.
 
 ### Boundary constraints
 

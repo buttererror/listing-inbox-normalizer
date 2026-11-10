@@ -283,7 +283,7 @@ describe('02.5 Offline Integration — Stage 2 to Field Resolver & Runtime Revie
 
   it('Stage 2 → 02.5 integration: rejected villa price (900K) + valid (2M) resolves villa to 2M, while apartment competing prices (950K & 1M) remain unresolved', () => {
     // Inject Stage 2 result directly:
-    // Villa: rejected price 900K (e.g. wrong_offer or quote_value_mismatch), valid price 2M
+    // Villa: rejected price 900K (for example, wrong_offer), valid price 2M
     // Apartment: two valid competing asking prices (950K, 1M), contradiction finding
     const villaOutcome = {
       offer_index: 0,

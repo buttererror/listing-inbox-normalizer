@@ -281,7 +281,7 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
       }
     });
 
-    it('rejects shared evidence that belongs exclusively to another offer', () => {
+    it('preserves grounded shared evidence when source position alone cannot prove applicability', () => {
       const payload = {
         classification: 'listing',
         detected_classes: ['listing'],
@@ -310,14 +310,13 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         const villaOffer = outcome.offers[0];
-        expect(villaOffer.acceptedCandidates).toHaveLength(1);
-        expect(villaOffer.rejectedCandidates).toHaveLength(1);
-        expect(villaOffer.rejectedCandidates[0]).toMatchObject({
+        expect(villaOffer.acceptedCandidates).toHaveLength(2);
+        expect(villaOffer.acceptedCandidates[1]).toMatchObject({
           field: 'city',
           quote: 'Jeddah',
           scope: 'shared',
-          reason: 'unscoped_shared_evidence',
         });
+        expect(villaOffer.rejectedCandidates).toHaveLength(0);
       }
     });
   });
@@ -363,7 +362,7 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
       }
     });
 
-    it('rejects quotes that appear multiple times ambiguously within the SAME offer', () => {
+    it('preserves repeated grounded quotes within the same offer', () => {
       const text = 'Villa with 3 bedrooms, but permits allow 3 bedrooms extension';
       const payload = {
         classification: 'listing',
@@ -384,13 +383,12 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         const offer = outcome.offers[0];
-        expect(offer.acceptedCandidates).toHaveLength(0);
-        expect(offer.rejectedCandidates).toHaveLength(1);
-        expect(offer.rejectedCandidates[0]).toMatchObject({
+        expect(offer.acceptedCandidates).toHaveLength(1);
+        expect(offer.acceptedCandidates[0]).toMatchObject({
           field: 'bedrooms',
           quote: '3 bedrooms',
-          reason: 'multiple_occurrences',
         });
+        expect(offer.rejectedCandidates).toHaveLength(0);
       }
     });
   });
@@ -764,215 +762,21 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
     });
   });
 
-  describe('9. Task 02.4: Cross-check mechanically verifiable source consistency', () => {
-    it('detects clear quantity mismatch: 3 BR with bedrooms: 4', () => {
-      const text = 'Villa with 3 BR in Riyadh.';
-      const payload = {
-        classification: 'listing',
-        detected_classes: ['listing'],
-        listings: [
-          {
-            offer_quote: text,
-            candidates: [
-              // Quote specifies 3 BR, but candidate proposes 4
-              { field: 'bedrooms', value: 4, quote: '3 BR', scope: 'local' },
-            ],
-            findings: [],
-          },
-        ],
-      };
-
-      const outcome = validateStage2(text, payload);
-      expect(outcome.ok).toBe(true);
-      if (outcome.ok) {
-        const offer = outcome.offers[0];
-        expect(offer.acceptedCandidates).toHaveLength(0);
-        expect(offer.rejectedCandidates).toHaveLength(1);
-        expect(offer.rejectedCandidates[0]).toMatchObject({
-          field: 'bedrooms',
-          quote: '3 BR',
-          reason: 'quote_value_mismatch',
-        });
-      }
-    });
-
-    it('accepts Arabic-Indic numerals matching normalized values: ٣ غرف نوم with bedrooms: 3', () => {
-      const text = 'شقة ٣ غرف نوم ومساحة ١٦٥ م²';
-      const payload = {
-        classification: 'listing',
-        detected_classes: ['listing'],
-        listings: [
-          {
-            offer_quote: text,
-            candidates: [
-              { field: 'bedrooms', value: 3, quote: '٣ غرف نوم', scope: 'local' },
-              { field: 'area_sqm', value: 165, kind: 'unspecified', quote: '١٦٥ م²', scope: 'local' },
-            ],
-            findings: [],
-          },
-        ],
-      };
-
-      const outcome = validateStage2(text, payload);
-      expect(outcome.ok).toBe(true);
-      if (outcome.ok) {
-        expect(outcome.offers[0].acceptedCandidates).toHaveLength(2);
-      }
-    });
-
-    it('accepts price shorthand: 950K -> 950000 and 3.2M SAR -> 3200000', () => {
-      const text = '1) 950K 2) 3.2M SAR';
-      const payload = {
-        classification: 'listing',
-        detected_classes: ['listing'],
-        listings: [
-          {
-            offer_quote: '1) 950K',
-            candidates: [
-              {
-                field: 'price',
-                value: { amount: 950000, currency: null, period: 'total' },
-                role: 'asking_price',
-                quote: '950K',
-                scope: 'local',
-              },
-            ],
-            findings: [],
-          },
-          {
-            offer_quote: '2) 3.2M SAR',
-            candidates: [
-              {
-                field: 'price',
-                value: { amount: 3200000, currency: 'SAR', period: 'total' },
-                role: 'asking_price',
-                quote: '3.2M SAR',
-                scope: 'local',
-              },
-            ],
-            findings: [],
-          },
-        ],
-      };
-
-      const outcome = validateStage2(text, payload);
+  describe('9. Task 02.5b: structural validation boundary', () => {
+    it('preserves a grounded semantic mismatch for Stage 1 rather than comparing quote and value', () => {
+      const text = 'شقة ٣ غرف نوم';
+      const outcome = validateStage2(text, {
+        classification: 'listing', detected_classes: ['listing'],
+        listings: [{ offer_quote: text, candidates: [{ field: 'bedrooms', value: 4, quote: '٣ غرف نوم', scope: 'local' }], findings: [] }],
+      });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         expect(outcome.offers[0].acceptedCandidates).toHaveLength(1);
-        expect(outcome.offers[1].acceptedCandidates).toHaveLength(1);
+        expect(outcome.offers[0].rejectedCandidates).toHaveLength(0);
       }
     });
 
-    it('rejects magnitude mismatch: 3.2M SAR with price amount: 320000', () => {
-      const text = 'Asking 3.2M SAR';
-      const payload = {
-        classification: 'listing',
-        detected_classes: ['listing'],
-        listings: [
-          {
-            offer_quote: text,
-            candidates: [
-              // Mismatch: 3.2M is 3,200,000, not 320,000
-              {
-                field: 'price',
-                value: { amount: 320000, currency: 'SAR', period: 'total' },
-                role: 'asking_price',
-                quote: '3.2M SAR',
-                scope: 'local',
-              },
-            ],
-            findings: [],
-          },
-        ],
-      };
-
-      const outcome = validateStage2(text, payload);
-      expect(outcome.ok).toBe(true);
-      if (outcome.ok) {
-        const offer = outcome.offers[0];
-        expect(offer.acceptedCandidates).toHaveLength(0);
-        expect(offer.rejectedCandidates).toHaveLength(1);
-        expect(offer.rejectedCandidates[0].reason).toBe('quote_value_mismatch');
-      }
-    });
-
-    it('rejects phone number when normalized digits differ from quote digits', () => {
-      const text = 'Call 0551234567';
-      const payload = {
-        classification: 'listing',
-        detected_classes: ['listing'],
-        listings: [
-          {
-            offer_quote: text,
-            candidates: [
-              // Quote specifies 0551234567, but normalized phone specifies +966509876543
-              { field: 'contact_phone', value: '+966509876543', quote: '0551234567', scope: 'local' },
-            ],
-            findings: [],
-          },
-        ],
-      };
-
-      const outcome = validateStage2(text, payload);
-      expect(outcome.ok).toBe(true);
-      if (outcome.ok) {
-        const offer = outcome.offers[0];
-        expect(offer.acceptedCandidates).toHaveLength(0);
-        expect(offer.rejectedCandidates).toHaveLength(1);
-        expect(offer.rejectedCandidates[0].reason).toBe('quote_value_mismatch');
-      }
-    });
-  });
-
-  describe('10. Task 02.4: Arithmetic cross-check & ValidationOutcome per offer', () => {
-    it('detects arithmetic inconsistency between area, per_sqm_rate, and total asking price', () => {
-      const text = 'Land area 200 sqm, rate 2,500 SAR/sqm, total price 1,000,000 SAR';
-      const payload = {
-        classification: 'listing',
-        detected_classes: ['listing'],
-        listings: [
-          {
-            offer_quote: text,
-            candidates: [
-              { field: 'area_sqm', value: 200, kind: 'land', quote: '200 sqm', scope: 'local' },
-              {
-                field: 'price',
-                value: { amount: 2500, currency: 'SAR', period: null },
-                role: 'per_sqm_rate',
-                quote: '2,500 SAR/sqm',
-                scope: 'local',
-              },
-              // 200 * 2500 = 500,000, but asking price is claimed as 1,000,000!
-              {
-                field: 'price',
-                value: { amount: 1000000, currency: 'SAR', period: 'total' },
-                role: 'asking_price',
-                quote: '1,000,000 SAR',
-                scope: 'local',
-              },
-            ],
-            findings: [],
-          },
-        ],
-      };
-
-      const outcome = validateStage2(text, payload);
-      expect(outcome.ok).toBe(true);
-      if (outcome.ok) {
-        const offer = outcome.offers[0];
-        // Candidates themselves are individually grounded and format-valid
-        expect(offer.acceptedCandidates).toHaveLength(3);
-        // Arithmetic discrepancy is flagged as a validation finding!
-        expect(offer.validationFindings).toHaveLength(1);
-        expect(offer.validationFindings[0]).toMatchObject({
-          category: 'arithmetic_inconsistency',
-          field: 'price',
-          description: expect.stringContaining('200 sqm'),
-        });
-      }
-    });
-
-    it('produces OfferValidationOutcome with offer_index, accepted, rejected, semantic findings, and mechanical findings', () => {
+    it('produces OfferValidationOutcome with typed accepted and rejected collections', () => {
       const text = '1) Villa with 3 BR. 2) Apartment 950K.';
       const payload = {
         classification: 'listing',
@@ -982,8 +786,7 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
             offer_quote: '1) Villa with 3 BR.',
             candidates: [
               { field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' },
-              // Invalid quantity mismatch
-              { field: 'bedrooms', value: 5, quote: '3 BR', scope: 'local' },
+              { field: 'bedrooms', value: 3, quote: '3 BR', scope: 'local' },
             ],
             findings: [
               { category: 'uncertainty', field: 'price', quote: null, description: 'No price stated' },
@@ -1013,10 +816,10 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
 
         const offer0 = outcome.offers[0];
         expect(offer0.offer_index).toBe(0);
-        expect(offer0.acceptedCandidates).toHaveLength(1);
-        expect(offer0.rejectedCandidates).toHaveLength(1);
+        expect(offer0.acceptedCandidates).toHaveLength(2);
+        expect(offer0.rejectedCandidates).toHaveLength(0);
         expect(offer0.semanticFindings).toHaveLength(1);
-        expect(offer0.validationFindings).toHaveLength(1);
+        expect(offer0.validationFindings).toHaveLength(0);
 
         const offer1 = outcome.offers[1];
         expect(offer1.offer_index).toBe(1);

@@ -243,7 +243,7 @@ Examples:
 ### 6.9 Responsibility boundaries
 
 - **Stage 1 — LLM Extraction:** Interpret the source and propose normalized typed candidates with original evidence.
-- **Stage 2 — Mechanical Validation:** Verify structure, source integrity, types, formats, and mechanically checkable consistency.
+- **Stage 2 — Mechanical Validation:** Verify structure, grounded evidence, numeric constraints, and canonical formats; it does not reinterpret quote meaning or compare it with normalized values.
 - **Stage 3 — Field Resolution:** Select supported values according to documented business policies.
 - **Stage 5 — Runtime Reviewer:** Identify unresolved or materially uncertain information requiring human review.
 
@@ -258,14 +258,13 @@ Validation does not attempt to reinterpret natural language.
 | ID | Policy | Required behavior |
 |---|---|---|
 | V-01 | Schema | Validate the message and offer envelope first. Return a typed failure if the envelope is unusable |
-| V-02 | Evidence existence | Verify a verbatim occurrence within its offer or explicitly shared context. Reject ambiguity that remains after scoping |
+| V-02 | Evidence existence | Verify a verbatim occurrence; reject local evidence outside its claimed offer. Preserve repeated or shared evidence unless a mechanical source-boundary check disproves it |
 | V-03 | Evidence integrity | Reject reliably identifiable clipped or fabricated quotes |
 | V-04 | Types | Validate each field against its internal schema |
 | V-05 | Allowed values | Enforce enum constraints |
 | V-06 | Numeric constraints | Require finite, safe, appropriately bounded numbers |
 | V-07 | Phone format | Validate and canonicalize Saudi mobile numbers |
-| V-08 | Arithmetic | Check numerical relationships when sufficient structured evidence exists |
-| V-09 | Invalid candidates | Reject invalid candidates individually. Retain their original data and findings and continue with usable fields and offers |
+| V-08 | Invalid candidates | Reject invalid candidates individually. Retain their original data and findings and continue with usable fields and offers |
 
 ### Numeric constraints
 
@@ -277,19 +276,11 @@ Validation does not attempt to reinterpret natural language.
 
 Do not introduce arbitrary maximum property prices, bedroom counts, or areas without a justified requirement.
 
-### Arithmetic example
-
-Source:
-
-`900 sqm, 2,500 SAR/sqm, total 2.1M`
-
-The calculated total is `2,250,000 SAR`. Where the source explicitly scopes SAR to the stated total and links all three operands for the same offer, record the verifiable discrepancy, clear the public amount and period, and retain the stated total and operands. If the total lacks explicit SAR evidence, it is already ineligible under the currency policy. The calculation never supplies a public price.
-
 ### Validation limitation
 
 An exact quote and a schema-valid value do not prove that the LLM interpreted the quote correctly.
 
-Mechanical checks should catch identifiable errors without claiming comprehensive semantic verification.
+Stage 2 does not parse numbers, price shorthand or qualifiers from quotes, compare phone digits, or perform arithmetic. For example, a grounded `٣ غرف نوم` candidate with normalized value `4` may pass Stage 2; Stage 1 is responsible for semantic evidence-to-value verification.
 
 ---
 

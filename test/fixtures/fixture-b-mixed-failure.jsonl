@@ -1,0 +1,3 @@
+{"id":"fixture-b-01","sender":"+966555555555","received_at":"2026-11-01T13:00:00+03:00","text":"للبيع فيلا في الرياض حي الملقا بسعر ٣٫٥ مليون ريال، ولدينا أيضاً شقة للبيع في جدة بسعر ٨٠٠ ألف ريال. ومطلوب شراء أرض تجارية في الخبر. للتواصل: ٠٥٥١٢٣٤٥٦٧"}
+{"id": "fixture-b-02-broken", "sender": "bad", "text": "malformed line without closing quote
+{"id":"fixture-b-03","sender":"+966556666666","received_at":"2026-11-01T14:00:00+03:00","text":"Villa for sale in City: Riyadh, District: Al Malqa. Asking 3.2M SAR. Call 0551234567"}

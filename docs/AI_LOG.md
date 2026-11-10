@@ -1,5 +1,16 @@
 # Key agent sessions
 
+
+## Stage 2 Validation Simplification (Task 02.5b) — 2026-11-10
+
+- **Evidence status** — Evidence checked against the supplied handoff, implementation, and focused offline tests. Full typecheck needs clarification because it currently fails on an unrelated required `message_id` mismatch in `src/messages/listing-message-processor.ts`.
+- **Human review** — Not requested.
+- **Objective** — Simplify Stage 2 into a structural safety boundary and remove duplicated semantic interpretation.
+- **Important prompt** — Verbatim user prompt: “Implement this”. The accompanying file was titled “Dwelleo — Stage 2 Validation Simplification Handoff”.
+- **Outcome** — Removed quote/value comparisons, shorthand and qualifier parsing, phone-digit comparison, repeated-occurrence and shared-position rejection, and arithmetic checks. Retained envelope and schema validation, verbatim grounding, local association, clipping, numeric constraints, canonical formats, typed partial recovery, and original offer indexes. Added boundary tests including grounded `٣ غرف نوم` with value `4` surviving Stage 2.
+- **Verification and limits** — Focused Stage 2, resolver, reviewer, and integration suites passed: 81 tests across 5 suites. No live-provider check was run. The full typecheck failure above is outside this task's changed boundary.
+- **Related decisions** — [D-033](DECISIONS.md#d-033-simplify-stage-2-to-a-structural-safety-boundary).
+
 All sessions below occurred on 2026-11-08 (Africa/Cairo). Quotes are verbatim excerpts unless explicitly described otherwise. Summaries describe observed work, not reconstructed transcripts. Earlier GPT exchanges are available only through the supplied handoff summary.
 
 ## Architecture and planning
@@ -943,10 +954,29 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   - Verified Apartment: resolved 8 fields (`sale`, `apartment`, `جدة`, `الروضة`, 3 bedrooms, 2 bathrooms, 165 m², shared phone `+966551234567`), with asking price unresolved (`amount: null`, `period: null`, `currency: 'SAR'`). Under D-020, `needs_review: true` and `review_reasons: ['price_conflict']`.
   - Verified Villa isolation: Villa does not inherit the Apartment's price conflict; its asking price resolves cleanly to 2,000,000 SAR and carries no review flags.
   - Verified Provenance and Rejection exclusion: full quote and candidate provenance is retained. Conflicting candidates remain in `acceptedCandidates` but are excluded from `selectedCandidates`. Injected rejected candidates (fabricated quotes, wrong-offer quotes, clipped tokens, invalid numeric constraints) are retained in `rejectedCandidates`, excluded from `selectedCandidates`, and never contribute to resolved values. Harmless rejected assertions do not compromise surviving supported fields.
+## Task 02.6 — Input Validation and CLI Result Assembly — 2026-11-10
+
+- **Evidence status** — Evidence checked against user prompt, implementation, offline test suites, typecheck, build, and manual Gemini CLI checks against Fixture A and Fixture B.
+- **Human review** — Confirmed by user prompt.
+- **Objective** — Implement Task 02.6 — Input Validation and CLI Result Assembly. Connect the existing processing stages so that Dwelleo accepts a JSONL file containing multiple broker messages and produces exactly one contract-compliant JSON result per nonblank input line, preserving input order, supporting listings, rentals, multi-offer, mixed, project, buyer requests, and irrelevant messages.
+- **Important prompt** — Verbatim user prompt: “# Dwelleo — Task 02.6 Implementation Handoff\n\n## Objective\nImplement Task 02.6 — Input Validation and CLI Result Assembly.\nConnect the existing processing stages so that Dwelleo accepts a JSONL file containing multiple broker messages and produces exactly one contract-compliant JSON result per nonblank input line, preserving input order.\nThis task completes the CLI processing path for listings, rentals, multiple offers, mixed messages, projects, buyer requests, and irrelevant messages.\nReuse the implementation completed in Tasks 02.0–02.5.\nDo not introduce additional LLM calls, interpretation logic, validation rules, or business policies.”
+- **Outcome** —
+  - Connected the complete processing pipeline: Stage 0 Input Validation → Stage 1 LLM Extraction → Stage 2 Mechanical Validation → Stage 3 Field Resolution → Stage 5 Runtime Reviewer → Stage 6 Result Assembly.
+  - Reverted `process <input.jsonl>` CLI command to output public listing JSONL records satisfying `MessageSuccess | ProcessingFailure`.
+  - Updated `messageSuccessSchema` in `src/messages/message-result.schema.ts` to support all 5 classifications (`listing`, `project`, `buyer_request`, `irrelevant`, `mixed`), requiring source-ordered `detected_classes: BaseClassification[]`.
+  - Updated `ListingMessageProcessor` in `src/messages/listing-message-processor.ts`: mapped each grounded offer in `outcome.result.offers` through `ListingsService.process(offer)`, generated distinct listing IDs using an injectable ID generator (defaulting to `randomUUID`), preserved resolved property fields, runtime review decisions (`needs_review`, `review_reasons`), set `duplicate_of: null`, preserved literal `'SAR'` currency, and validated assembled results with `messageSuccessSchema.parse(assembled)`.
+  - Preserved source-ordered `detected_classes` for mixed messages and assembled only genuine individual property offers (excluding buyer requests and project unit ranges).
+  - Emitted empty `listings: []` for buyer requests, irrelevant messages, and project-only announcements without offers.
+  - Reused `rawMessageSchema` for input validation in `src/messages/jsonl-runner.ts`, skipping blank lines, isolating malformed lines with typed `invalid_input` errors without calling the gateway, continuing processing on subsequent lines, and returning exit code 0 on all-success and exit code 1 when one or more lines fail.
+  - Recorded decision `D-034` in `docs/DECISIONS.md`.
 - **Verification and limits** —
-  - `test/resolver-reviewer-integration.spec.ts` passed 3/3 tests.
-  - `pnpm run typecheck`, `pnpm run build`, and `pnpm test` passed cleanly (182 tests across 17 test suites).
-- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks).
+  - Focused processor test suite in `test/listing-message-processor.spec.ts` passed 14/14 tests covering single sale, single rental, multi-offer order, mixed message assembly, buyer request, irrelevant, project announcement, competing prices, rejected candidates, and failure pass-through.
+  - CLI integration test suite in `test/cli-integration.spec.ts` passed 11/11 tests covering Arabic sale, rental, multi-offer messages, rejected candidates, invalid envelope, invalid JSONL line, mixed messages, blank lines, and valid-invalid-valid batch with zero gateway calls for invalid input.
+  - Full offline suite passed all 17 test suites (191 total tests). `pnpm run typecheck` and `pnpm run build` passed cleanly with exit code 0.
+  - Manual live CLI checks with Gemini API:
+    - **Fixture A (all valid):** `test/fixtures/fixture-a-valid.jsonl` produced 4 contract-compliant output lines: sale listing (1 villa, 3.2M SAR), rental listing (1 apartment, 45K SAR yearly), buyer request (`listings: []`), and project announcement (`listings: []`), exiting 0.
+    - **Fixture B (mixed multi-offer + malformed line):** `test/fixtures/fixture-b-mixed-failure.jsonl` produced 3 ordered output lines: Line 1 mixed multi-offer (2 listings: villa in Riyadh and apartment in Jeddah; buyer request not converted to listing), Line 2 typed failure (`code: "invalid_input"`), Line 3 valid English villa listing, exiting 1.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks), [D-033](DECISIONS.md#d-033-simplify-stage-2-to-a-structural-safety-boundary), [D-034](DECISIONS.md#d-034-complete-cli-result-assembly-and-revert-process-command-to-public-listing-contract).
 
 
 

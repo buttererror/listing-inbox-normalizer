@@ -30,7 +30,6 @@ export type ResolutionIssue =
   | 'unsupported'
   | 'currency_unknown'
   | 'period_unknown'
-  | 'arithmetic_inconsistent'
   | 'offer_uncertain'
   | 'offer_missing_context';
 
@@ -128,7 +127,7 @@ function hasRejectedEvidence(field: ResolvedField, provenance: FieldProvenance):
   return (
     provenance.rejectedCandidates.length > 0 ||
     provenance.rejectedFindings.length > 0 ||
-    provenance.validationFindings.some((finding) => finding.category !== 'arithmetic_inconsistency')
+    provenance.validationFindings.length > 0
   );
 }
 
@@ -245,12 +244,7 @@ function resolvePrice(
   const askingPrices = (provenance.acceptedCandidates as CandidateFor<'price'>[])
     .filter((candidate) => candidate.role === 'asking_price');
   const semanticIssue = materialSemanticIssue('price', semanticFindings);
-  const arithmeticMismatch = provenance.validationFindings.some(
-    (finding) => finding.category === 'arithmetic_inconsistency',
-  );
-
   if (askingPrices.length === 0) {
-    if (arithmeticMismatch) return { value: null, selected: [], finding: { field: 'price', issue: 'arithmetic_inconsistent' } };
     if (semanticIssue) return { value: null, selected: [], finding: { field: 'price', issue: semanticIssue } };
     if (hasRejectedEvidence('price', provenance)) {
       return { value: null, selected: [], finding: { field: 'price', issue: 'unsupported' } };
@@ -260,7 +254,6 @@ function resolvePrice(
 
   const distinct = uniqueCandidates(askingPrices);
   if (distinct.length > 1) return { value: null, selected: [], finding: { field: 'price', issue: 'conflict' } };
-  if (arithmeticMismatch) return { value: null, selected: [], finding: { field: 'price', issue: 'arithmetic_inconsistent' } };
   if (semanticIssue) return { value: null, selected: [], finding: { field: 'price', issue: semanticIssue } };
 
   const selected = distinct[0] as CandidateFor<'price'>;

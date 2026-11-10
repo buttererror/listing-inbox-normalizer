@@ -150,7 +150,7 @@ describe('02.5T — Stage 5 runtime reviewer (V01–V11)', () => {
         field: 'price',
         quote: 'Deposit 50K SAR',
         scope: 'local',
-        reason: 'quote_value_mismatch',
+        reason: 'wrong_offer',
       }],
     });
     const review = reviewResolvedOffer(resolved);
@@ -199,7 +199,7 @@ describe('02.5T — Stage 5 runtime reviewer (V01–V11)', () => {
         field: 'bathrooms',
         quote: '5 baths',
         scope: 'local',
-        reason: 'quote_value_mismatch',
+        reason: 'wrong_offer',
       }],
     });
 

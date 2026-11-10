@@ -1,8 +1,7 @@
-import { Stage1ExtractionResult } from '../extraction/extraction-result.schema';
 import { MessageSuccess, ProcessingFailure } from './message-result.schema';
 import { RawMessage } from './raw-message.schema';
 
-export type MessageResult = MessageSuccess | ProcessingFailure | Stage1ExtractionResult;
+export type MessageResult = MessageSuccess | ProcessingFailure;
 
 export const MESSAGE_PROCESSOR = Symbol('MESSAGE_PROCESSOR');
 

@@ -318,6 +318,7 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
 
       expect(outcome.offers).toHaveLength(1);
       const remainingOffer = outcome.offers[0];
+      expect(remainingOffer.offer_index).toBe(1);
       expect(remainingOffer.offer_quote).toContain('للبيع شقة في جدة');
       expect(remainingOffer.acceptedCandidates.find((c) => c.field === 'property_type')?.value).toBe('apartment');
       expect(remainingOffer.semanticFindings).toHaveLength(1);
@@ -374,7 +375,7 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       );
     });
 
-    it('M02: rejects bedrooms count 5 with quote ٤ غرف نوم for value mismatch', () => {
+    it('M02: preserves a grounded bedrooms value even when its quote suggests a different value', () => {
       const extraction = createBaseExtraction();
       extraction.listings[0].candidates = extraction.listings[0].candidates.map((c) =>
         c.field === 'bedrooms' ? { ...c, value: 5, quote: '٤ غرف نوم' } : c,
@@ -385,15 +386,10 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       if (!outcome.ok) return;
 
       const villa = outcome.offers[0];
-      expect(villa.acceptedCandidates.find((c) => c.field === 'bedrooms')).toBeUndefined();
-      expect(villa.rejectedCandidates).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            field: 'bedrooms',
-            reason: 'quote_value_mismatch',
-          }),
-        ]),
-      );
+      expect(villa.acceptedCandidates).toEqual(expect.arrayContaining([
+        expect.objectContaining({ field: 'bedrooms', value: 5 }),
+      ]));
+      expect(villa.rejectedCandidates).toHaveLength(0);
     });
 
     it('M03: rejects negative bedrooms count -1 as invalid numerical constraint', () => {
@@ -440,7 +436,7 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       );
     });
 
-    it('M05: rejects area 160 with quote المساحة ١٦٥ م² for value mismatch', () => {
+    it('M05: preserves a grounded area value without parsing its quote', () => {
       const extraction = createBaseExtraction();
       extraction.listings[1].candidates = extraction.listings[1].candidates.map((c) =>
         c.field === 'area_sqm' ? { ...c, value: 160, quote: 'المساحة ١٦٥ م²' } : c,
@@ -451,15 +447,10 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       if (!outcome.ok) return;
 
       const apartment = outcome.offers[1];
-      expect(apartment.acceptedCandidates.find((c) => c.field === 'area_sqm')).toBeUndefined();
-      expect(apartment.rejectedCandidates).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            field: 'area_sqm',
-            reason: 'quote_value_mismatch',
-          }),
-        ]),
-      );
+      expect(apartment.acceptedCandidates).toEqual(expect.arrayContaining([
+        expect.objectContaining({ field: 'area_sqm', value: 160 }),
+      ]));
+      expect(apartment.rejectedCandidates).toHaveLength(0);
     });
 
     it('M06: rejects nonpositive area 0 as invalid numerical constraint', () => {
@@ -497,7 +488,7 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       expect(price.quote).toBe('السعر ٢ مليون ريال');
     });
 
-    it('M08: rejects price 200000 with quote السعر ٢ مليون ريال for value mismatch', () => {
+    it('M08: preserves a grounded price value without interpreting magnitude words', () => {
       const extraction = createBaseExtraction();
       extraction.listings[0].candidates = extraction.listings[0].candidates.map((c) =>
         c.field === 'price'
@@ -514,15 +505,10 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       if (!outcome.ok) return;
 
       const villa = outcome.offers[0];
-      expect(villa.acceptedCandidates.find((c) => c.field === 'price')).toBeUndefined();
-      expect(villa.rejectedCandidates).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            field: 'price',
-            reason: 'quote_value_mismatch',
-          }),
-        ]),
-      );
+      expect(villa.acceptedCandidates).toEqual(expect.arrayContaining([
+        expect.objectContaining({ field: 'price', value: expect.objectContaining({ amount: 200000 }) }),
+      ]));
+      expect(villa.rejectedCandidates).toHaveLength(0);
     });
 
     it('M09: accepts phone +966551234567 matching Arabic-Indic digits ٠٥٥١٢٣٤٥٦٧', () => {
@@ -542,7 +528,7 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       );
     });
 
-    it('M10: rejects phone +966559999999 with quote ٠٥٥١٢٣٤٥٦٧ for digits mismatch', () => {
+    it('M10: preserves canonical Saudi E.164 phone without comparing source digits', () => {
       const extraction = createBaseExtraction();
       extraction.listings[0].candidates = extraction.listings[0].candidates.map((c) =>
         c.field === 'contact_phone'
@@ -555,15 +541,10 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       if (!outcome.ok) return;
 
       const villa = outcome.offers[0];
-      expect(villa.acceptedCandidates.find((c) => c.field === 'contact_phone')).toBeUndefined();
-      expect(villa.rejectedCandidates).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            field: 'contact_phone',
-            reason: 'quote_value_mismatch',
-          }),
-        ]),
-      );
+      expect(villa.acceptedCandidates).toEqual(expect.arrayContaining([
+        expect.objectContaining({ field: 'contact_phone', value: '+966559999999' }),
+      ]));
+      expect(villa.rejectedCandidates).toHaveLength(0);
     });
 
     it('M11: rejects phone 0551234567 as normalized value for not following Saudi E.164 format', () => {
@@ -609,7 +590,7 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       );
     });
 
-    it('M13: rejects asking_price candidate when quote explicitly denotes deposit (عربون)', () => {
+    it('M13: preserves price roles for Stage 1 when quote semantics indicate a deposit (عربون)', () => {
       const customSource =
         '١) للبيع فيلا في الرياض، حي الملقا، ٤ غرف نوم. العربون ٥٠ ألف ريال والسعر ٣٫٢ مليون ريال. للتواصل: ٠٥٥١٢٣٤٥٦٧';
       const extraction = {
@@ -645,18 +626,9 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
 
       const villa = outcome.offers[0];
       const acceptedPrices = villa.acceptedCandidates.filter((c) => c.field === 'price');
-      expect(acceptedPrices).toHaveLength(1);
-      expect((acceptedPrices[0] as any).value.amount).toBe(3200000);
-
-      expect(villa.rejectedCandidates).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            field: 'price',
-            quote: 'العربون ٥٠ ألف ريال',
-            reason: 'quote_value_mismatch',
-          }),
-        ]),
-      );
+      expect(acceptedPrices).toHaveLength(2);
+      expect(acceptedPrices.map((candidate: any) => candidate.value.amount)).toEqual([50000, 3200000]);
+      expect(villa.rejectedCandidates).toHaveLength(0);
     });
 
     it('M14: accepts null currency for a price without an explicit currency qualifier', () => {
@@ -710,9 +682,9 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
   describe('3. Partial recovery — Combined Stage 2 (P01–P03)', () => {
     it('P01: invalid villa candidate must not affect apartment', () => {
       const extraction = createBaseExtraction();
-      // Invalidate villa bedrooms (value 5 with quote ٤ غرف نوم)
+      // Invalidate villa bedrooms with a mechanical constraint, not quote semantics.
       extraction.listings[0].candidates = extraction.listings[0].candidates.map((c) =>
-        c.field === 'bedrooms' ? { ...c, value: 5, quote: '٤ غرف نوم' } : c,
+        c.field === 'bedrooms' ? { ...c, value: -1, quote: '٤ غرف نوم' } : c,
       );
 
       const outcome = validateStage2(sourceText, extraction);
@@ -725,16 +697,16 @@ describe('Stage 2 Verification Matrix — E01–E12, M01–M15, P01–P03', () =
       const villa = outcome.offers[0];
       const apartment = outcome.offers[1];
 
-      // Villa bedrooms rejected, villa price accepted
+      // Villa's mechanically invalid bedroom is rejected, while its price is accepted.
       expect(villa.acceptedCandidates).not.toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ field: 'bedrooms', value: 5 }),
+          expect.objectContaining({ field: 'bedrooms', value: -1 }),
         ]),
       );
       expect(villa.rejectedCandidates).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            candidate: expect.objectContaining({ field: 'bedrooms', value: 5 }),
+            candidate: expect.objectContaining({ field: 'bedrooms', value: -1 }),
             reason: expect.any(String),
           }),
         ]),
