@@ -845,6 +845,26 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   - `pnpm run typecheck` and `pnpm test` passed cleanly (18 test suites, 186 tests).
 - **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review).
 
+## Stage 2 Complete Mechanical Validation — 2026-11-10
+
+- **Evidence status** — Evidence checked against unit tests, typecheck, build, and live CLI smoke check.
+- **Human review** — Not requested. Followed approved Task 02.4 specification.
+- **Objective** — Implement Task 02.4 to complete Stage 2 Mechanical Validation: numeric constraints, canonical formats, mechanically verifiable quote/value cross-checks, arithmetic checks, and typed `ValidationOutcome` per offer under D-031.
+- **Important prompt** — Verbatim: “# Dwelleo — Tasks 02.3 and 02.4 Implementation Handoff\n\n## Objective\n\nComplete Stage 2 — Mechanical Validation without introducing semantic interpretation into deterministic code... Task 02.4 must complete the remaining mechanical checks and establish the validated output contract used by the resolver in 02.5.”
+- **Outcome** —
+  - Implemented `validateCandidateNumericConstraints` in `src/extraction/stage2-mechanical-validation.ts` validating expected types, finiteness, non-negative integer bedrooms/bathrooms, and positive area/price.
+  - Implemented `validateCandidateFormats` checking canonical Saudi mobile format `+9665XXXXXXXX`, supported currency (`SAR` or `null`), price roles/periods, and area kinds.
+  - Implemented `crossCheckMechanicalConsistency` detecting clear quote/value mismatches for bedroom/bathroom counts, area numeric values, shorthand prices (M, K, full digits), and Saudi phone subscriber digits without introducing semantic parsers.
+  - Implemented `crossCheckOfferArithmetic` checking explicit linked operands within each offer (e.g. `area * per_sqm_rate = asking_price`) and emitting `arithmetic_inconsistency` findings.
+  - Implemented typed `OfferValidationOutcome` per offer with accepted/rejected candidates, semantic findings, rejected findings, and validation findings.
+  - Added 12 new focused tests in `test/stage2-mechanical-validation.spec.ts` (28 tests total in this file).
+- **Verification and limits** —
+  - `pnpm run typecheck`, `pnpm test`, and `pnpm run build` passed cleanly (198 tests across 18 test suites).
+  - Live CLI smoke check with `test/fixtures/task24-smoke.jsonl` verified Arabic-Indic quantities, qualified deposit, shorthand millions, and Saudi mobile.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks).
+
+
+
 
 
 

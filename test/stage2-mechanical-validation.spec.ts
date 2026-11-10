@@ -585,4 +585,445 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
       }
     });
   });
+
+  describe('7. Task 02.4: Validate numerical constraints', () => {
+    const text = 'Studio with 0 bedrooms, 1 bathroom, 45 sqm. Asking 250000 SAR.';
+
+    it('accepts valid non-negative integer bedrooms and positive area/price', () => {
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              { field: 'bedrooms', value: 0, quote: '0 bedrooms', scope: 'local' }, // Studio
+              { field: 'bathrooms', value: 1, quote: '1 bathroom', scope: 'local' },
+              { field: 'area_sqm', value: 45, kind: 'built_up', quote: '45 sqm', scope: 'local' },
+              {
+                field: 'price',
+                value: { amount: 250000, currency: 'SAR', period: 'total' },
+                role: 'asking_price',
+                quote: 'Asking 250000 SAR',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        expect(outcome.offers[0].acceptedCandidates).toHaveLength(4);
+        expect(outcome.offers[0].rejectedCandidates).toHaveLength(0);
+      }
+    });
+
+    it('rejects negative, fractional, or non-finite quantities', () => {
+      const invalidText = 'Villa with 3 BR, 2 baths, 300 sqm. Price 1500000 SAR.';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: invalidText,
+            candidates: [
+              // 1. Negative bedrooms
+              { field: 'bedrooms', value: -1, quote: '3 BR', scope: 'local' },
+              // 2. Fractional bathrooms
+              { field: 'bathrooms', value: 2.5, quote: '2 baths', scope: 'local' },
+              // 3. Non-positive area
+              { field: 'area_sqm', value: 0, kind: 'built_up', quote: '300 sqm', scope: 'local' },
+              // 4. Non-positive price amount
+              {
+                field: 'price',
+                value: { amount: -1500000, currency: 'SAR', period: 'total' },
+                role: 'asking_price',
+                quote: 'Price 1500000 SAR',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(invalidText, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        const offer = outcome.offers[0];
+        expect(offer.acceptedCandidates).toHaveLength(0);
+        expect(offer.rejectedCandidates).toHaveLength(4);
+        expect(offer.rejectedCandidates.map((r) => r.reason)).toEqual([
+          'invalid_numeric_constraint',
+          'invalid_numeric_constraint',
+          'invalid_numeric_constraint',
+          'invalid_numeric_constraint',
+        ]);
+        expect(offer.validationFindings.map((f) => f.category)).toEqual([
+          'numeric_constraint_violation',
+          'numeric_constraint_violation',
+          'numeric_constraint_violation',
+          'numeric_constraint_violation',
+        ]);
+      }
+    });
+  });
+
+  describe('8. Task 02.4: Validate formats', () => {
+    it('accepts canonical Saudi mobile format +9665XXXXXXXX', () => {
+      const text = 'Call 0551234567';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              { field: 'contact_phone', value: '+966551234567', quote: '0551234567', scope: 'local' },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        expect(outcome.offers[0].acceptedCandidates).toHaveLength(1);
+      }
+    });
+
+    it('rejects invalid or non-Saudi mobile phone formats', () => {
+      const text = 'Call 0551234567';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              // 1. Missing +966 international prefix
+              { field: 'contact_phone', value: '0551234567', quote: '0551234567', scope: 'local' },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        expect(outcome.offers[0].acceptedCandidates).toHaveLength(0);
+        expect(outcome.offers[0].rejectedCandidates).toHaveLength(1);
+        expect(outcome.offers[0].rejectedCandidates[0].reason).toBe('invalid_format');
+      }
+    });
+
+    it('preserves uncertainty when currency or period is null without fabricating defaults', () => {
+      const text = 'Rent 85,000/yr. Down payment 20,000.';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              // No explicit SAR currency -> currency: null
+              {
+                field: 'price',
+                value: { amount: 85000, currency: null, period: 'yearly' },
+                role: 'asking_price',
+                quote: 'Rent 85,000/yr',
+                scope: 'local',
+              },
+              // No period -> period: null
+              {
+                field: 'price',
+                value: { amount: 20000, currency: null, period: null },
+                role: 'deposit',
+                quote: 'Down payment 20,000',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        expect(outcome.offers[0].acceptedCandidates).toHaveLength(2);
+        const prices = outcome.offers[0].acceptedCandidates as any[];
+        expect(prices[0].value.currency).toBeNull();
+        expect(prices[0].value.period).toBe('yearly');
+        expect(prices[1].value.period).toBeNull();
+      }
+    });
+  });
+
+  describe('9. Task 02.4: Cross-check mechanically verifiable source consistency', () => {
+    it('detects clear quantity mismatch: 3 BR with bedrooms: 4', () => {
+      const text = 'Villa with 3 BR in Riyadh.';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              // Quote specifies 3 BR, but candidate proposes 4
+              { field: 'bedrooms', value: 4, quote: '3 BR', scope: 'local' },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        const offer = outcome.offers[0];
+        expect(offer.acceptedCandidates).toHaveLength(0);
+        expect(offer.rejectedCandidates).toHaveLength(1);
+        expect(offer.rejectedCandidates[0]).toMatchObject({
+          field: 'bedrooms',
+          quote: '3 BR',
+          reason: 'quote_value_mismatch',
+        });
+      }
+    });
+
+    it('accepts Arabic-Indic numerals matching normalized values: ٣ غرف نوم with bedrooms: 3', () => {
+      const text = 'شقة ٣ غرف نوم ومساحة ١٦٥ م²';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              { field: 'bedrooms', value: 3, quote: '٣ غرف نوم', scope: 'local' },
+              { field: 'area_sqm', value: 165, kind: 'unspecified', quote: '١٦٥ م²', scope: 'local' },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        expect(outcome.offers[0].acceptedCandidates).toHaveLength(2);
+      }
+    });
+
+    it('accepts price shorthand: 950K -> 950000 and 3.2M SAR -> 3200000', () => {
+      const text = '1) 950K 2) 3.2M SAR';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: '1) 950K',
+            candidates: [
+              {
+                field: 'price',
+                value: { amount: 950000, currency: null, period: 'total' },
+                role: 'asking_price',
+                quote: '950K',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+          {
+            offer_quote: '2) 3.2M SAR',
+            candidates: [
+              {
+                field: 'price',
+                value: { amount: 3200000, currency: 'SAR', period: 'total' },
+                role: 'asking_price',
+                quote: '3.2M SAR',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        expect(outcome.offers[0].acceptedCandidates).toHaveLength(1);
+        expect(outcome.offers[1].acceptedCandidates).toHaveLength(1);
+      }
+    });
+
+    it('rejects magnitude mismatch: 3.2M SAR with price amount: 320000', () => {
+      const text = 'Asking 3.2M SAR';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              // Mismatch: 3.2M is 3,200,000, not 320,000
+              {
+                field: 'price',
+                value: { amount: 320000, currency: 'SAR', period: 'total' },
+                role: 'asking_price',
+                quote: '3.2M SAR',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        const offer = outcome.offers[0];
+        expect(offer.acceptedCandidates).toHaveLength(0);
+        expect(offer.rejectedCandidates).toHaveLength(1);
+        expect(offer.rejectedCandidates[0].reason).toBe('quote_value_mismatch');
+      }
+    });
+
+    it('rejects phone number when normalized digits differ from quote digits', () => {
+      const text = 'Call 0551234567';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              // Quote specifies 0551234567, but normalized phone specifies +966509876543
+              { field: 'contact_phone', value: '+966509876543', quote: '0551234567', scope: 'local' },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        const offer = outcome.offers[0];
+        expect(offer.acceptedCandidates).toHaveLength(0);
+        expect(offer.rejectedCandidates).toHaveLength(1);
+        expect(offer.rejectedCandidates[0].reason).toBe('quote_value_mismatch');
+      }
+    });
+  });
+
+  describe('10. Task 02.4: Arithmetic cross-check & ValidationOutcome per offer', () => {
+    it('detects arithmetic inconsistency between area, per_sqm_rate, and total asking price', () => {
+      const text = 'Land area 200 sqm, rate 2,500 SAR/sqm, total price 1,000,000 SAR';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: text,
+            candidates: [
+              { field: 'area_sqm', value: 200, kind: 'land', quote: '200 sqm', scope: 'local' },
+              {
+                field: 'price',
+                value: { amount: 2500, currency: 'SAR', period: null },
+                role: 'per_sqm_rate',
+                quote: '2,500 SAR/sqm',
+                scope: 'local',
+              },
+              // 200 * 2500 = 500,000, but asking price is claimed as 1,000,000!
+              {
+                field: 'price',
+                value: { amount: 1000000, currency: 'SAR', period: 'total' },
+                role: 'asking_price',
+                quote: '1,000,000 SAR',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        const offer = outcome.offers[0];
+        // Candidates themselves are individually grounded and format-valid
+        expect(offer.acceptedCandidates).toHaveLength(3);
+        // Arithmetic discrepancy is flagged as a validation finding!
+        expect(offer.validationFindings).toHaveLength(1);
+        expect(offer.validationFindings[0]).toMatchObject({
+          category: 'arithmetic_inconsistency',
+          field: 'price',
+          description: expect.stringContaining('200 sqm'),
+        });
+      }
+    });
+
+    it('produces OfferValidationOutcome with offer_index, accepted, rejected, semantic findings, and mechanical findings', () => {
+      const text = '1) Villa with 3 BR. 2) Apartment 950K.';
+      const payload = {
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [
+          {
+            offer_quote: '1) Villa with 3 BR.',
+            candidates: [
+              { field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' },
+              // Invalid quantity mismatch
+              { field: 'bedrooms', value: 5, quote: '3 BR', scope: 'local' },
+            ],
+            findings: [
+              { category: 'uncertainty', field: 'price', quote: null, description: 'No price stated' },
+            ],
+          },
+          {
+            offer_quote: '2) Apartment 950K.',
+            candidates: [
+              { field: 'property_type', value: 'apartment', quote: 'Apartment', scope: 'local' },
+              {
+                field: 'price',
+                value: { amount: 950000, currency: null, period: 'total' },
+                role: 'asking_price',
+                quote: '950K',
+                scope: 'local',
+              },
+            ],
+            findings: [],
+          },
+        ],
+      };
+
+      const outcome = validateStage2(text, payload);
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) {
+        expect(outcome.offers).toHaveLength(2);
+
+        const offer0 = outcome.offers[0];
+        expect(offer0.offer_index).toBe(0);
+        expect(offer0.acceptedCandidates).toHaveLength(1);
+        expect(offer0.rejectedCandidates).toHaveLength(1);
+        expect(offer0.semanticFindings).toHaveLength(1);
+        expect(offer0.validationFindings).toHaveLength(1);
+
+        const offer1 = outcome.offers[1];
+        expect(offer1.offer_index).toBe(1);
+        expect(offer1.acceptedCandidates).toHaveLength(2);
+        expect(offer1.rejectedCandidates).toHaveLength(0);
+      }
+    });
+  });
 });

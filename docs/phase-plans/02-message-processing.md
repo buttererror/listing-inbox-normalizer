@@ -38,6 +38,8 @@ Run the configured CLI after each task against a small, independently labeled JS
 | 02.0 | Stage 1 — LLM Classification & Extraction | LLM Gateway | Completed 2026-11-10. The Vercel AI SDK gateway selects tool-less Gemini, Anthropic, or OpenAI providers through the existing CLI. Offline adapter, extraction, and CLI checks passed, and the live Gemini synthetic fixture produced a listing. |
 | 02.1 | [Stage 1 — LLM Classification & Extraction](../architecture.md#stage-1--llm-classification--extraction) | Extraction through the generic LLM Gateway | Completed 2026-11-10. Defined the typed extraction envelope, all 9 field candidates, bounded findings, and the 9-step ordered domain prompt. 02.1T verified matrix rows, reordered intents, duplicate classes, field variants, envelopes, and CLI integration with fabricated quote and quote/value mismatch checks. Live Gemini check returned price.amount: 3200000. |
 | 02.2 | [Stage 2 — Mechanical Validation](../architecture.md#stage-2--mechanical-validation) | Extraction validation boundary | Completed 2026-11-10. Implemented Stage 2 Extraction Structure & Source Evidence Validation merging former 02.3 under D-030. Deterministic entry point validates envelope, independent candidate schemas, independent semantic finding schemas, exact source text evidence, token clipping, offer-local containment, shared evidence scoping, and offer disambiguation of repeated quotes. Rejects invalid evidence with deterministic reasons while preserving valid candidates and findings. 02.2T offline suite passed 16 focused tests (186 total tests). Live CLI check against `test/fixtures/two-offers.jsonl` returned valid two-offer extraction envelope with shared contact and local quotes. |
+| 02.3 | [Stage 2 — Mechanical Validation](../architecture.md#stage-2--mechanical-validation) | Extraction validation boundary | Superseded by 02.2 under D-030. Semantic findings validation (schemas, grounded quotes, token clipping, offer association) merged into 02.2. |
+| 02.4 | [Stage 2 — Mechanical Validation](../architecture.md#stage-2--mechanical-validation) | Extraction validation boundary | Completed 2026-11-10 under D-031. Completed Stage 2 Mechanical Validation with finite non-negative integer room counts, finite positive area/price, canonical Saudi phone E.164 (+9665XXXXXXXX), currency/role/period formats, mechanically verifiable quote/value cross-checks (quantities, price shorthand M/K/full, phone subscriber digits), arithmetic cross-checks, and typed `ValidationOutcome` per offer. 02.4T offline tests passed 28 focused tests (198 total tests across 18 suites). Live CLI check against `test/fixtures/task24-smoke.jsonl` verified Arabic-Indic quantities, qualified deposit, shorthand millions, and Saudi mobile. |
 
 ## 02.0 progress — 2026-11-09
 
@@ -81,4 +83,25 @@ Stage 2 Extraction Structure & Source Evidence Validation implemented under D-03
   - Full offline suite passed 18 test suites (186 total tests) without API credentials.
   - `pnpm run typecheck` and `pnpm run build` passed cleanly with exit code 0.
 - **Live CLI Check:** `node dist/cli.js process test/fixtures/two-offers.jsonl` returned exit code 0 with a valid Stage 1 extraction envelope containing two grounded listings (Villa in Riyadh and Apartment in Jeddah) with local field quotes and shared contact phone.
+
+## 02.4 progress — 2026-11-10
+
+Stage 2 Mechanical Validation completed under D-031.
+- **Numerical Constraints Validation:** Implemented `validateCandidateNumericConstraints` checking expected numeric types, finiteness, non-negative integer constraints for bedrooms and bathrooms, positive finite bounds for area (`area_sqm > 0`) and price amounts (`amount > 0`). Rejects negative, fractional, or nonfinite values with reason `invalid_numeric_constraint`.
+- **Format Validation:** Implemented `validateCandidateFormats` checking canonical Saudi mobile format `+9665XXXXXXXX`, supported currency values (`SAR` or `null` without fabricating defaults), price roles (`asking_price`, `deposit`, `installment`, `per_sqm_rate`, `other`), price periods (`total`, `yearly`, `monthly`, `null`), and area kinds (`land`, `built_up`, `unspecified`).
+- **Mechanically Verifiable Source Consistency:** Implemented `crossCheckMechanicalConsistency` detecting clear, mechanically unambiguous mismatches between normalized values and their verbatim evidence quotes:
+  - Bedroom/bathroom quantity mismatch against explicit number tokens in quote (e.g. `3 BR` with `bedrooms: 4` rejected with `quote_value_mismatch`).
+  - Area numeric mismatch against explicit area numbers in quote.
+  - Price shorthand and magnitude cross-checks: parses millions (`M` / `مليون`), thousands (`K` / `ألف`), and explicit full numbers; detects magnitude and digit mismatches (e.g. `3.2M SAR` with `320000` rejected). Preserves unparsed written word expressions.
+  - Saudi phone subscriber digit cross-check: verifies that normalized mobile `+9665XXXXXXXX` ends with the same 9 subscriber digits as the source quote.
+- **Arithmetic Consistency & ValidationOutcome:** Implemented `crossCheckOfferArithmetic` checking explicit linked operands within each offer (e.g. `area * per_sqm_rate = asking_price`). Emits `ValidationFinding` with category `arithmetic_inconsistency` on discrepancy. Produces `OfferValidationOutcome` per offer with `offer_index`, `acceptedCandidates`, `rejectedCandidates`, `semanticFindings`, `rejectedFindings`, and `validationFindings`.
+- **Single-Sale Bridge Continuity:** Preserved operational continuity of `process-legacy` through 02.4.
+- **Verification:**
+  - Offline suite in `test/stage2-mechanical-validation.spec.ts` expanded to 28 focused tests covering numerical constraints, formats, quote/value cross-checks, Arabic-Indic numbers, phone digits, shorthand prices, arithmetic discrepancy, partial recovery, and ExtractionService integration.
+  - Full offline suite passed all 18 test suites (198 total tests) without API credentials.
+  - `pnpm run typecheck` and `pnpm run build` passed cleanly with exit code 0.
+- **Live CLI Checks:**
+  - `node dist/cli.js process test/fixtures/task24-smoke.jsonl` returned exit code 0, validating Arabic-Indic quantities (4 bedrooms, 5 bathrooms, 450 sqm), qualified deposit (50,000 SAR), shorthand millions (3.2M SAR), and Saudi mobile (+966551234567).
+  - `node dist/cli.js process-legacy test/fixtures/task24-smoke.jsonl` returned exit code 0, verifying single-sale bridge resolution.
+
 

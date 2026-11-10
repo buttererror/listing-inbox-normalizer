@@ -3,6 +3,7 @@ import {
   CandidateScope,
   ExtractedOffer,
   MessageClassification,
+  PriceRole,
   SemanticFinding,
   semanticFindingSchema,
   Stage1ExtractionResult,
@@ -16,7 +17,7 @@ import {
 } from './verify-source-integrity';
 
 /**
- * Deterministic rejection reasons for Stage 2 Mechanical Validation.
+ * Deterministic rejection reasons for Stage 2 Mechanical Validation (02.2 & 02.4).
  */
 export type Stage2RejectionReason =
   | 'invalid_schema'
@@ -25,7 +26,10 @@ export type Stage2RejectionReason =
   | 'wrong_offer'
   | 'clipped_token'
   | 'multiple_occurrences'
-  | 'unscoped_shared_evidence';
+  | 'unscoped_shared_evidence'
+  | 'invalid_numeric_constraint'
+  | 'invalid_format'
+  | 'quote_value_mismatch';
 
 /**
  * A candidate rejected during Stage 2 with its original untrusted payload and deterministic reason.
@@ -59,7 +63,11 @@ export interface ValidationFinding {
     | 'ungrounded_evidence'
     | 'wrong_offer'
     | 'clipped_evidence'
-    | 'ambiguous_evidence';
+    | 'ambiguous_evidence'
+    | 'numeric_constraint_violation'
+    | 'format_violation'
+    | 'quote_value_mismatch'
+    | 'arithmetic_inconsistency';
   field?: string | null;
   quote?: string | null;
   description: string;
@@ -69,6 +77,7 @@ export interface ValidationFinding {
  * Outcome of Stage 2 Mechanical Validation for an individual property offer.
  */
 export interface OfferValidationOutcome {
+  offer_index: number;
   offer_quote: string;
   acceptedCandidates: TypedFieldCandidate[];
   rejectedCandidates: RejectedCandidate[];
@@ -103,12 +112,14 @@ export function validateCandidateSchema(raw: unknown): {
   success: boolean;
   candidate?: TypedFieldCandidate;
   error?: string;
+  issues?: any[];
 } {
   const parseResult = typedFieldCandidateSchema.safeParse(raw);
   if (!parseResult.success) {
     return {
       success: false,
       error: parseResult.error.issues.map((i) => i.message).join('; '),
+      issues: parseResult.error.issues,
     };
   }
   return {
@@ -139,6 +150,296 @@ export function validateSemanticFindingSchema(raw: unknown): {
 }
 
 /**
+ * Normalizes Eastern Arabic-Indic and Arabic-Indic numerals to ASCII 0-9.
+ */
+export function normalizeDigitsToAscii(str: string): string {
+  return str
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+}
+
+/**
+ * Task 02.4 — 1. Validate numerical constraints.
+ * Check expected numeric types, finiteness, integer requirements, and non-negative/positive bounds.
+ */
+export function validateCandidateNumericConstraints(candidate: TypedFieldCandidate): {
+  valid: boolean;
+  reason?: Stage2RejectionReason;
+  message?: string;
+} {
+  switch (candidate.field) {
+    case 'bedrooms':
+      if (!Number.isFinite(candidate.value) || !Number.isInteger(candidate.value) || candidate.value < 0) {
+        return {
+          valid: false,
+          reason: 'invalid_numeric_constraint',
+          message: `Bedrooms must be a non-negative integer, got ${candidate.value}`,
+        };
+      }
+      break;
+
+    case 'bathrooms':
+      if (!Number.isFinite(candidate.value) || !Number.isInteger(candidate.value) || candidate.value < 0) {
+        return {
+          valid: false,
+          reason: 'invalid_numeric_constraint',
+          message: `Bathrooms must be a non-negative integer, got ${candidate.value}`,
+        };
+      }
+      break;
+
+    case 'area_sqm':
+      if (!Number.isFinite(candidate.value) || candidate.value <= 0) {
+        return {
+          valid: false,
+          reason: 'invalid_numeric_constraint',
+          message: `Area must be a finite positive number, got ${candidate.value}`,
+        };
+      }
+      break;
+
+    case 'price':
+      if (!Number.isFinite(candidate.value.amount) || candidate.value.amount <= 0) {
+        return {
+          valid: false,
+          reason: 'invalid_numeric_constraint',
+          message: `Price amount must be a finite positive number, got ${candidate.value.amount}`,
+        };
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Task 02.4 — 2. Validate formats.
+ * Check canonical Saudi mobile format +9665XXXXXXXX, currency, price roles, periods, and area kinds.
+ */
+export function validateCandidateFormats(candidate: TypedFieldCandidate): {
+  valid: boolean;
+  reason?: Stage2RejectionReason;
+  message?: string;
+} {
+  switch (candidate.field) {
+    case 'contact_phone':
+      if (!/^\+9665\d{8}$/.test(candidate.value)) {
+        return {
+          valid: false,
+          reason: 'invalid_format',
+          message: `Contact phone must follow Saudi E.164 mobile format +9665XXXXXXXX, got "${candidate.value}"`,
+        };
+      }
+      break;
+
+    case 'price':
+      if (candidate.value.currency !== 'SAR' && candidate.value.currency !== null) {
+        return {
+          valid: false,
+          reason: 'invalid_format',
+          message: `Price currency must be 'SAR' or null, got "${candidate.value.currency}"`,
+        };
+      }
+      if (
+        candidate.value.period !== 'total' &&
+        candidate.value.period !== 'yearly' &&
+        candidate.value.period !== 'monthly' &&
+        candidate.value.period !== null
+      ) {
+        return {
+          valid: false,
+          reason: 'invalid_format',
+          message: `Price period must be total, yearly, monthly, or null, got "${candidate.value.period}"`,
+        };
+      }
+      break;
+
+    case 'area_sqm':
+      if (
+        candidate.kind !== 'land' &&
+        candidate.kind !== 'built_up' &&
+        candidate.kind !== 'unspecified'
+      ) {
+        return {
+          valid: false,
+          reason: 'invalid_format',
+          message: `Area kind must be land, built_up, or unspecified, got "${candidate.kind}"`,
+        };
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Task 02.4 — 3. Cross-check mechanically verifiable source consistency.
+ * Detect clear mismatches between normalized values and their evidence when the comparison
+ * is mechanically unambiguous (e.g. "3 BR" with bedrooms: 4, "3.2M" with price: 320000,
+ * or phone digits mismatch).
+ */
+export function crossCheckMechanicalConsistency(candidate: TypedFieldCandidate): {
+  valid: boolean;
+  reason?: Stage2RejectionReason;
+  message?: string;
+} {
+  const quoteAscii = normalizeDigitsToAscii(candidate.quote);
+
+  switch (candidate.field) {
+    case 'bedrooms':
+    case 'bathrooms': {
+      // Find explicit digit token in quote (e.g. "3 BR", "٣ غرف", "5 baths")
+      const digitMatch = quoteAscii.match(/(?:^|[^\d.,])(\d+)(?:[^\d.,]|$)/);
+      if (digitMatch) {
+        const num = parseInt(digitMatch[1], 10);
+        if (num !== candidate.value) {
+          return {
+            valid: false,
+            reason: 'quote_value_mismatch',
+            message: `Candidate quote "${candidate.quote}" specifies quantity ${num}, but normalized value is ${candidate.value}`,
+          };
+        }
+      }
+      break;
+    }
+
+    case 'area_sqm': {
+      // Find explicit numeric area in quote (e.g. "165 sqm", "١٦٥ م²", "380.5 m2")
+      const numMatch = quoteAscii.match(/(?:^|[^\d.,])(\d+(?:[.,]\d+)?)/);
+      if (numMatch) {
+        const parsed = parseFloat(numMatch[1].replace(',', '.'));
+        if (Number.isFinite(parsed) && parsed !== candidate.value) {
+          return {
+            valid: false,
+            reason: 'quote_value_mismatch',
+            message: `Candidate quote "${candidate.quote}" specifies area ${parsed}, but normalized value is ${candidate.value}`,
+          };
+        }
+      }
+      break;
+    }
+
+    case 'price': {
+      const amount = candidate.value.amount;
+
+      // 1. Shorthand Millions (e.g. "3.2M", "3.2 M", "3.2M SAR", "٣٫٢ مليون", "2 مليون")
+      const millionMatch = quoteAscii.match(/(\d+(?:[.,\u066b]\d+)?)\s*(?:M|مليون)\b/i);
+      if (millionMatch) {
+        const base = parseFloat(millionMatch[1].replace(/[\u066b,]/g, '.'));
+        if (Number.isFinite(base)) {
+          const expected = base * 1_000_000;
+          if (Math.abs(expected - amount) > 1) {
+            return {
+              valid: false,
+              reason: 'quote_value_mismatch',
+              message: `Price quote "${candidate.quote}" specifies ${base}M (${expected}), but normalized amount is ${amount}`,
+            };
+          }
+        }
+        break;
+      }
+
+      // 2. Shorthand Thousands (e.g. "950K", "950 K", "950 ألف")
+      const thousandMatch = quoteAscii.match(/(\d+(?:[.,\u066b]\d+)?)\s*(?:K|ألف)\b/i);
+      if (thousandMatch) {
+        const base = parseFloat(thousandMatch[1].replace(/[\u066b,]/g, '.'));
+        if (Number.isFinite(base)) {
+          const expected = base * 1_000;
+          if (Math.abs(expected - amount) > 1) {
+            return {
+              valid: false,
+              reason: 'quote_value_mismatch',
+              message: `Price quote "${candidate.quote}" specifies ${base}K (${expected}), but normalized amount is ${amount}`,
+            };
+          }
+        }
+        break;
+      }
+
+      // 3. Full explicit number (e.g. "950,000", "950000", "٩٥٠٬٠٠٠")
+      const fullNumMatch = quoteAscii.match(/(?:^|[^\d.,])(\d{1,3}(?:[,\s]\d{3})+|\d{4,})(?:[^\d.,]|$)/);
+      if (fullNumMatch) {
+        const raw = fullNumMatch[1].replace(/[,\s]/g, '');
+        const parsed = parseInt(raw, 10);
+        if (Number.isFinite(parsed) && parsed !== amount) {
+          return {
+            valid: false,
+            reason: 'quote_value_mismatch',
+            message: `Price quote "${candidate.quote}" specifies amount ${parsed}, but normalized amount is ${amount}`,
+          };
+        }
+      }
+      break;
+    }
+
+    case 'contact_phone': {
+      // Cross-check that the normalized Saudi mobile ends with the same subscriber digits as the quote
+      const quoteDigits = quoteAscii.replace(/\D/g, '');
+      const valueDigits = candidate.value.replace(/\D/g, '');
+      if (quoteDigits.length >= 9 && valueDigits.length >= 9) {
+        const quoteSuffix = quoteDigits.slice(-9);
+        const valueSuffix = valueDigits.slice(-9);
+        if (quoteSuffix !== valueSuffix) {
+          return {
+            valid: false,
+            reason: 'quote_value_mismatch',
+            message: `Normalized phone "${candidate.value}" digits do not match quote digits "${candidate.quote}"`,
+          };
+        }
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Task 02.4 — Check arithmetic consistency when relevant operands are explicitly represented and grounded.
+ * E.g. area (sqm) * rate (SAR/sqm) = total asking price.
+ */
+export function crossCheckOfferArithmetic(acceptedCandidates: TypedFieldCandidate[]): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+
+  const areaCandidate = acceptedCandidates.find((c) => c.field === 'area_sqm');
+  const rateCandidate = acceptedCandidates.find(
+    (c) => c.field === 'price' && (c as any).role === 'per_sqm_rate',
+  );
+  const askingPriceCandidate = acceptedCandidates.find(
+    (c) => c.field === 'price' && (c as any).role === 'asking_price',
+  );
+
+  if (areaCandidate && rateCandidate && askingPriceCandidate) {
+    const area = areaCandidate.value;
+    const rate = (rateCandidate as any).value.amount;
+    const total = (askingPriceCandidate as any).value.amount;
+
+    if (Number.isFinite(area) && Number.isFinite(rate) && Number.isFinite(total)) {
+      const expectedTotal = area * rate;
+      if (Math.abs(expectedTotal - total) > 1) {
+        findings.push({
+          category: 'arithmetic_inconsistency',
+          field: 'price',
+          quote: (askingPriceCandidate as any).quote,
+          description: `Arithmetic inconsistency: area (${area} sqm) * rate (${rate} SAR/sqm) = ${expectedTotal}, but asking price is ${total}`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+/**
  * Occurrence interval helper.
  */
 interface Span {
@@ -147,23 +448,25 @@ interface Span {
 }
 
 /**
- * Stage 2: Mechanical Validation entry point for extraction structure and source evidence.
+ * Stage 2: Mechanical Validation entry point for extraction structure, source evidence,
+ * numerical constraints, formats, and consistency (02.2 + 02.4).
  *
  * Check order:
  * 1. Envelope validation: ensure classification, detected classes, and offer groupings adhere to the contract.
  * 2. Offer grounding: verify that claimed offer quotes exist in source text.
  *    If property offers are claimed but none can be grounded, fail with `invalid_extraction`.
- * 3. Candidate schema check: validate each candidate schema independently. Invalid entries are rejected
- *    without failing the offer or message (partial recovery).
+ * 3. Candidate schema check: validate each candidate schema independently (typed as unknown until valid).
  * 4. Evidence existence & scoping:
  *    - Verify verbatim occurrence in source text.
  *    - For offer-local scope: verify the quote belongs to the offer quote and falls within the offer span.
- *    - For shared scope: verify the quote exists in source text and can legitimately be associated
- *      (not exclusively inside another offer's local boundary).
- * 5. Integrity & clipping: detect cuts through words, numbers, and signs.
+ *    - For shared scope: verify the quote exists in source text and can legitimately be associated.
+ * 5. Token clipping: detect cuts through words, numbers, and signs.
  * 6. Occurrence & ambiguity: disambiguate repeated quotes by scoping to the offer.
- *    Quotes that repeat ambiguously within a single offer's scope are rejected.
- * 7. Semantic findings validation: validate shape, verbatim evidence, clipping, and offer association.
+ * 7. Numerical constraints (02.4): finite, integer, non-negative, positive bounds.
+ * 8. Format validation (02.4): Saudi phone E.164, currency, price role, period, area kind.
+ * 9. Mechanical consistency (02.4): quote/value mismatch check for quantities, shorthand prices, phone digits.
+ * 10. Arithmetic cross-check (02.4): check explicit linked operands within the offer.
+ * 11. Semantic findings validation (02.2 / 02.3): validate shape, verbatim evidence, clipping, and offer association.
  */
 export function validateStage2(
   sourceText: string,
@@ -194,7 +497,6 @@ export function validateStage2(
   }
 
   // 2. Offer grounding
-  // Find spans for each offer in the source text
   const offerSpans: Array<{ offer: (typeof rawOffers)[number]; spans: Span[] }> = [];
   for (const rawOffer of rawOffers) {
     const spans = findOccurrences(sourceText, rawOffer.offer_quote);
@@ -203,8 +505,7 @@ export function validateStage2(
     }
   }
 
-  // If the model claimed property offers, but NONE of them exist in the source message,
-  // the entire extraction is ungrounded and unusable.
+  // If property offers were claimed, but NONE of them exist in the source message, fail with invalid_extraction
   if (offerSpans.length === 0) {
     return {
       ok: false,
@@ -229,34 +530,49 @@ export function validateStage2(
     const rejectedFindings: RejectedFinding[] = [];
     const validationFindings: ValidationFinding[] = [];
 
-    // 3 & 4. Validate candidates independently
+    // 3, 4, 5, 6, 7, 8, 9: Validate candidates independently
     for (const rawCandidate of offer.candidates) {
-      // 3.1 Validate candidate schema
+      // 3. Candidate schema check
       const schemaCheck = validateCandidateSchema(rawCandidate);
       if (!schemaCheck.success || !schemaCheck.candidate) {
         const field = typeof (rawCandidate as any)?.field === 'string' ? (rawCandidate as any).field : undefined;
         const quote = typeof (rawCandidate as any)?.quote === 'string' ? (rawCandidate as any).quote : undefined;
         const scope = typeof (rawCandidate as any)?.scope === 'string' ? (rawCandidate as any).scope : undefined;
+
+        const isNumericConstraint =
+          (field === 'bedrooms' || field === 'bathrooms' || field === 'area_sqm' || field === 'price') &&
+          schemaCheck.issues?.some(
+            (i: any) =>
+              i.code === 'too_small' ||
+              i.code === 'too_big' ||
+              i.message?.toLowerCase().includes('integer') ||
+              i.message?.toLowerCase().includes('greater than') ||
+              (i.path && (i.path.includes('amount') || i.path.includes('value'))),
+          );
+
+        const reason: Stage2RejectionReason = isNumericConstraint ? 'invalid_numeric_constraint' : 'invalid_schema';
+        const category = isNumericConstraint ? 'numeric_constraint_violation' : 'schema_violation';
+
         rejectedCandidates.push({
           candidate: rawCandidate,
           field,
           quote,
           scope,
-          reason: 'invalid_schema',
+          reason,
           message: schemaCheck.error,
         });
         validationFindings.push({
-          category: 'schema_violation',
+          category,
           field,
           quote,
-          description: `Candidate failed schema: ${schemaCheck.error}`,
+          description: `Candidate failed ${reason}: ${schemaCheck.error}`,
         });
         continue;
       }
 
       const candidate = schemaCheck.candidate;
 
-      // 4.1 Verbatim occurrence in the source message
+      // 4. Verbatim occurrence in source text
       if (!sourceText.includes(candidate.quote)) {
         rejectedCandidates.push({
           candidate: rawCandidate,
@@ -275,7 +591,7 @@ export function validateStage2(
         continue;
       }
 
-      // 4.2 Scoping & association
+      // 4. Scoping & association
       if (candidate.scope === 'local') {
         // Offer-local evidence must appear inside this offer's quote
         if (!offer.offer_quote.includes(candidate.quote)) {
@@ -345,9 +661,6 @@ export function validateStage2(
           });
           continue;
         }
-
-        // Local evidence passed all checks
-        acceptedCandidates.push(candidate);
       } else {
         // candidate.scope === 'shared'
         const quoteOccurrences = findOccurrences(sourceText, candidate.quote);
@@ -373,7 +686,6 @@ export function validateStage2(
           continue;
         }
 
-        // Check legitimate association:
         // Shared evidence is legitimate if it appears in shared message context (outside other offers)
         // or within this offer. If every unclipped occurrence lies exclusively inside other offers,
         // it cannot legitimately be associated as shared evidence for this offer.
@@ -385,7 +697,6 @@ export function validateStage2(
           const inOtherOffers = otherOffersSpans.some(
             (s) => occ.start >= s.start && occ.end <= s.end,
           );
-          // Outside all other offers -> shared context
           return !inOtherOffers;
         });
 
@@ -406,12 +717,77 @@ export function validateStage2(
           });
           continue;
         }
-
-        acceptedCandidates.push(candidate);
       }
+
+      // 7. Numerical constraints check (02.4)
+      const numericCheck = validateCandidateNumericConstraints(candidate);
+      if (!numericCheck.valid) {
+        rejectedCandidates.push({
+          candidate: rawCandidate,
+          field: candidate.field,
+          quote: candidate.quote,
+          scope: candidate.scope,
+          reason: numericCheck.reason!,
+          message: numericCheck.message,
+        });
+        validationFindings.push({
+          category: 'numeric_constraint_violation',
+          field: candidate.field,
+          quote: candidate.quote,
+          description: numericCheck.message ?? 'Candidate failed numeric constraint check',
+        });
+        continue;
+      }
+
+      // 8. Format validation (02.4)
+      const formatCheck = validateCandidateFormats(candidate);
+      if (!formatCheck.valid) {
+        rejectedCandidates.push({
+          candidate: rawCandidate,
+          field: candidate.field,
+          quote: candidate.quote,
+          scope: candidate.scope,
+          reason: formatCheck.reason!,
+          message: formatCheck.message,
+        });
+        validationFindings.push({
+          category: 'format_violation',
+          field: candidate.field,
+          quote: candidate.quote,
+          description: formatCheck.message ?? 'Candidate failed format check',
+        });
+        continue;
+      }
+
+      // 9. Mechanically verifiable source consistency (02.4)
+      const consistencyCheck = crossCheckMechanicalConsistency(candidate);
+      if (!consistencyCheck.valid) {
+        rejectedCandidates.push({
+          candidate: rawCandidate,
+          field: candidate.field,
+          quote: candidate.quote,
+          scope: candidate.scope,
+          reason: consistencyCheck.reason!,
+          message: consistencyCheck.message,
+        });
+        validationFindings.push({
+          category: 'quote_value_mismatch',
+          field: candidate.field,
+          quote: candidate.quote,
+          description: consistencyCheck.message ?? 'Normalized value does not match verbatim quote',
+        });
+        continue;
+      }
+
+      // Passed all Stage 2 mechanical validation checks
+      acceptedCandidates.push(candidate);
     }
 
-    // 5. Validate semantic findings independently (Task 02.3 merged into 02.2)
+    // 10. Check arithmetic consistency across accepted candidates in this offer (02.4)
+    const arithmeticFindings = crossCheckOfferArithmetic(acceptedCandidates);
+    validationFindings.push(...arithmeticFindings);
+
+    // 11. Validate semantic findings independently (02.2 / 02.3)
     for (const rawFinding of offer.findings) {
       const schemaCheck = validateSemanticFindingSchema(rawFinding);
       if (!schemaCheck.success || !schemaCheck.finding) {
@@ -471,7 +847,6 @@ export function validateStage2(
         }
 
         // Check wrong-offer association for finding
-        // If quote is inside another offer's span and completely absent from this offer or shared context
         const inCurrentOffer = currentOfferSpans.some((s) =>
           occs.some((o) => o.start >= s.start && o.end <= s.end),
         );
@@ -505,6 +880,7 @@ export function validateStage2(
     }
 
     validatedOffers.push({
+      offer_index: i,
       offer_quote: offer.offer_quote,
       acceptedCandidates,
       rejectedCandidates,

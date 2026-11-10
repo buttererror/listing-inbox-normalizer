@@ -529,4 +529,19 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Approval evidence** — User prompt: "Implement Stage 2: Extraction Structure & Source Evidence Validation, merging the former Task 02.3 into 02.2... Update the active Phase 02 plan to merge Task 02.3 into 02.2. Mark 02.3 as superseded and incorporate its acceptance criteria into 02.2... Implement task 2.2".
 - **References** — D-019, D-027, D-028, [Phase 02 plan](phase-plans/02-message-processing.md).
 
+### D-031: Complete Stage 2 Mechanical Validation with numerical constraints, format checks, and mechanical cross-checks
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Task 02.4 completes Stage 2 Mechanical Validation. Once candidates pass structure and source grounding (02.2), deterministic code must verify finite numerical constraints, canonical formats, and clear quote/value consistency without introducing semantic re-interpretation into deterministic code.
+- **Options and tradeoffs** —
+  1. Rely solely on LLM self-normalization or downstream resolver to catch numerical and format violations. (Unsafe: allows hallucinated magnitudes, negative room counts, or non-Saudi phone numbers into the resolver).
+  2. Implement general Arabic/English semantic parsers in deterministic code. (Fragile, violates architecture boundaries).
+  3. Validate expected numerical constraints, canonical formats, and mechanically unambiguous cross-checks (explicit digits, magnitude shorthand, subscriber phone digits, explicit arithmetic operands). If an expression is written in words without explicit numbers, preserve the candidate and grounded uncertainty rather than guessing.
+- **Recommendation and rationale** — Implement option 3 in `src/extraction/stage2-mechanical-validation.ts`. Return a typed `OfferValidationOutcome` per offer containing `acceptedCandidates`, `rejectedCandidates`, `semanticFindings`, `rejectedFindings`, and `validationFindings`. Invalid candidates cannot influence resolution; valid unrelated candidates survive independently.
+- **Consequences** — Stage 2 Mechanical Validation is complete. Grounded, format-compliant candidates and findings are passed to downstream resolvers. Single-sale baseline `process-legacy` remains operational until 02.5.
+- **Validation** — Offline suite expanded to 28 tests in `test/stage2-mechanical-validation.spec.ts` (198 total tests passing across 18 suites); clean typecheck and build; and live CLI smoke checks against `test/fixtures/task24-smoke.jsonl` verifying Arabic-Indic quantities, qualified deposit, shorthand millions, and Saudi phone.
+- **Approval evidence** — User prompt: "Dwelleo — Tasks 02.3 and 02.4 Implementation Handoff... Complete Stage 2 — Mechanical Validation without introducing semantic interpretation into deterministic code... Task 02.4 must complete the remaining mechanical checks and establish the validated output contract used by the resolver in 02.5".
+- **References** — D-019, D-020, D-027, D-030, [Phase 02 plan](phase-plans/02-message-processing.md).
+
+
 
