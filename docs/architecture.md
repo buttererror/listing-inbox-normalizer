@@ -4,7 +4,7 @@ The [assessment brief](task-brief.md) defines requirements. The [policy referenc
 
 ## Implemented baseline
 
-NestJS starts an HTTP application or a CLI application context. `GET /health` reports liveness. Zod validates configuration and inputs. The [verified single-sale CLI baseline](phase-plans/02-extraction-through-cli.md) uses a mocked gateway, quote-based assertions, evidence checks, and Listings normalization and resolution. The LLM Gateway selects Gemini, Anthropic, or OpenAI through the provider-independent interface and loads Vercel AI SDK providers with native dynamic imports from the CommonJS application. A missing key returns `provider_unavailable`. Prisma is configured for SQLite and CommonJS generation. Domain persistence and HTTP listing routes are planned.
+NestJS starts an HTTP application or a CLI application context. `GET /health` reports liveness. Zod validates configuration and inputs. Phase 02 CLI message processing is complete: `ListingMessageProcessor` accepts JSONL broker messages and executes the end-to-end pipeline (Stage 0 Input Validation, Stage 1 LLM Extraction, Stage 2 Mechanical Validation, Stage 3 Field Resolution, Stage 5 Runtime Reviewer, and Stage 6 Result Assembly). It emits contract-compliant public listings or typed failure envelopes in input order, supporting sales, rentals, multiple offers, mixed messages, projects, buyer requests, and irrelevant messages. The CLI also provides `--format=table` for human-friendly tabular inspection with business-level review explanations. The LLM Gateway selects Gemini, Anthropic, or OpenAI (with local Antigravity CLI fallback) through the provider-independent interface. Automated behavior tests run strictly offline without credentials. Domain persistence and HTTP listing routes follow in Phase 04.
 
 ## Module boundaries
 
@@ -379,6 +379,12 @@ Review result for the price finding shown. Other findings depend on the complete
   review_reasons: string[]
 }
 ```
+
+### Technical validation diagnostics vs business review reasons
+
+- **Technical validation codes** (`invalid_schema`, `invalid_format`, `quote_not_in_source`, `wrong_offer`, `clipped_token`, `invalid_numeric_constraint`) remain strictly internal diagnostics stored on candidate provenance (`rejectedCandidates[i].reason`). They explain why an extracted candidate failed mechanical verification.
+- **Runtime review reasons** (`review_reasons`) describe what is wrong or uncertain about the resolved property listing (e.g. `bedrooms_unsupported`, `bedrooms_missing`, `price_conflict`, `price_missing`, `price_currency_unknown`, `district_missing`). When an invalid candidate has a valid replacement, no review reason is triggered solely for that rejection.
+- **Presentation mapping:** In the CLI presentation layer (`review-labels.ts`), machine-readable review codes are mapped to human-friendly explanations (`formatReviewReason`) for tabular output (`--format=table`), with a safe fallback for unknown codes. The underlying JSONL contract retains stable machine-readable codes.
 
 ### Boundary constraints
 

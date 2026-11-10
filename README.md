@@ -1,6 +1,6 @@
 # Dwelleo
 
-Dwelleo currently processes a single-sale JSONL message through the CLI and serves an HTTP liveness endpoint. The [roadmap](docs/roadmap.md) describes planned capabilities and their delivery order.
+Dwelleo processes broker messages through the CLI and serves an HTTP liveness endpoint. It accepts a JSONL file containing multiple broker messages and produces one contract-compliant JSON result per nonblank input line in input order, supporting sales, rentals, multiple offers, mixed messages, projects, buyer requests, and irrelevant messages. An optional table format (`--format=table`) presents human-friendly review explanations and structured columns for review. The [roadmap](docs/roadmap.md) describes planned capabilities and their delivery order.
 
 ## Requirements
 
@@ -25,7 +25,13 @@ Set `LLM_API_KEY` in your local, ignored `.env` file to use the default Gemini p
 
 ```sh
 pnpm run build
-node dist/cli.js process test/fixtures/one-message.jsonl
+node dist/cli.js process test/fixtures/fixture-a-valid.jsonl
+```
+
+For human-friendly tabular inspection with formatted review explanations:
+
+```sh
+node dist/cli.js process test/fixtures/fixture-a-valid.jsonl --format=table
 ```
 
 To use Anthropic or OpenAI, also set `LLM_PROVIDER` to `anthropic` or `openai`, and provide an explicit `LLM_MODEL`. Keep the provider API key in `LLM_API_KEY`.

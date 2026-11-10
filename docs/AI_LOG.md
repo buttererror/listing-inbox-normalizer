@@ -1,5 +1,35 @@
 # Key agent sessions
 
+## Phase 03 evaluation planning — 2026-11-10
+
+- **Evidence status** — Evidence checked against Plan v2, roadmap, Phase 02 task record, public result schema and SDK gateway code. No live evaluation was run.
+- **Human review** — Not requested. D-036 remains Proposed and requires approval before dependent qualification work.
+- **Objective** — Turn the candidate Phase 03 outcome into an actionable independent provider evaluation plan.
+- **Important prompt** — Verbatim user prompt: “Make a plan”. The preceding user question was “What are we going to do in phase 3?”
+- **Outcome** — Added the Phase 03 task plan, exit checks, proposed scoring protocol and D-036 decision review; linked the plan from the roadmap and phase index. Kept original PLAN.md unchanged.
+- **Verification and limits** — Checked the planned CLI and gateway boundaries in source. The gateway currently returns only model output, so token usage needs a separate capture task. No corpus, evaluator, scores, usage or latency measurements exist yet. Documentation links and diff were reviewed; no behavior tests were run for this documentation-only session.
+- **Related decisions** — [D-036](DECISIONS.md#d-036-use-a-frozen-independent-corpus-and-separate-live-measurement) (Proposed); D-019, D-023, D-024, D-026 and D-033.
+
+
+## Human-Friendly Review Reasons & Stage 2 Validation Fixes — 2026-11-10
+
+- **Evidence status** — Evidence checked against implementation, focused test suites, and live CLI executions.
+- **Human review** — Not requested.
+- **Objective** — Provide business-level human-readable review reasons for listing defects, preserve technical validation codes as internal candidate diagnostics, provide CLI `--format=table` presentation, fix Stage 2 finding evidence association, simplify candidate schema error classification, and document shared-evidence architectural boundaries.
+- **Important prompt** — Verbatim user prompt: “Dwelleo — Human-Friendly Review Reasons Handoff... Objective: Keep technical validation diagnostics useful for developers while ensuring human reviewers see understandable, actionable explanations about the property listing... Additional Scope — Stage 2 Validation Fixes: 1. Correct semantic-finding evidence association... 2. Simplify schema error classification... 3. Preserve the agreed shared-evidence limitation”.
+- **Outcome** — Created `src/listings/review-labels.ts` defining `REVIEW_REASON_LABELS` and `formatReviewReason` with safe fallback; created `src/messages/table-runner.ts` and updated `src/cli.ts` to support `--format=table` CLI presentation rendering aligned tables with zero-offer representation; updated `src/extraction/stage2-mechanical-validation.ts` to associate semantic findings using only unclipped occurrences (`unclipped.some`), simplified candidate schema classification to inspect structured Zod issue paths (`value` and `amount`) without error message string inspection, and added architectural boundary documentation on shared evidence.
+- **Verification and limits** — Full offline test suite passed with 206 tests across 18 suites (including 15 dedicated tests in `test/review-reasons-presentation.spec.ts`); TypeScript typecheck and build passed cleanly; manual live CLI check with Gemini API on Fixture A and Fixture B in both JSONL and `--format=table` verified exit codes and table alignment.
+- **Related decisions** — [D-035](DECISIONS.md#d-035-business-level-review-reasons-human-facing-cli-presentation-and-stage-2-validation-corrections).
+
+## Input Validation & CLI Result Assembly (Task 02.6) — 2026-11-10
+
+- **Evidence status** — Evidence checked against implementation, focused test suites, and live CLI executions.
+- **Human review** — Not requested.
+- **Objective** — Connect Stage 0 input validation, Stage 1 extraction, Stage 2 mechanical validation, Stage 3 resolution, Stage 5 review, and Stage 6 result assembly to process JSONL messages sequentially and emit exactly one contract-compliant JSON result per nonblank line in input order.
+- **Important prompt** — Verbatim user prompt: “Dwelleo — Task 02.6 Implementation Handoff... Objective: Implement Task 02.6 — Input Validation and CLI Result Assembly. Connect the existing processing stages so that Dwelleo accepts a JSONL file containing multiple broker messages and produces exactly one contract-compliant JSON result per nonblank input line, preserving input order.”
+- **Outcome** — Implemented `ListingMessageProcessor` (`src/messages/listing-message-processor.ts`) connecting the end-to-end pipeline; updated `runJsonl` (`src/messages/jsonl-runner.ts`) and CLI (`src/cli.ts`) to stream JSONL results to stdout and operational errors to stderr; reverted `process` command to the public listing schema; retired legacy single-sale bridge.
+- **Verification and limits** — Passed 191 tests across 17 test suites; typecheck and build clean; live Gemini API CLI execution on Fixtures A & B passed. Committed as `e16e6af`.
+- **Related decisions** — [D-034](DECISIONS.md#d-034-complete-cli-result-assembly-and-revert-process-command-to-public-listing-contract).
 
 ## Stage 2 Validation Simplification (Task 02.5b) — 2026-11-10
 

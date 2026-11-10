@@ -44,6 +44,18 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ## Proposed and recently approved
 
+### D-036: Use a frozen independent corpus and separate live measurement
+
+- **Status** — Proposed on 2026-11-10; approval pending.
+- **Context** — Phase 03 must assess real CLI extraction on cases independent of implementation examples and report accuracy, latency, usage and cost. Phase 02 smoke checks do not establish representative quality. The current SDK gateway returns only `result.output`, so token usage is not available to the caller.
+- **Options and tradeoffs** — Reuse existing smoke fixtures (cheap, but biased); score an independently authored frozen corpus through the public CLI (more work, reproducible and tests the delivered path); or score only internal model envelopes (fine-grained, but bypasses resolution and review). For telemetry, alter the public JSONL contract (easy to observe, incompatible), use an evaluation-only capture path (isolated, extra harness work), or add a narrow internal gateway hook (less duplication, small production boundary change).
+- **Recommendation and rationale** — Freeze independent source messages and audited labels before the first live baseline. Use a separate evaluator against the built CLI's public JSONL output, with offer-local matching and explicit error denominators. Capture usage and timing outside the public result, choosing the smallest viable evaluation-only or internal telemetry path after inspecting SDK behavior. Report costs only when usage and an attributable rate snapshot are available. Compare revisions on the same frozen cases and preserve the original run.
+- **Consequences** — Requires a label guide, corpus provenance, evaluator, run artifacts and mismatch audit. It does not set a quality threshold or assert hidden-set generalization. Gemini is the primary provider; other providers require distinct run records. The production JSONL contract remains unchanged.
+- **Validation** — Offline evaluator tests for message/offer alignment, nulls, errors, denominators and optional telemetry; live CLI run manifest and manual audit of scored mismatches; reconcile README figures with raw artifacts.
+- **Review checkpoint** — Approve the protocol, corpus independence rule and telemetry boundary before Phase 03 qualification runs or dependent evaluator implementation. Set corpus size and any minimum acceptance threshold before viewing live baseline results. Review any prompt/schema/provider change before its implementation.
+- **Approval evidence** — Pending. The instruction “Make a plan” authorizes planning, not this proposed evaluation policy.
+- **References** — [Phase 03 plan](phase-plans/03-independent-provider-evaluation.md), [Plan v2](../PLAN-v2.md), [roadmap](roadmap.md), SC-12, SC-14, PC-03, D-019, D-023, D-024, D-026, D-033.
+
 ### D-018: Resolve uncertain evidence and field applicability
 
 - **Status** — Accepted on 2026-11-09.
@@ -582,6 +594,20 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Approval evidence** — Direct user instruction: “Implement Task 02.6 — Input Validation and CLI Result Assembly... Connect the existing processing stages so that Dwelleo accepts a JSONL file containing multiple broker messages and produces exactly one contract-compliant JSON result per nonblank input line, preserving input order.”
 - **References** — D-019, D-020, D-028, D-030, D-031, D-033, [Architecture](architecture.md), [Phase 02 plan](phase-plans/02-message-processing.md).
 
+### D-035: Business-level review reasons, human-facing CLI presentation, and Stage 2 validation corrections
 
-
-
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Internal Stage 2 validation produces technical diagnostic codes (`invalid_schema`, `invalid_format`, `quote_not_in_source`, `wrong_offer`, `clipped_token`, `invalid_numeric_constraint`) that explain why an extracted candidate failed. Human reviewers inspecting listings need actionable, business-level explanations describing property listing defects rather than internal implementation errors. Additionally, two Stage 2 mechanical validation defects required correction: (1) finding-to-offer association was erroneously checking clipped source occurrences, allowing clipped evidence to associate findings with offers; and (2) candidate schema error classification was using fragile string checks against Zod error messages. Finally, the shared-evidence mechanical boundary limitation needed explicit architectural documentation.
+- **Options and tradeoffs** —
+  1. Replace machine-readable `review_reasons` codes with free-form LLM-generated explanations. (Rejected: breaks API stability, introduces nondeterministic explanations, violates schema contract).
+  2. Directly expose internal technical validation codes as review reasons. (Rejected: confusing to human reviewers, leaks implementation details, conflates extraction diagnostics with domain listing problems).
+  3. Keep stable machine-readable `review_reasons` codes in the public contract (e.g. `bedrooms_unsupported`, `price_conflict`, `price_missing`, `district_missing`), map them to human-friendly labels in the CLI presentation layer (`--format=table`), preserve technical rejection codes strictly on rejected candidate provenance, and correct Stage 2 finding evidence association (checking unclipped occurrences only) and schema error classification (using structured Zod issue paths/codes without string heuristics).
+- **Decision and rationale** — Implement option 3.
+  - `src/listings/review-labels.ts` defines `REVIEW_REASON_LABELS` and `formatReviewReason` with safe fallback for unknown codes.
+  - `src/messages/table-runner.ts` implements `--format=table` CLI presentation displaying readable review labels, separate rows per property offer, and explicit representation of zero-offer messages without fabricating listings.
+  - Default JSONL output remains machine-readable, stable, and contract-compliant.
+  - `src/extraction/stage2-mechanical-validation.ts` uses `unclipped.some` for finding-to-offer association, uses structured Zod issue paths (`path.includes('value') || path.includes('amount')`) for numeric constraint classification without string inspection, and documents the shared-evidence boundary limitation.
+- **Consequences** — Public API and JSONL contracts remain unchanged with stable codes. CLI users can view human-friendly aligned tables with `--format=table`. Internal diagnostics remain on candidate provenance.
+- **Validation** — Focused offline test suite in `test/review-reasons-presentation.spec.ts` (15 tests covering business review reasons, technical code isolation, mapping/fallback, table runner, JSONL integrity, and Stage 2 fixes); full 18-suite test suite passing (206 tests); clean typecheck and build; and live CLI verification with `--format=table`.
+- **Approval evidence** — Direct user instruction: "Dwelleo — Human-Friendly Review Reasons Handoff... Keep technical validation diagnostics useful for developers while ensuring human reviewers see understandable, actionable explanations about the property listing... Additional Scope — Stage 2 Validation Fixes: 1. Correct semantic-finding evidence association... 2. Simplify schema error classification... 3. Preserve the agreed shared-evidence limitation".
+- **References** — D-019, D-020, D-030, D-031, D-033, D-034, [Architecture](architecture.md), [AI Log](AI_LOG.md).
