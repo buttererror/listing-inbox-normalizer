@@ -201,3 +201,40 @@ Prioritized according to the Phase 03 error-analysis order:
 
 ### Proposed Improvement Candidates (For Task 03.5 Review)
 1. **Prompt-to-Schema Alignment in [`src/extraction/domain-prompt.ts`](../src/extraction/domain-prompt.ts):** Update the prose and example descriptions for `price` and `area_sqm` to explicitly state the exact wire structure (`price` candidate has sibling keys `field`, `value: { amount, currency, period }`, `role`, `quote`, `scope` — `role` is a sibling of `value`, never inside `value`; `area_sqm` candidate has sibling keys `field`, `value`, `kind`, `quote`, `scope`). Do **not** relax Stage 2 `z.strictObject` guarantees or alter frozen expected labels (`test/evaluation/expected.json`).
+
+---
+
+## 9. Task 03.5 Post-Fix Comparison
+
+**Change applied:** Updated [`src/extraction/domain-prompt.ts`](../src/extraction/domain-prompt.ts) (lines 13–14 and line 24) to align candidate key-placement instructions directly with `stage1GatewayWireSchema` (clarifying `kind` and `role` as candidate top-level siblings of `value`, and disallowing extra/unrecognized keys on `price.value`). Stage 2 `z.strictObject` validation and frozen expected labels (`test/evaluation/expected.json`) were kept completely unchanged.  
+**Post-fix run date:** `2026-11-10T04:56:56.872Z`  
+**Saved artifacts:** [`evaluation-results/post-fix/`](../evaluation-results/post-fix/summary.json) (`actual.jsonl`, `telemetry.jsonl`, `summary.json`, `metadata.json`); baseline preserved untouched under [`evaluation-results/baseline/`](../evaluation-results/baseline/summary.json).
+
+### Spot Check (3 Affected Cases Before Full Run)
+- `eval-001`: `area_sqm: 450`, `price: 3,200,000 SAR (total)`, `needs_review: false`, `4,317.48 ms`, `10,100` input tokens.
+- `eval-009`: `area_sqm: 55`, `price: 3,500 SAR (monthly)`, `needs_review: false`, `4,440.85 ms`, `10,076` input tokens.
+- `eval-011`: `area_sqm: 175`, `price: null`, `review_reasons: ["price_currency_unknown"]`, `4,655.48 ms`, `10,096` input tokens.
+
+### Before vs. After Quality & Telemetry Comparison (20 / 20 Cases)
+
+| Metric | Baseline (Task 03.4) | Post-Fix (Task 03.5) | Delta |
+|---|---:|---:|---:|
+| **Classification accuracy** | `20 / 20 (100.0%)` | `20 / 20 (100.0%)` | `0.0%` |
+| **Detected-class accuracy** | `20 / 20 (100.0%)` | `20 / 20 (100.0%)` | `0.0%` |
+| **Offer-count accuracy** | `20 / 20 (100.0%)` | `20 / 20 (100.0%)` | `0.0%` |
+| **Field accuracy (applicable)** | `137 / 171 (80.1%)` | **`169 / 171 (98.8%)`** | **`+18.7%` (`+32` fields)** |
+| **Unsupported-value acceptance** | `0 / 26 (0.0%)` | `0 / 26 (0.0%)` | `0.0%` |
+| **Supported-value omission** | `34 / 150 (22.7%)` | **`2 / 150 (1.3%)`** | **`-21.4%` (`34 → 2`)** |
+| **Review precision** | `12 / 16 (75.0%)` | **`12 / 13 (92.3%)`** | **`+17.3%` (`FP 4 → 1`)** |
+| **Review recall** | `12 / 12 (100.0%)` | `12 / 12 (100.0%)` | `0.0%` |
+| **Total mismatches** | `50` | **`6`** | **`-44`** |
+| **Mean request duration** | `10,758.5 ms` | **`6,804.4 ms`** | **`-36.8%`** |
+| **Median request duration** | `11,637.3 ms` | **`4,929.8 ms`** | **`-57.6%`** |
+| **Total input tokens (20 calls)** | `591,931` (`29,596.5` avg) | **`330,563`** (`16,528.2` avg) | **`-44.2%`** |
+| **Total output tokens (20 calls)** | `17,510` (`875.5` avg) | **`11,703`** (`585.1` avg) | **`-33.2%`** |
+
+- **`area_sqm` accuracy:** improved from `8/16 (50.0%)` to **`16/16 (100.0%)`**.
+- **`price.amount` & `price.period` accuracy:** improved from `4/16 (25.0%)` to **`16/16 (100.0%)`**.
+- **Remaining 6 mismatches across 4 cases:**
+  - `eval-015`, `eval-018`: synthetic `052...` phones flagged as `contact_phone_uncertain` (`2/150` supported omissions; `1` FP review flag on `eval-015`).
+  - `eval-004`, `eval-019`: `price_uncertain` emitted instead of `price_missing` (per-sqm rate) and `price_period_unknown` (unspecified period), while correctly keeping `price.amount: null` and `needs_review: true`.

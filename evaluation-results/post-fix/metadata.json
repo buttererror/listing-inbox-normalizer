@@ -1,0 +1,41 @@
+{
+  "run_date": "2026-11-10T04:56:56.872Z",
+  "dataset_version": "1.0.0",
+  "git_commit": "48d707155fde29b1ca614b20abdda0266a83c2a9",
+  "change": "Align domain-prompt.ts price/area_sqm candidate key instructions with stage1GatewayWireSchema",
+  "provider": "agy",
+  "cli_version": "1.5.3",
+  "model": "gemini-3.8-flash-low",
+  "total_cases": 20,
+  "scored_cases": 20,
+  "provider_failures": 0,
+  "telemetry_summary": {
+    "records_count": 20,
+    "duration_ms": {
+      "mean": 6804.44,
+      "median": 4929.8,
+      "min": 1855.27,
+      "max": 21304.52,
+      "total_s": 136.09
+    },
+    "input_tokens": {
+      "total": 330563,
+      "mean": 16528.2,
+      "median": 20279,
+      "min": 10077,
+      "max": 33335
+    },
+    "output_tokens": {
+      "total": 11703,
+      "mean": 585.1,
+      "median": 441,
+      "min": 25,
+      "max": 2252
+    },
+    "total_tokens": {
+      "total": 342266,
+      "mean": 17113.3,
+      "median": 20348
+    }
+  }
+}

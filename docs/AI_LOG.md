@@ -1,5 +1,16 @@
 # Key agent sessions
 
+## Task 03.5 targeted prompt-to-schema alignment & comparison — 2026-11-10
+
+- **Evidence status** — Evidence checked against offline regression suite, 3-case live spot check, 20-case post-fix evaluation run (`evaluation-results/post-fix/`), and preserved baseline (`evaluation-results/baseline/`).
+- **Human review** — Not requested.
+- **Objective** — Implement Task 03.5: resolve the baseline `price`/`area_sqm` schema key-placement mismatch without altering Stage 2 strict validation or frozen expected labels.
+- **Important prompt** — User: “Implement task 3.5”.
+- **Outcome** — Applied a minimal prompt-to-schema correction in `src/extraction/domain-prompt.ts` clarifying that `kind` (`area_sqm`) and `role` (`price`) are candidate top-level siblings of `value` and disallowing duplicated/extra keys on `price.value`. Verified 3 affected cases live (`eval-001`, `eval-009`, `eval-011`), then ran the full 20-case comparison into `evaluation-results/post-fix/` while preserving `evaluation-results/baseline/` untouched. Applicable field accuracy rose from `80.1%` (`137/171`) to `98.8%` (`169/171`), supported-value omission dropped from `22.7%` (`34/150`) to `1.3%` (`2/150`), review precision rose from `75.0%` (`12/16`) to `92.3%` (`12/13`), `area_sqm` and `price.amount`/`price.period` each achieved `16/16 (100.0%)`, mean latency dropped from `10.76s` to `6.80s`, and total input tokens fell `44.2%` (`591,931` → `330,563`). Documented comparison in `docs/evaluation-baseline-analysis.md` (Section 9) and `docs/phase-plans/03-independent-provider-evaluation.md`.
+- **Verification and limits** — Offline suite (`20` suites, `228` tests), `typecheck`, and `build` passed cleanly. Live budget used: 3 spot checks + 20 full comparison calls (23 calls). Remaining 6 mismatches across 4 cases stem from conservative model uncertainty on synthetic `052` phones (`eval-015`, `eval-018`) and `price_uncertain` vs `price_missing`/`price_period_unknown` (`eval-004`, `eval-019`).
+- **Related decisions** — D-020, D-036, D-038.
+
+
 ## Task 03.4 baseline evaluation — 2026-11-10
 
 - **Evidence status** — Evidence checked against saved raw CLI outputs, evaluator summary, telemetry log, and Stage 2 validation diagnostics.

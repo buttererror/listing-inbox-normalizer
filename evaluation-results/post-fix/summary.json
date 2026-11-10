@@ -1,0 +1,219 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-11-10T04:56:56.872Z",
+  "total_cases": 20,
+  "scored_cases": 20,
+  "provider_failures": 0,
+  "malformed_lines": 0,
+  "missing_results": 0,
+  "metrics": {
+    "classification_accuracy": {
+      "numerator": 20,
+      "denominator": 20,
+      "percentage": 100,
+      "formatted": "20/20 (100.0%)"
+    },
+    "detected_class_accuracy": {
+      "numerator": 20,
+      "denominator": 20,
+      "percentage": 100,
+      "formatted": "20/20 (100.0%)"
+    },
+    "offer_count_accuracy": {
+      "numerator": 20,
+      "denominator": 20,
+      "percentage": 100,
+      "formatted": "20/20 (100.0%)"
+    },
+    "field_accuracy": {
+      "numerator": 169,
+      "denominator": 171,
+      "percentage": 98.8,
+      "formatted": "169/171 (98.8%)"
+    },
+    "unsupported_value_acceptance": {
+      "numerator": 0,
+      "denominator": 26,
+      "percentage": 0,
+      "formatted": "0/26 (0.0%)"
+    },
+    "supported_value_omission": {
+      "numerator": 2,
+      "denominator": 150,
+      "percentage": 1.3,
+      "formatted": "2/150 (1.3%)"
+    },
+    "review_precision": {
+      "numerator": 12,
+      "denominator": 13,
+      "percentage": 92.3,
+      "formatted": "12/13 (92.3%)"
+    },
+    "review_recall": {
+      "numerator": 12,
+      "denominator": 12,
+      "percentage": 100,
+      "formatted": "12/12 (100.0%)"
+    }
+  },
+  "offer_matching": {
+    "expected_offers": 16,
+    "actual_offers": 16,
+    "matched_offers": 16,
+    "extra_offers": 0,
+    "missing_offers": 0
+  },
+  "field_breakdown": {
+    "purpose": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "property_type": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "city": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "district": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "bedrooms": {
+      "total_comparisons": 13,
+      "correct": 13,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "bathrooms": {
+      "total_comparisons": 14,
+      "correct": 14,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "area_sqm": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "price.amount": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "price.period": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "price.currency": {
+      "total_comparisons": 16,
+      "correct": 16,
+      "accuracy_percentage": 100,
+      "unsupported_accepted": 0,
+      "supported_omitted": 0
+    },
+    "contact_phone": {
+      "total_comparisons": 16,
+      "correct": 14,
+      "accuracy_percentage": 87.5,
+      "unsupported_accepted": 0,
+      "supported_omitted": 2
+    }
+  },
+  "review_breakdown": {
+    "true_positives": 12,
+    "false_positives": 1,
+    "false_negatives": 0,
+    "true_negatives": 3
+  },
+  "mismatches": [
+    {
+      "message_id": "eval-004",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [price_missing], unexpected [price_uncertain]",
+      "expected": [
+        "price_missing"
+      ],
+      "actual": [
+        "price_uncertain"
+      ]
+    },
+    {
+      "message_id": "eval-015",
+      "type": "review_decision",
+      "offer_index": 0,
+      "description": "False positive review flag: listing was flagged for review when expected clean",
+      "expected": [],
+      "actual": [
+        "contact_phone_uncertain"
+      ]
+    },
+    {
+      "message_id": "eval-015",
+      "type": "field",
+      "offer_index": 0,
+      "field": "contact_phone",
+      "description": "Supported value omitted: field \"contact_phone\" expected \"+966521234567\", received null",
+      "expected": "+966521234567",
+      "actual": null
+    },
+    {
+      "message_id": "eval-018",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [], unexpected [contact_phone_uncertain]",
+      "expected": [
+        "price_conflict"
+      ],
+      "actual": [
+        "price_conflict",
+        "contact_phone_uncertain"
+      ]
+    },
+    {
+      "message_id": "eval-018",
+      "type": "field",
+      "offer_index": 0,
+      "field": "contact_phone",
+      "description": "Supported value omitted: field \"contact_phone\" expected \"+966524567890\", received null",
+      "expected": "+966524567890",
+      "actual": null
+    },
+    {
+      "message_id": "eval-019",
+      "type": "review_reasons",
+      "offer_index": 0,
+      "description": "Review reasons mismatch: missing [price_period_unknown], unexpected [price_uncertain]",
+      "expected": [
+        "price_period_unknown"
+      ],
+      "actual": [
+        "price_uncertain"
+      ]
+    }
+  ],
+  "excluded_from_denominators": []
+}

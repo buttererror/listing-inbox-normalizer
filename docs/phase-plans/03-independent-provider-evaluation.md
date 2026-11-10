@@ -307,6 +307,8 @@ If no significant changes are justified, skip implementation and document that d
 
 This is a planning estimate, not a guaranteed cost or hard technical limit.
 
+**Implementation evidence — 2026-11-10 (Task 03.5):** Updated `src/extraction/domain-prompt.ts` (lines 13–14 and line 24) to clarify that `kind` (`area_sqm`) and `role` (`price`) sit as candidate top-level siblings of `value` and that extra keys are disallowed on `price.value`. Verified offline tests (20/20 suites, 228/228 tests), typecheck, and build. Spot-checked `eval-001`, `eval-009`, and `eval-011` live (all 3 passed on turn 1 in ~4.3–4.7s and ~10.1k input tokens). Ran full 20-case comparison into `evaluation-results/post-fix/` (preserving `evaluation-results/baseline/` unchanged): field accuracy improved from `137/171 (80.1%)` to **`169/171 (98.8%)`**, supported omission fell from `34/150 (22.7%)` to **`2/150 (1.3%)`**, review precision improved from `12/16 (75.0%)` to **`12/13 (92.3%)`**, `area_sqm` and `price.amount`/`price.period` each reached `16/16 (100.0%)`, mean latency dropped from `10.76s` to **`6.80s`**, and total input tokens dropped by `44.2%` (`591,931` → `330,563`). See [Baseline Evaluation Analysis — Section 9](../evaluation-baseline-analysis.md#9-task-035-post-fix-comparison).
+
 ## 7. Task 03.6 — Document and close Phase 03
 
 Add a concise evaluation section to the README.
