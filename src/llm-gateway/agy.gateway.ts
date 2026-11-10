@@ -21,6 +21,7 @@ export class AgyGateway implements LlmGateway {
   async execute(request: LlmRequest): Promise<unknown> {
     const prompt = `${request.instructions}\n\nSource text:\n${request.sourceText}`;
     const args = [
+      '--dangerously-skip-permissions',
       '-p',
       prompt,
       '--output-format',

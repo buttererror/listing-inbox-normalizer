@@ -182,7 +182,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
         listings: [validSaleOffer, secondOffer],
       };
       const service = new ExtractionService({ execute: async () => payload });
-      const outcome = await service.extract(sampleMessage);
+      const outcome = await service.extract({
+        ...sampleMessage,
+        text: `${validSaleOffer.offer_quote}\n${secondOffer.offer_quote}`,
+      });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         expect(outcome.result.listings).toHaveLength(2);
@@ -195,7 +198,7 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
   describe('field variants, scopes, qualified prices, and findings', () => {
     it('preserves local versus shared candidate evidence', async () => {
       const offerWithSharedContact: ExtractedOffer = {
-        offer_quote: 'Offer text',
+        offer_quote: 'Villa for sale. Call 0551234567',
         candidates: [
           { field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' },
           { field: 'contact_phone', value: '+966551234567', quote: '0551234567', scope: 'shared' },
@@ -208,7 +211,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
         listings: [offerWithSharedContact],
       };
       const service = new ExtractionService({ execute: async () => payload });
-      const outcome = await service.extract(sampleMessage);
+      const outcome = await service.extract({
+        ...sampleMessage,
+        text: 'Villa for sale. Call 0551234567',
+      });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         const candidates = outcome.result.listings[0].candidates;
@@ -218,8 +224,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
     });
 
     it('exercises all nine field variants and qualifiers', async () => {
+      const allFieldsText =
+        'townhouse for rent in Jeddah, Al Rawdah. 4 BR, 3 baths, 450 sqm land. 120k SAR / yr. Call 0559876543';
       const allFieldsOffer: ExtractedOffer = {
-        offer_quote: 'Complete property offer',
+        offer_quote: allFieldsText,
         candidates: [
           { field: 'purpose', value: 'rent', quote: 'for rent', scope: 'local' },
           { field: 'property_type', value: 'townhouse', quote: 'townhouse', scope: 'local' },
@@ -245,7 +253,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
         listings: [allFieldsOffer],
       };
       const service = new ExtractionService({ execute: async () => payload });
-      const outcome = await service.extract(sampleMessage);
+      const outcome = await service.extract({
+        ...sampleMessage,
+        text: allFieldsText,
+      });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         expect(outcome.result.listings[0].candidates).toHaveLength(9);
@@ -253,8 +264,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
     });
 
     it('preserves qualified price roles: deposit, installment, per_sqm_rate', async () => {
+      const qualifiedPricesText =
+        'Multiple price assertions: Asking 3.2M SAR. Deposit 50,000 SAR. 2,500 SAR/sqm';
       const qualifiedPricesOffer: ExtractedOffer = {
-        offer_quote: 'Multiple price assertions',
+        offer_quote: qualifiedPricesText,
         candidates: [
           {
             field: 'price',
@@ -286,7 +299,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
         listings: [qualifiedPricesOffer],
       };
       const service = new ExtractionService({ execute: async () => payload });
-      const outcome = await service.extract(sampleMessage);
+      const outcome = await service.extract({
+        ...sampleMessage,
+        text: qualifiedPricesText,
+      });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         const prices = outcome.result.listings[0].candidates.filter((c) => c.field === 'price') as any[];
@@ -295,8 +311,9 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
     });
 
     it('preserves competing candidates for the same field', async () => {
+      const competingText = 'Villa 3 BR updated to 4 BR';
       const competingOffer: ExtractedOffer = {
-        offer_quote: 'Villa 3 BR updated to 4 BR',
+        offer_quote: competingText,
         candidates: [
           { field: 'bedrooms', value: 3, quote: '3 BR', scope: 'local' },
           { field: 'bedrooms', value: 4, quote: '4 BR', scope: 'local' },
@@ -309,7 +326,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
         listings: [competingOffer],
       };
       const service = new ExtractionService({ execute: async () => payload });
-      const outcome = await service.extract(sampleMessage);
+      const outcome = await service.extract({
+        ...sampleMessage,
+        text: competingText,
+      });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         expect(outcome.result.listings[0].candidates).toHaveLength(2);
@@ -317,8 +337,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
     });
 
     it('preserves structured bounded findings', async () => {
+      const findingsText =
+        'Uncertain price description: Price around market average. 3 BR ... 4 BR';
       const offerWithFindings: ExtractedOffer = {
-        offer_quote: 'Uncertain price description',
+        offer_quote: findingsText,
         candidates: [],
         findings: [
           {
@@ -347,7 +369,10 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
         listings: [offerWithFindings],
       };
       const service = new ExtractionService({ execute: async () => payload });
-      const outcome = await service.extract(sampleMessage);
+      const outcome = await service.extract({
+        ...sampleMessage,
+        text: findingsText,
+      });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
         expect(outcome.result.listings[0].findings).toEqual(offerWithFindings.findings);

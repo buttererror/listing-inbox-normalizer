@@ -516,3 +516,17 @@ For each genuine incident record: incorrect action or claim; who caught it (user
 - **Approval evidence** — User instructions: "I think we are at the stage that we must use the agy cli temporarily along with the current implmentation", "Implement", "Let's use agy, how to fix that error?", and "Commit".
 - **References** — D-023, D-026, [AI log](AI_LOG.md).
 
+### D-030: Stage 2 extraction structure and source evidence validation merging Task 02.3 into 02.2
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Stage 2 (Mechanical Validation) must ensure that information returned by the LLM is correctly structured, supported by original source text, and associated with the correct property offer. Former Task 02.3 separated `SemanticFinding[]` evidence validation from candidate evidence validation.
+- **Options and tradeoffs** —
+  1. Implement candidate validation in 02.2 and finding validation in 02.3 separately (duplicates verbatim and clipping logic across two incremental tasks).
+  2. Merge Task 02.3 into Task 02.2 as instructed, placing envelope validation, independent candidate schema validation, independent semantic finding schema validation, source grounding, offer-local containment, shared evidence scoping, token clipping, and repeated quote disambiguation behind one deterministic Stage 2 entry point.
+- **Recommendation and rationale** — Implement option 2 in `src/extraction/stage2-mechanical-validation.ts`. Reuse existing clipping and occurrence helpers. Enforce the invariant that invalid evidence is rejected with deterministic reasons and never enters trusted inputs downstream.
+- **Consequences** — Task 02.3 is superseded. `ExtractionService.extract()` executes Stage 2 validation directly. Grounded candidates and findings are preserved, while rejected candidates and findings are captured in `rejectedCandidates`, `rejectedFindings`, and `rejectedEvidence`. An unusable envelope or claimed listings where none can be grounded returns typed `invalid_extraction`.
+- **Validation** — Focused offline suite in `test/stage2-mechanical-validation.spec.ts` (16 tests); full 18-suite offline test suite passing (186 tests); clean typecheck and build; and live CLI check with `test/fixtures/two-offers.jsonl` returning two grounded listings with local quotes and shared contact.
+- **Approval evidence** — User prompt: "Implement Stage 2: Extraction Structure & Source Evidence Validation, merging the former Task 02.3 into 02.2... Update the active Phase 02 plan to merge Task 02.3 into 02.2. Mark 02.3 as superseded and incorporate its acceptance criteria into 02.2... Implement task 2.2".
+- **References** — D-019, D-027, D-028, [Phase 02 plan](phase-plans/02-message-processing.md).
+
+

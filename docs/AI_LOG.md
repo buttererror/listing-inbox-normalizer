@@ -777,3 +777,50 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
   - Live execution of `node dist/cli.js process test/fixtures/message.json` passed with exit code 0, returning the valid Stage 1 ExtractionEnvelope JSON with apartment classification, offer quote, candidate fields with evidence quotes, and zero findings.
 - **Related decisions** — [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli), [D-029](DECISIONS.md#d-029-antigravity-cli-gateway-for-local-model-execution).
 
+## Stage 2 Extraction Structure & Source Evidence Validation (Task 02.2 / 02.3) — 2026-11-10
+
+- **Evidence status** — Evidence checked against source, tests, typecheck, build, and live CLI runs.
+- **Human review** — Not requested.
+- **Objective** — Implement Stage 2 Mechanical Validation for extraction structure and source evidence, merging former Task 02.3 into 02.2 under D-030.
+- **Important prompts** — “# Dwelleo — Task 02.2 Implementation Handoff\n\n## Objective\n\nImplement Stage 2: Extraction Structure & Source Evidence Validation, merging the former Task 02.3 into 02.2...\nImplement task 2.2”.
+- **Outcome** —
+  - Implemented `src/extraction/stage2-mechanical-validation.ts` containing the deterministic entry point `validateStage2`:
+    - Envelope validation: checks classification, detected classes, and offer groupings.
+    - Offer grounding: verifies claimed `offer_quote` existence in source text; maps claimed offers with zero grounded spans to typed `invalid_extraction`.
+    - Independent candidate schema validation: inputs typed as `unknown` validated against `typedFieldCandidateSchema`; invalid entries rejected with `invalid_schema` without failing the offer or message (partial recovery).
+    - Source evidence verification & scoping: verifies verbatim source occurrence (`quote_not_in_source`), offer-local containment within `offer_quote` and source span (`wrong_offer`), shared evidence legitimacy outside other offers (`unscoped_shared_evidence`), token clipping (`clipped_token`), and offer-scoped disambiguation of repeated quotes (`multiple_occurrences`).
+    - Semantic findings validation (former 02.3): validates finding schemas, verbatim quotes, clipping, and offer scoping; preserves grounded uncertainty, contradiction, and missing context findings.
+  - Connected `validateStage2` in `ExtractionService.extract()`, ensuring only validated candidates and findings enter `offer.candidates` and `offer.findings`, and capturing all rejections in `rejectedCandidates`, `rejectedFindings`, and `rejectedEvidence`.
+  - Added focused unit tests in `test/stage2-mechanical-validation.spec.ts` (16 tests).
+  - Updated Phase 02 plan in `docs/phase-plans/02-message-processing.md` to merge 02.3 into 02.2, mark 02.3 as superseded, and record 02.2 completion.
+  - Recorded decision [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022).
+- **Verification and limits** —
+  - `pnpm run typecheck` and `pnpm run build` passed cleanly with exit code 0.
+  - Full offline suite passed all 18 test suites (186 total tests) without API credentials.
+  - Live CLI check executed `node dist/cli.js process test/fixtures/two-offers.jsonl` returning exit code 0 and outputting the valid two-offer Stage 1 extraction envelope with local quotes and shared contact.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-027](DECISIONS.md#d-027-bridge-stage-1-typed-proposals-to-the-single-sale-baseline), [D-028](DECISIONS.md#d-028-temporarily-output-stage-1-extractionenvelope-through-process-cli), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022).
+
+## Stage 1 Normalization Policies Documentation Update — 2026-11-10
+
+- **Evidence status** — Evidence checked against user prompt, policies reference, typecheck, and full test suite.
+- **Human review** — Not requested. Direct user instruction defining normalization policies.
+- **Objective** — Update `docs/processing-resolution-policy.md` with complete Stage 1 Step 6 Normalization policies.
+- **Important prompt** — Verbatim excerpt: “Update the policies with normalization policies \n## Step 6 — Normalize\n\nConvert the attributes interpreted in Step 5 into canonical typed values. Normalization must preserve the source's meaning, numeric precision, units, qualifiers, and uncertainty...”
+- **Outcome** —
+  - Added `## Step 6 — Normalize` and subsections 6.1 through 6.9 to `docs/processing-resolution-policy.md` verbatim:
+    - 6.1 Canonical field types (purpose, property_type, city, district, bedrooms, bathrooms, area_sqm, price tuple, contact_phone).
+    - 6.2 Numeric normalization (Arabic-Indic, Eastern Arabic-Indic digits, written numbers, shorthand magnitudes K/M/ألف/مليون, precision preservation).
+    - 6.3 Purpose and property type (mapping to English enums, contextual terminology, specificity).
+    - 6.4 City and district (verbatim language and spelling preservation, trimming, administrative label stripping only when functional, no translation/transliteration).
+    - 6.5 Area (sqm normalization, semantic area kind: land | built_up | unspecified, preservation of multiple measurements).
+    - 6.6 Price (amount conversion, explicit SAR requirement, period yearly | monthly | total | null, role asking_price | deposit | installment | per_sqm_rate | other, public contract boundary).
+    - 6.7 Contact phone (E.164 +9665XXXXXXXX normalization, Arabic-Indic conversion, omission on low confidence).
+    - 6.8 Evidence preservation and uncertainty (verbatim quotes, competing candidates preservation, structured findings).
+    - 6.9 Responsibility boundaries (Stage 1 LLM Extraction, Stage 2 Mechanical Validation, Stage 3 Field Resolution, Stage 5 Runtime Reviewer).
+- **Verification and limits** —
+  - `pnpm run typecheck` and `pnpm test` passed cleanly (all 18 test suites, 186 tests).
+  - Verified markdown diff in `docs/processing-resolution-policy.md` against user specification.
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review).
+
+
+

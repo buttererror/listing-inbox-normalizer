@@ -98,6 +98,159 @@ Avoid model-generated confidence scores and redundant self-verification verdicts
 
 ---
 
+## Step 6 — Normalize
+
+Convert the attributes interpreted in Step 5 into canonical typed values. Normalization must preserve the source's meaning, numeric precision, units, qualifiers, and uncertainty.
+
+### 6.1 Canonical field types
+
+- **purpose:** `sale` or `rent`.
+- **property_type:** `villa`, `apartment`, `studio`, `land`, `townhouse`, or `other`.
+- **city:** String containing the supported city name.
+- **district:** String containing the supported district name.
+- **bedrooms:** Non-negative integer.
+- **bathrooms:** Non-negative integer.
+- **area_sqm:** Positive numeric value with `kind: land | built_up | unspecified`.
+- **price:** Object containing:
+  - `amount`: Positive numeric value.
+  - `currency`: `SAR` when explicitly supported; otherwise `null`.
+  - `period`: `total`, `yearly`, `monthly`, or `null`.
+  - `role`: `asking_price`, `deposit`, `installment`, `per_sqm_rate`, or `other`.
+- **contact_phone:** Saudi mobile number normalized to E.164 (`+9665XXXXXXXX`).
+
+### 6.2 Numeric normalization
+
+- Convert Arabic-Indic (`٠١٢٣٤٥٦٧٨٩`) and Eastern Arabic-Indic (`۰۱۲۳۴۵۶۷۸۹`) digits into standard decimal values.
+- Interpret clearly supported written numbers in Arabic and English.
+- Convert shorthand magnitudes into absolute numbers, including `K`, `M`, `ألف`, and `مليون`.
+- Interpret decimal and grouping separators according to the source context.
+- Preserve numeric precision. Do not round or estimate values.
+- Do not convert approximate quantities into falsely precise values. Preserve their uncertainty in the extraction findings.
+- Never invent a number when its source is missing or ambiguous.
+
+Examples:
+- `٣ غرف نوم` → `bedrooms: 3`
+- `أربع غرف نوم` → `bedrooms: 4`
+- `950K` → `950000`
+- `٣٫٢ مليون` → `3200000`
+- `مليون ونصف` → `1500000`
+
+### 6.3 Purpose and property type
+
+- Map Arabic and English terminology to the defined English enum values.
+- Interpret abbreviations and common Saudi real-estate terminology contextually.
+- Do not use a generic enum when the source explicitly supports a more specific enum.
+- Do not infer a property's purpose or type from unrelated information.
+
+Examples:
+- `للبيع` → `sale`
+- `للإيجار` → `rent`
+- `شقة` → `apartment`
+- `فيلا` → `villa`
+- `أرض` → `land`
+
+### 6.4 City and district
+
+- Preserve city and district names in the language and spelling used in the original message.
+- Trim surrounding whitespace.
+- Remove explicit administrative labels such as `حي`, `District:`, or `مدينة` only when they function as labels rather than as part of the actual place name.
+- Do not translate or transliterate location names.
+- Do not expand abbreviations or replace place names with alternative spellings unless the source clearly supports the expanded form.
+- Do not infer a missing city from a district, or vice versa, using external geographical knowledge.
+- Keep city and district as separate attributes.
+
+Examples:
+- `الرياض، حي النرجس` → `city: "الرياض"`, `district: "النرجس"`
+- `Riyadh, District: Al Narjis` → `city: "Riyadh"`, `district: "Al Narjis"`
+
+Cross-language location matching belongs to deduplication, not extraction normalization.
+
+### 6.5 Area
+
+- Normalize supported area measurements into square metres.
+- Convert from another area unit only when the source clearly identifies the unit and the conversion is unambiguous.
+- Preserve the semantic area kind:
+  - `land`: Land or plot area.
+  - `built_up`: Built-up or building area.
+  - `unspecified`: Area mentioned without a clearly established kind.
+- Do not assume land area or built-up area merely because of the property type.
+- Preserve separate supported area measurements as separate candidates, including their kinds.
+- Do not choose between competing area measurements during normalization.
+
+Examples:
+- `٢٠٠ م²` → `area_sqm: 200`, `kind: unspecified`
+- `مساحة الأرض ٣٠٠ متر مربع` → `area_sqm: 300`, `kind: land`
+- `Built-up area: 250 sqm` → `area_sqm: 250`, `kind: built_up`
+
+### 6.6 Price
+
+**Amount**
+- Convert supported price expressions into absolute numeric amounts.
+- Preserve the original amount's meaning and precision.
+- Do not treat deposits, installments, or per-square-metre rates as total asking prices.
+
+**Currency**
+- Use `SAR` only when the source explicitly identifies Saudi riyals or an unambiguous equivalent.
+- Use `null` internally when the currency is missing or cannot be established.
+- Do not silently assume SAR from the property's location.
+
+**Period**
+- Use `yearly` for explicitly annual rental prices.
+- Use `monthly` for explicitly monthly rental prices.
+- Use `total` when the source supports a total price rather than a recurring amount.
+- Use `null` when the period cannot be established.
+- Do not assume every rental amount is yearly.
+
+**Role**
+- Use `asking_price` for an identified sale or rental asking price.
+- Use `deposit` for deposits or earnest money.
+- Use `installment` for installment amounts.
+- Use `per_sqm_rate` for rates expressed per square metre.
+- Use `other` when a price has a different identifiable role.
+
+Examples:
+- `السعر ٩٥٠ ألف ريال` → `amount: 950000`, `currency: SAR`, `period: total`, `role: asking_price` when clearly referring to the property's total sale price.
+- `85,000/yr` → `amount: 85000`, `currency: null`, `period: yearly`, `role: asking_price` when presented as the rental asking price.
+- `العربون ٥٠ ألف ريال` → `amount: 50000`, `currency: SAR`, `role: deposit`.
+- `٢٥٠٠ ريال للمتر` → `amount: 2500`, `currency: SAR`, `role: per_sqm_rate`.
+
+**Public contract boundary:** The final listing schema requires `price.currency: "SAR"`. An internally extracted amount with unknown or unsupported currency must not be presented as a confirmed SAR price. The downstream resolver must follow the documented public-price policy, potentially leaving the public amount null and flagging the uncertainty for review.
+
+### 6.7 Contact phone
+
+- Normalize supported Saudi mobile numbers into `+9665XXXXXXXX`.
+- Convert Arabic-Indic digits before phone normalization.
+- Accept clearly supported local or international representations of the same Saudi mobile number.
+- Do not invent missing digits.
+- Do not treat unrelated international or landline numbers as Saudi mobile numbers.
+- Omit a candidate when the phone cannot be normalized confidently.
+
+Examples:
+- `٠٥٥١٢٣٤٥٦٧` → `+966551234567`
+- `0551234567` → `+966551234567`
+- `966551234567` → `+966551234567`
+
+### 6.8 Evidence preservation and uncertainty
+
+- Every normalized candidate must retain its exact verbatim source quote.
+- Never translate, transliterate, or rewrite source evidence.
+- Do not replace an unsupported value with a guessed default.
+- If two supported source statements give competing values, preserve both candidates for downstream resolution.
+- Use semantic findings to report material uncertainty, contradiction, or missing context.
+- Do not invent values to complete the listing schema.
+- Do not choose between competing supported candidates during normalization.
+
+### 6.9 Responsibility boundaries
+
+- **Stage 1 — LLM Extraction:** Interpret the source and propose normalized typed candidates with original evidence.
+- **Stage 2 — Mechanical Validation:** Verify structure, source integrity, types, formats, and mechanically checkable consistency.
+- **Stage 3 — Field Resolution:** Select supported values according to documented business policies.
+- **Stage 5 — Runtime Reviewer:** Identify unresolved or materially uncertain information requiring human review.
+
+Normalization must not perform deduplication, human-review decisions, or public-result assembly.
+
+---
+
 ## 2. Mechanical Validation Policies — Code
 
 Validation does not attempt to reinterpret natural language.

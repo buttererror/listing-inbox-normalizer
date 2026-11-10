@@ -336,7 +336,11 @@ describe('02.1T / 02.6T — Offline CLI integration', () => {
           arabicGatewayResponse.listings[0],
         ],
       };
-      await writeFile(path, `${JSON.stringify(englishMessage)}\n`);
+      const multiOfferMessage = {
+        ...englishMessage,
+        text: `${englishGatewayResponse.listings[0].offer_quote}\n${arabicGatewayResponse.listings[0].offer_quote}`,
+      };
+      await writeFile(path, `${JSON.stringify(multiOfferMessage)}\n`);
       const gateway: LlmGateway = {
         execute: async () => multiOfferResponse,
       };

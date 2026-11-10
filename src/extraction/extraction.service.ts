@@ -10,8 +10,11 @@ import {
   gatewayExtractionResponseSchema,
   Stage1ExtractionResult,
   stage1GatewayWireSchema,
-  validateExtractionEnvelope,
 } from './extraction-result.schema';
+import {
+  OfferValidationOutcome,
+  validateStage2,
+} from './stage2-mechanical-validation';
 import {
   RejectedEvidence,
   RejectedReason,
@@ -25,6 +28,7 @@ export type ExtractionOutcome =
       ok: true;
       result: Stage1ExtractionResult & {
         candidates?: Array<{ assertions: Array<{ field: string; quote: string }> }>;
+        validationOutcomes?: OfferValidationOutcome[];
       };
       rejectedEvidence?: RejectedEvidence[];
     }
@@ -70,25 +74,42 @@ export class ExtractionService {
       throw err;
     }
 
-    // First validate Stage 1 envelope
-    const envelope = validateExtractionEnvelope(output);
-    if (envelope.ok) {
-      const { classification, detected_classes, listings } = envelope.data;
-      const legacyCandidates = listings.map((offer) => ({
-        assertions: (offer.candidates as Array<{ field?: string; quote?: string }>)
-          .filter((c) => typeof c?.field === 'string' && typeof c?.quote === 'string')
-          .map((c) => ({ field: c.field!, quote: c.quote! })),
+    // Run Stage 2: Mechanical Validation for structure & source evidence
+    const stage2 = validateStage2(message.text, output);
+    if (stage2.ok) {
+      const listings: ExtractedOffer[] = stage2.offers.map((o) => ({
+        offer_quote: o.offer_quote,
+        candidates: o.acceptedCandidates,
+        findings: o.semanticFindings,
       }));
+
+      const legacyCandidates = listings.map((offer) => ({
+        assertions: offer.candidates.map((c) => ({ field: c.field, quote: c.quote })),
+      }));
+
+      const allRejectedCandidates = stage2.offers.flatMap((o) => o.rejectedCandidates);
+      const allRejectedFindings = stage2.offers.flatMap((o) => o.rejectedFindings);
+      const rejectedEvidence: RejectedEvidence[] = [
+        ...allRejectedCandidates.map((r) => ({
+          assertion: { field: r.field ?? 'unknown', quote: r.quote ?? '' },
+          reason: r.reason as any,
+        })),
+        ...allRejectedFindings.map((r) => ({
+          assertion: { field: (r.finding as any)?.field ?? 'finding', quote: (r.finding as any)?.quote ?? '' },
+          reason: r.reason as any,
+        })),
+      ];
 
       return {
         ok: true,
         result: {
-          classification,
-          detected_classes,
-          listings: listings as ExtractedOffer[],
+          classification: stage2.classification,
+          detected_classes: stage2.detected_classes,
+          listings,
           candidates: legacyCandidates,
+          validationOutcomes: stage2.offers,
         },
-        rejectedEvidence: [],
+        rejectedEvidence,
       };
     }
 
