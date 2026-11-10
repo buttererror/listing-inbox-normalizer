@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { AgyGateway } from '../src/llm-gateway/agy.gateway';
+import { AgyGateway, parseAgyResponseString } from '../src/llm-gateway/agy.gateway';
 import { LlmRequest, ProviderError } from '../src/llm-gateway/llm-request';
 import { parseTelemetry } from '../scripts/evaluate';
 
@@ -119,5 +119,30 @@ describe('AgyGateway', () => {
 
     await expect(promise).rejects.toThrow(ProviderError);
     await expect(promise).rejects.toMatchObject({ code: 'provider_unavailable' });
+  });
+
+  it('extracts JSON from markdown code blocks and multi-line self-correction responses', () => {
+    const fenced = '```json\n{"classification":"irrelevant","detected_classes":["irrelevant"],"listings":[]}\n```';
+    expect(parseAgyResponseString(fenced)).toEqual({
+      classification: 'irrelevant',
+      detected_classes: ['irrelevant'],
+      listings: [],
+    });
+
+    const multiLineRetry = [
+      JSON.stringify({
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [{ candidates: [{ field: 'purpose', quote_scope: 'local', quote: 'sale', value: 'sale' }] }],
+      }),
+      JSON.stringify({
+        classification: 'listing',
+        detected_classes: ['listing'],
+        listings: [{ candidates: [{ field: 'purpose', scope: 'local', quote: 'sale', value: 'sale' }] }],
+      }),
+    ].join('\n');
+
+    const parsed = parseAgyResponseString(multiLineRetry) as any;
+    expect(parsed.listings[0].candidates[0].scope).toBe('local');
   });
 });

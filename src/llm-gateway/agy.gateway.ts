@@ -1,10 +1,74 @@
 import { spawn } from 'node:child_process';
+import os from 'node:os';
 import { LlmGateway, LlmRequest, ProviderError, writeLlmTelemetry } from './llm-request';
 
 export interface AgyGatewayOptions {
   executable?: string;
   model?: string;
   timeoutMs?: number;
+}
+
+function hasValidCandidateShapes(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return false;
+  const record = obj as Record<string, unknown>;
+  if (typeof record.classification !== 'string' || !Array.isArray(record.listings)) {
+    return false;
+  }
+  for (const listing of record.listings) {
+    if (!listing || typeof listing !== 'object') return false;
+    const candidates = (listing as Record<string, unknown>).candidates;
+    if (!Array.isArray(candidates)) return false;
+    for (const c of candidates) {
+      if (!c || typeof c !== 'object') return false;
+      const cand = c as Record<string, unknown>;
+      if (!('field' in cand) || !('value' in cand) || !('quote' in cand) || !('scope' in cand)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+export function parseAgyResponseString(raw: string): unknown {
+  const trimmed = raw.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {}
+
+  const parsedObjects: unknown[] = [];
+
+  // Extract from any markdown code blocks ```json ... ```
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
+  let match: RegExpExecArray | null;
+  while ((match = codeBlockRegex.exec(trimmed)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed && typeof parsed === 'object') {
+        parsedObjects.push(parsed);
+      }
+    } catch {}
+  }
+
+  // Extract from individual JSON lines
+  const lines = trimmed
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith('{') && l.endsWith('}'));
+  for (const line of lines) {
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed && typeof parsed === 'object') {
+        parsedObjects.push(parsed);
+      }
+    } catch {}
+  }
+
+  if (parsedObjects.length > 0) {
+    const valid = parsedObjects.find(hasValidCandidateShapes);
+    return valid ?? parsedObjects[0];
+  }
+
+  return raw;
 }
 
 export class AgyGateway implements LlmGateway {
@@ -20,7 +84,7 @@ export class AgyGateway implements LlmGateway {
 
   async execute(request: LlmRequest): Promise<unknown> {
     const startedAt = performance.now();
-    const prompt = `${request.instructions}\n\nSource text:\n${request.sourceText}`;
+    const prompt = `${request.instructions}\nIMPORTANT: Do not execute any commands or call any tools. Output ONLY valid JSON adhering to the schema.\n\nSource text:\n${request.sourceText}`;
     const args = [
       '-p',
       prompt,
@@ -57,7 +121,7 @@ export class AgyGateway implements LlmGateway {
       let stderr = '';
       let timedOut = false;
 
-      const child = spawn(this.executable, ['--sandbox', ...args]);
+      const child = spawn(this.executable, ['--sandbox', ...args], { cwd: os.tmpdir() });
 
       const timer = setTimeout(() => {
         timedOut = true;
@@ -110,11 +174,7 @@ export class AgyGateway implements LlmGateway {
               return resolve(parsedEnvelope.structured_output);
             }
             if ('response' in parsedEnvelope && typeof parsedEnvelope.response === 'string') {
-              try {
-                return resolve(JSON.parse(parsedEnvelope.response));
-              } catch {
-                return resolve(parsedEnvelope.response);
-              }
+              return resolve(parseAgyResponseString(parsedEnvelope.response));
             }
           }
           resolve(parsedEnvelope);
