@@ -4,7 +4,7 @@
 
 ## Objective and scope
 
-Add SQLite persistence and replay, HTTP ingestion and listing reads, and human approval to the shared processor. Reuse the Phase 02 pipeline in order: input validation, LLM extraction, mechanical validation, field resolution, runtime review, and result assembly. Preserve the existing interpretation, normalization, and review policies.
+Add SQLite persistence and replay to HTTP ingestion, plus listing reads and human approval. Reuse the stateless Phase 02 processor; the CLI remains JSONL-only with no SQLite side effects.
 
 Governing references: [assessment brief](../task-brief.md), [architecture](../architecture.md), [first listing contracts](01-contracts-and-cli.md#approved-contract-and-policy-choices), [decision register](../DECISIONS.md#open-policy-checkpoints), [roadmap](../roadmap.md), and [success criteria](../success-criteria.md).
 
@@ -17,7 +17,7 @@ Phase 05 owns cross-message property deduplication. Phase 04 scope covers the th
 - `GET /listings` returns `{ "listings": [...] }` in stable ingestion and offer order. An omitted `needs_review` filter returns all listings. The literal query values `true` and `false` filter the current flag. Malformed values return 400.
 - `POST /listings/{id}/approve` returns the updated listing. First approval of an originally flagged listing records approval and sets current `needs_review` to `false`. A repeat returns the existing approved state. Preserve extracted fields, original `review_reasons`, source provenance, and the ingestion snapshot.
 - Approval errors use `{ "message_id": null, "error": { "code", "message" } }`. An unknown ID returns 404 `listing_not_found`. A listing that never required review returns 409 `approval_conflict`.
-- CLI and HTTP startup apply committed SQLite migrations. A fresh database is usable without a separate manual initialization step.
+- HTTP startup applies committed SQLite migrations. CLI startup does not require SQLite or migrations.
 
 Approval evidence comes from the Phase 04 planning chat, including the user's confirmation that the stored flag becomes false and reasons and replay history remain available. Record the approved choice in the decision register before approval implementation.
 
@@ -29,7 +29,7 @@ Complete each focused check and record its result before dependent work. Use gat
 
 Use the existing Prisma and SQLite setup for the schema, committed migrations, and database lifecycle. Store original message fields, classification and detected classes, the immutable successful result, listing IDs and order, current review state, original review eligibility, approval state and timestamp or equivalent, and source provenance.
 
-**04.1T.** Verify fresh initialization and committed migrations through both entry points. Save and read messages and listings, close and reopen the database, and check order and review state.
+**04.1T.** Verify HTTP startup initializes a fresh database and committed migrations. Save and read messages and listings, close and reopen the database, and check order and review state. Verify the CLI starts without a database or migrations.
 
 #### 04.1 progress — 2026-11-10
 
@@ -38,17 +38,24 @@ Use the existing Prisma and SQLite setup for the schema, committed migrations, a
 - **Errors and limitations** — Prisma 7.10.1's SQLite migration command has an upstream schema-engine logging defect: it fails with an empty error unless `RUST_LOG=info`. `db:deploy` pins that documented workaround without changing dependencies. Runtime migration discovery requires the application to start from the repository root where prisma/migrations is available. Shared processor persistence, replay, HTTP listing routes, and approval remain in later tasks.
 - **Verification evidence** — On 2026-11-10, `db:deploy` applied the migration to fresh temporary HTTP and CLI databases; a second deploy preserved the existing migration history, including on a disposable copy initialized by the former runner. HTTP startup completed after migration (with loopback access). The CLI emitted JSONL results only to stdout while build and migration output remained on stderr. The focused restart test passed; the full offline suite passed 22 suites / 248 tests, and `pnpm run typecheck` and `pnpm run build` passed.
 
-### 04.2 — Shared persistence and replay
+### 04.2 — HTTP persistence and replay
 
-Validate input, check the stored ID, and run the existing pipeline for new messages. Validate the final public result before storing it. Keep model calls outside the write transaction. Use a short transaction to save the message, all listing rows, and the snapshot together. Enforce unique message IDs in SQLite. On a competing insert, reread the committed winner and apply the same replay or conflict rule.
+PersistentIngestionService checks the stored ID before calling the stateless processor for a new HTTP message. Validate the final public result before storing it. Keep model calls outside the write transaction. Ordinary CLI processing neither persists nor replays messages.
 
 Concurrent identical requests may both invoke the model before either saves. The database must still contain one successful ingestion and one set of listing rows.
 
 **04.2T.** Check first ingestion, sequential exact replay with no additional gateway call, stable IDs, changed-payload conflicts, multiple offers in source order, and successful messages with zero offers. Exercise concurrent identical and conflicting submissions. Force a write failure and verify rollback. Verify that provider or extraction failures produce no successful stored ingestion.
 
+#### 04.2 progress — 2026-11-10
+
+- **Correction (2026-11-10)** — The initial implementation incorrectly put SQLite replay and persistence in ListingMessageProcessor and wired CLI startup to migrations. PersistentIngestionService now owns HTTP replay/conflict and atomic storage; ListingMessageProcessor and CLI are stateless. Route coverage follows in 04.3.
+- **Handled cases** — The focused temporary-SQLite test verifies multi-offer persistence in source order, exact replay with stable IDs and one extraction call, changed-text conflict, concurrent identical writes producing one winner, empty project success, extraction failure without a stored message, and rollback after a duplicate listing-ID write failure.
+- **Known gaps** — Concurrent identical requests can both call the gateway before either wins the database insert; Phase 05 deduplication remains out of scope. A concurrent changed-payload writer is guarded by the same post-insert reread path but needs broader HTTP coverage in 04.3.
+- **Verification evidence** — `pnpm run typecheck` and `pnpm test -- test/persistence-replay.spec.ts` passed on 2026-11-10 (4 focused tests).
+
 ### 04.3 — HTTP ingestion
 
-Connect `POST /messages` to the processor used by the CLI. Return HTTP 200 for a new success or exact replay. Use the existing typed failure envelope and the mappings below. Keep provider credentials, raw responses, stack traces, and private message content out of public errors.
+Connect `POST /messages` to PersistentIngestionService, which delegates processing to the same stateless processor used by the CLI. Return HTTP 200 for a new success or exact replay.
 
 **04.3T.** Verify successful ingestion, replay, malformed JSON, invalid input, each typed failure and status, and internal storage failure. Compare CLI and HTTP results against the same database.
 
@@ -98,8 +105,8 @@ During implementation, use the existing project documents for their respective e
 
 ## Definition of done
 
-- [ ] Fresh CLI and HTTP startup apply committed migrations. SQLite data and approval state survive restart.
-- [ ] Both transports use the same processor and agree on equivalent input. Sequential exact replay returns the original snapshot without a model call, and changed payloads conflict.
+- [ ] CLI remains stateless and works without SQLite; HTTP startup applies committed migrations. SQLite data and approval state survive restart.
+- [ ] Both transports use the same processing pipeline. HTTP replay returns the original snapshot without a model call, and changed payloads conflict.
 - [ ] Multi-offer and zero-offer successes persist correctly. Concurrent same-ID writes retain one winner, and failed writes leave no partial success.
 - [ ] All three endpoints work with the documented error contracts. Listing filters use current review state, and approval is idempotent and preserves replay history.
 - [ ] Focused offline checks, the full offline suite, typecheck, and build pass.

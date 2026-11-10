@@ -115,7 +115,7 @@ Use `LLM_PROVIDER=agy` (or `antigravity`) to invoke the local Antigravity CLI (`
 pnpm start
 ```
 
-This command builds the application, applies committed SQLite migrations, and starts the HTTP server. The CLI command above likewise builds and applies migrations before processing, while preserving JSONL-only stdout. By default, `GET /health` listens on port `3000` and reports liveness; startup does not process messages. Set `PORT` to change the port. Use `pnpm run db:migrate` to author a migration and `pnpm run db:deploy` to apply committed migrations independently.
+This command builds the application, applies committed SQLite migrations, and starts the HTTP server. The CLI is deliberately stateless: it processes each supplied JSONL line again and requires neither SQLite nor migrations. HTTP ingestion owns stored-message replay, current listing state, and approval. Use `pnpm run db:migrate` to author a migration and `pnpm run db:deploy` to apply committed migrations independently.
 
 Run the offline test suite with:
 

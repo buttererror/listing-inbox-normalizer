@@ -44,6 +44,21 @@ Supersedes / superseded by: Relevant ID, if applicable.
 
 ## Proposed and recently approved
 
+### D-043: Keep CLI stateless and assign persistence to HTTP ingestion
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Phase 04 incorrectly coupled the CLI to SQLite migrations, replay, and writes.
+- **Decision and rationale** — Share the stateless MessageProcessor pipeline, not persistence side effects. HTTP PersistentIngestionService owns replay/conflict checks and atomic writes; HTTP startup owns migrations. CLI remains a JSONL processor with no database connection.
+- **Consequences** — HTTP replays avoid sequential LLM calls and retain stable IDs; repeated CLI runs process their supplied messages again. Phase 05 retains cross-message property deduplication and must assess any batch-local CLI need.
+- **Validation** — Focused stateless CLI and temporary-SQLite persistence tests; HTTP route checks remain Task 04.3.
+- **Approval evidence** — User supplied “Phase 04 Architecture Correction & Documentation Handoff” and directed “Implement this”.
+
+### D-042: Apply committed SQLite migrations through package startup commands
+
+- **Status** — Superseded by D-043 on 2026-11-10 for CLI startup; HTTP migration startup remains in effect.
+- **Correction** — `start` and `start:dev` apply committed migrations. The `cli` command builds and runs without database deployment. The earlier CLI migration wiring was removed after the architecture review.
+- **References** — D-043, Phase 04 plan, [AI log](AI_LOG.md).
+
 ### D-041: Support Claude Code CLI (claude-cli) in the LLM Gateway and harden environment config
 
 - **Status** — Accepted on 2026-11-10.
@@ -57,6 +72,30 @@ Supersedes / superseded by: Relevant ID, if applicable.
 - **Review checkpoint** — Verify `claude` CLI `--tools ""` + `--json-schema` behavior in a manual live check (`test/fixtures/one-message.jsonl`) before relying on `claude-cli` outside development/evaluation.
 - **Approval evidence** — User approved the `/plan` implementation plan specifying `ClaudeCliGateway`, `--tools ""` isolation (without `--bare`), `'claude-cli'`/`'claude'` aliases, `src/config/env.ts` hardening, and `README.md` documentation updates.
 - **References** — `D-024`, `D-026`, `D-029`, `D-038`, `OPEN-08`, [`src/config/env.ts`](../src/config/env.ts), [`src/llm-gateway/claude-cli.gateway.ts`](../src/llm-gateway/claude-cli.gateway.ts), [`README.md`](../README.md).
+
+### D-042: Apply committed SQLite migrations through package startup commands
+
+- **Status** — Accepted on 2026-11-10.
+- **Context** — Task 04.1 requires committed SQLite migrations before CLI and HTTP startup. The initial temporary database-module runner was created after Prisma 7.10.1 reported an empty schema-engine error on a fresh SQLite database.
+- **Options and tradeoffs** — Use `prisma migrate deploy` from package scripts, retaining Prisma's migration ownership and one-command startup; retain a custom SQL runner, which duplicates Prisma migration behavior; or require a manual setup command, which violates the fresh-start contract.
+- **Decision and rationale** — Keep `db:migrate` for authoring and use `db:deploy` for committed migrations. `start`, `start:dev`, and `cli` invoke `db:deploy`; `cli` builds first and redirects build/migration diagnostics to stderr. Remove the custom runner. Prisma 7.10.1 needs `RUST_LOG=info` for SQLite `migrate deploy` in this environment, so the package command includes that narrow workaround rather than changing the pinned dependencies.
+- **Consequences** — Fresh HTTP and CLI starts provision the database without a separate setup step, and DatabaseService retains only Prisma connection and shutdown ownership. Startup requires committed migration files in the distribution. A Prisma logging workaround remains until the upstream defect is fixed and can be rechecked.
+- **Validation** — `db:deploy` applied the migration to fresh temporary SQLite files. HTTP and CLI startup invoked it successfully; CLI stdout remained JSONL-only. A disposable copy of a database initialized by the former runner was recognized with no pending migration.
+- **Review checkpoint** — Recheck the Prisma workaround on dependency upgrade; use the same command before Tasks 04.2 through 04.5.
+- **Approval evidence** — User instruction: “PLEASE IMPLEMENT THIS PLAN: Use package scripts for Phase 04 migrations”, explicitly selecting `prisma migrate deploy`, `db:deploy`, and one-command CLI/HTTP startup.
+- **References** — D-001, D-003, D-013, D-014, D-040, [Phase 04](phase-plans/04-sqlite-http-and-approval.md), [AI log](AI_LOG.md), [Prisma issue #29355](https://github.com/prisma/orm/issues/29355).
+
+### D-040: Temporary database-module migration runner
+
+- **Status** — Superseded by D-042 on 2026-11-10; never accepted.
+- **Context** — An initial Task 04.1 implementation applied committed SQLite SQL inside DatabaseService after Prisma 7.10.1 emitted an empty schema-engine error on a fresh database.
+- **Options and tradeoffs** — The temporary runner made the foundation usable but duplicated Prisma migration behavior and coupled runtime startup to migration-directory parsing. Package `db:deploy` retains Prisma as the migration authority and meets the same one-command startup requirement.
+- **Recommendation and rationale** — The earlier proposed runner was a temporary fallback only; remove it once `prisma migrate deploy` is verified.
+- **Consequences** — The runner has been deleted. Existing databases it initialized retain Prisma-compatible history, which D-042 verifies before use.
+- **Validation** — A disposable copy of the runner-initialized database was recognized by `db:deploy` with no pending migration.
+- **Review checkpoint** — Historical record only; follow D-042.
+- **Approval evidence** — None; the user instead approved the package-script approach in D-042.
+- **References** — D-042, [Phase 04](phase-plans/04-sqlite-http-and-approval.md), [AI log](AI_LOG.md).
 
 ### D-039: Use Antigravity CLI (agy) for Phase 03 independent evaluation
 
@@ -378,6 +417,14 @@ The brief requires at least three genuine examples in this register before submi
 ### Error-record format
 
 For each genuine incident record: incorrect action or claim; who caught it (user, agent, automated check, or unknown); detection evidence and actual user correction prompt if available; correction; verification and remaining limits; links to session/files/tests/commit; and human-review status when requested. Present user-caught incidents as a short digest with the ID, issue, user detection, correction and any specific unresolved question.
+
+### E-015: Incorrectly required CLI database persistence
+
+- **Incorrect action:** The Phase 04 design assumed shared processing required CLI SQLite migrations, replay, and persistence side effects.
+- **Caught by:** User during Phase 04 review, by questioning the CLI database requirement.
+- **Correction:** D-043 makes CLI stateless and assigns replay and atomic persistence to HTTP PersistentIngestionService.
+- **Verification and limits:** Focused CLI and temporary-SQLite tests pass; HTTP controller routing remains Task 04.3. Phase 05 must assess batch-local CLI deduplication separately from HTTP replay.
+- **Human review:** Confirmed by the supplied architecture-correction handoff.
 
 ### E-001: An implemented dependency decision was classified as open
 

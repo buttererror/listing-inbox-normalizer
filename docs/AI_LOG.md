@@ -1,5 +1,29 @@
 # Key agent sessions
 
+## Phase 04 architecture correction — 2026-11-10
+
+- **Objective** — User supplied the Phase 04 Architecture Correction & Documentation Handoff and directed implementation.
+- **Outcome** — Moved replay and atomic writes out of ListingMessageProcessor into PersistentIngestionService, removed CLI migration startup, and documented stateless CLI versus persistent HTTP ingestion under D-043.
+- **Verification** — Focused persistence and CLI integration tests plus typecheck passed; HTTP route work remains Task 04.3.
+
+## Task 04.2 shared persistence and replay — 2026-11-10
+
+- **Evidence status** — Evidence checked against the shared processor, temporary SQLite migration/deployment, and focused offline persistence tests.
+- **Human review** — Confirmed by direct task instruction.
+- **Objective** — User: “Implement next task” after Task 04.1, interpreted as Phase 04.2.
+- **Outcome** — Added pre-extraction exact replay and changed-payload conflict handling to ListingMessageProcessor. New validated successes are written atomically with ordered listing rows, review state, immutable result snapshot, and raw source-offer provenance. Unique-insert races reread the winner. The processor remains usable in isolated Phase 02 unit tests without a database.
+- **Verification and limits** — `pnpm run typecheck` and `pnpm test -- test/persistence-replay.spec.ts` passed (4 tests): exact replay without another extraction, conflict, concurrent identical writes, and failed-write/extraction rollback. Concurrent requests can still duplicate a gateway call before their insert race resolves; Phase 05 owns semantic deduplication.
+- **Related decisions** — D-013, D-014, D-042, Phase 04 contract.
+
+## Phase 04 migration package commands — 2026-11-10
+
+- **Evidence status** — Evidence checked against the committed migration, fresh temporary SQLite databases, CLI and HTTP startup commands, and a disposable historical database copy.
+- **Human review** — Confirmed by direct implementation instruction.
+- **Objective** — User: “PLEASE IMPLEMENT THIS PLAN: Use package scripts for Phase 04 migrations”.
+- **Outcome** — Added `db:deploy` (`RUST_LOG=info prisma migrate deploy`) beside authoring `db:migrate`; wired it into production, development, and CLI startup; redirected the CLI build and migration output to stderr; removed the custom migration runner; and updated the README, phase record, and D-042. The `RUST_LOG=info` setting fixes Prisma 7.10.1's empty schema-engine error for a fresh SQLite database without changing the pinned Prisma dependencies.
+- **Verification and limits** — Fresh temporary HTTP and CLI databases each applied the migration before startup. A second deploy and a disposable copy of the prior runner-initialized database reported no pending migration. The HTTP process started after migration with loopback access. CLI stdout contained only JSONL records; the provider itself was unavailable in the sandbox, so the records were expected typed provider failures. The focused restart test passed; the full offline suite passed 22 suites / 248 tests; `pnpm run typecheck` and `pnpm run build` passed.
+- **Related decisions** — D-013, D-014, D-040, D-042.
+
 ## Claude CLI gateway & environment config review — 2026-11-10
 
 - **Evidence status** — Evidence checked against `src/config/env.ts`, `src/llm-gateway/cli-process.ts`, `src/llm-gateway/claude-cli.gateway.ts`, `src/llm-gateway/agy.gateway.ts`, `src/llm-gateway/llm-gateway.module.ts`, `README.md`, `.env.example`, `docs/DECISIONS.md`, `docs/architecture.md`, and offline test/build output.
@@ -14,6 +38,15 @@
   - Documented all API and CLI providers, environment variables, `claude-cli` setup/auth/isolation/troubleshooting, and status/limits in `README.md`, updated `.env.example` and `docs/architecture.md`, and recorded `D-041` in `docs/DECISIONS.md`.
 - **Verification and limits** — `pnpm run typecheck`, `pnpm run build`, focused gateway/config suites (`4` suites, `35` tests), and the full offline test suite (`22` suites, `248` tests) passed cleanly without credentials or network access. `claude` CLI is not installed in the execution environment, so live CLI qualification (`--tools ""` + `--json-schema` against a real `claude` binary) remains pending manual verification.
 - **Related decisions** — D-024, D-026, D-029, D-038, D-041, OPEN-08.
+
+## Task 04.1 database foundation — 2026-11-10
+
+- **Evidence status** — Evidence checked against the committed migration, database module, focused temporary SQLite restart test, typecheck, and build.
+- **Human review** — Not requested.
+- **Objective** — User: “Implement task 04.1”.
+- **Outcome** — Added Prisma StoredMessage and StoredListing models, a committed SQLite migration, and DatabaseService in DatabaseModule. Stored records cover exact raw message fields, classes, immutable result snapshot, listing and offer order, current and original review state, approval state, and provenance. Added a postinstall Prisma generation step and a focused test that saves one message with two ordered listings, closes the application, restarts through HTTP, and reads the same state. The later package-command migration session replaced the temporary runner; see D-040 and D-042.
+- **Verification and limits** — Before replacement, pnpm run typecheck and pnpm run build passed, and the focused restart test passed with loopback access. The former Prisma command failure is resolved by D-042's `RUST_LOG=info` package workaround. Shared processor persistence, replay, HTTP listing routes, and approval are pending Tasks 04.2 through 04.5.
+- **Related decisions** — D-001, D-003, D-012, D-013, D-014.
 
 ## Task 03.6 Phase 03 documentation & close-out — 2026-11-10
 

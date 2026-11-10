@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createCliContext, runCli } from '../src/cli';
 
@@ -11,6 +14,9 @@ describe('AI SDK Gemini CLI wiring', () => {
   });
 
   it('sends the configured CLI message through the gateway and returns a listing', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'dwelleo-gemini-cli-'));
+    process.env.DATABASE_URL = `file:${join(directory, 'test.db')}`;
+    execFileSync('pnpm', ['--silent', 'run', 'db:deploy'], { cwd: process.cwd(), env: process.env, stdio: 'pipe' });
     process.env.LLM_PROVIDER = 'gemini';
     process.env.LLM_MODEL = 'test-model';
     process.env.LLM_API_KEY = 'test-key';
@@ -42,11 +48,12 @@ describe('AI SDK Gemini CLI wiring', () => {
     let stdout = '';
     let stderr = '';
 
-    const exit = await runCli(['process', join(__dirname, 'fixtures/one-message.jsonl')], {
-      createContext: createCliContext,
-      stdout: (text) => { stdout += text; },
-      stderr: (text) => { stderr += text; },
-    });
+    try {
+      const exit = await runCli(['process', join(__dirname, 'fixtures/one-message.jsonl')], {
+        createContext: createCliContext,
+        stdout: (text) => { stdout += text; },
+        stderr: (text) => { stderr += text; },
+      });
 
     expect(exit).toBe(0);
     expect(stderr).toBe('');
@@ -75,6 +82,9 @@ describe('AI SDK Gemini CLI wiring', () => {
     expect(url).toContain('/models/test-model:generateContent');
     expect(request.tools).toBeUndefined();
     expect(request.systemInstruction.parts[0].text).toContain("Dwelleo's extraction engine");
-    expect(request.contents[0].parts[0].text).toContain('Asking 3.2M SAR');
+      expect(request.contents[0].parts[0].text).toContain('Asking 3.2M SAR');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });

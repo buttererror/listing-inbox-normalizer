@@ -37,7 +37,7 @@
   "scripts": {
     "start": "pnpm run build && pnpm run db:deploy && node dist/main.js",
     "start:dev": "pnpm run db:deploy && ts-node src/main.ts",
-    "cli": "pnpm run build 1>&2 && pnpm run db:deploy 1>&2 && node dist/cli.js",
+    "cli": "pnpm run build 1>&2 && node dist/cli.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand",

@@ -8,7 +8,7 @@ The [original plan](../PLAN.md) records the baseline. [Plan v2](../PLAN-v2.md) d
 | 01 — Contracts and CLI harness | Define contracts and verify JSONL through a controlled processor. | [Verified](phase-plans/01-contracts-and-cli.md) |
 | 02 — Message processing through CLI | Verify classification, multi-offer extraction, sale and rent, evidence validation, resolution and review through the CLI. Integrate the tool-less Gemini API in 02.0 and check each task manually through the live CLI. Keep automated behavior tests offline. | [Complete / Verified](phase-plans/02-message-processing.md). Tasks 02.0–02.6 and human-friendly review presentation verified offline and through live CLI checks. |
 | 03 — Independent provider evaluation | Evaluate the integrated CLI on independently authored cases after Phase 02. Record end-to-end results, accuracy, usage, latency, and available cost. | [Complete / Verified](phase-plans/03-independent-provider-evaluation.md) (2026-11-10). Evaluated `agy` (`1.5.3` / `gemini-3.8-flash-low`) across 20 frozen cases; post-fix prompt alignment achieved `100%` classification/offer-count, `98.8%` (`169/171`) applicable field accuracy, `0%` unsupported acceptance, and `6.80s` mean latency. See [analysis](evaluation-baseline-analysis.md). |
-| 04 — SQLite, HTTP and approval | Verify persistence, replay and all three HTTP endpoints offline through the shared processor. | Candidate |
+| 04 — SQLite, HTTP and approval | Verify HTTP persistence, replay and all three endpoints offline around the shared stateless processor; CLI remains JSONL-only and stateless. | Candidate |
 | 05 — Deduplication | Verify reposts, similar distinct properties and ambiguous matches against persisted records. Review thresholds and area comparability first. | Candidate |
 | 06 — Submission readiness | Verify fresh setup and the full brief. Record limitations, provider measurements, decisions and agent evidence. Prepare the live extension. | Candidate |
 
@@ -22,5 +22,5 @@ Use independently authored cases and a separate evaluator to measure classificat
 
 ## Phase 04 offline integration
 
-- Persist raw messages, successful results including detected classes, and listing provenance atomically. Use isolated temporary SQLite databases to verify restart, exact replay with stable IDs and no additional gateway call, changed-payload conflicts, concurrent same-ID writes, and no successful records on failure.
+- HTTP ingestion persists raw messages, successful results including detected classes, and listing provenance atomically. Use isolated temporary SQLite databases to verify restart, exact replay with stable IDs and no additional gateway call, changed-payload conflicts, concurrent same-ID writes, and no successful records on failure. The CLI stays stateless; Phase 05 assesses any batch-local deduplication need.
 - Connect `POST /messages`, `GET /listings`, and `POST /listings/{id}/approve`. Check status mapping, review filters, CLI and HTTP parity, and approval persistence. Resolve OPEN-07 before implementing approval. Preserve the replay snapshot and original evidence.

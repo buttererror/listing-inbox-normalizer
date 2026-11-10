@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
@@ -270,6 +271,7 @@ describe('ClaudeCliGateway', () => {
     async (provider) => {
       const tempDbDir = mkdtempSync(join(os.tmpdir(), 'dwelleo-claude-cli-'));
       process.env.DATABASE_URL = `file:${join(tempDbDir, 'test.db')}`;
+      execFileSync('pnpm', ['--silent', 'run', 'db:deploy'], { cwd: process.cwd(), env: process.env, stdio: 'pipe' });
       process.env.LLM_PROVIDER = provider;
       process.env.CLAUDE_EXECUTABLE = 'claude';
       delete process.env.LLM_API_KEY;

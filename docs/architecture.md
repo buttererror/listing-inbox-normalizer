@@ -4,13 +4,13 @@ The [assessment brief](task-brief.md) defines requirements. The [policy referenc
 
 ## Implemented baseline
 
-NestJS starts an HTTP application or a CLI application context. `GET /health` reports liveness. Zod validates configuration and inputs. Phase 02 CLI message processing is complete: `ListingMessageProcessor` accepts JSONL broker messages and executes the end-to-end pipeline (Stage 0 Input Validation, Stage 1 LLM Extraction, Stage 2 Mechanical Validation, Stage 3 Field Resolution, Stage 5 Runtime Reviewer, and Stage 6 Result Assembly). It emits contract-compliant public listings or typed failure envelopes in input order, supporting sales, rentals, multiple offers, mixed messages, projects, buyer requests, and irrelevant messages. The CLI also provides `--format=table` for human-friendly tabular inspection with business-level review explanations. The LLM Gateway selects Gemini, Anthropic, or OpenAI via Vercel AI SDK, or local Antigravity (`agy`) / Claude Code (`claude-cli`) CLI subprocesses, through the provider-independent interface. Automated behavior tests run strictly offline without credentials. Domain persistence and HTTP listing routes follow in Phase 04.
+NestJS exposes separate CLI and HTTP adapters around one stateless `ListingMessageProcessor`. The processor runs input validation, extraction, mechanical validation, resolution, runtime review, and public result assembly; it does not access SQLite. The CLI reads JSONL and writes one result per nonblank line without database startup, migrations, replay, or persistence. HTTP `POST /messages` uses PersistentIngestionService to check replay/conflict, invoke the same processor for new messages, and atomically save the successful snapshot and current listing rows. SQLite therefore supports HTTP ingestion, reads, and approval without coupling batch CLI execution to stored state.
 
 ## Module boundaries
 
 | Module | Responsibility |
 | --- | --- |
-| Messages | Input validation, replay, result assembly, and shared CLI/HTTP orchestration |
+| Messages | Stateless input validation and result assembly; HTTP persistent ingestion/replay orchestration |
 | Extraction | Domain prompt, typed candidate schema, and mechanical validation |
 | LLM Gateway | Generic provider execution, typed failures, timeouts, and usage |
 | Listings | Field resolution, identity matching, automated review, and approval |
@@ -48,7 +48,7 @@ Raw Message
     |  needs_review
     |  review_reasons
     v
-[6] Result Assembly & Persistence
+[6] Result Assembly
     |
     v
 Public Result
@@ -68,9 +68,9 @@ Public Result
 2. Validate the input schema and required fields.
 3. Reject malformed inputs with typed errors.
 4. Preserve the original message text without altering its evidence.
-5. Once storage exists, check for replay or a changed-payload conflict before calling the model. Pass new messages to Extraction.
+5. Pass valid new messages to Extraction. HTTP PersistentIngestionService, not Stage 0, checks SQLite replay and conflicts before invoking this processor.
 
-**Output** — `RawMessage` with the four validated string fields, a stored `MessageSuccess` on exact replay, or a typed `ProcessingFailure`.
+**Output** — `RawMessage` with the four validated string fields or a typed `ProcessingFailure`.
 
 **Boundary** — Classification, interpretation, normalization, and extraction belong to Stage 1.
 
