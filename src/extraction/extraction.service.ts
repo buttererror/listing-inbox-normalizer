@@ -6,31 +6,17 @@ import { ProcessingFailure } from '../messages/message-result.schema';
 import { RawMessage } from '../messages/raw-message.schema';
 import { DOMAIN_INSTRUCTIONS } from './domain-prompt';
 import {
-  ExtractedOffer,
-  gatewayExtractionResponseSchema,
-  Stage1ExtractionResult,
   stage1GatewayWireSchema,
 } from './extraction-result.schema';
 import {
-  OfferValidationOutcome,
+  ValidatedExtractionOutcome,
   validateStage2,
 } from './stage2-mechanical-validation';
-import {
-  RejectedEvidence,
-  RejectedReason,
-  verifySourceIntegrity,
-} from './verify-source-integrity';
-
-export type { RejectedEvidence, RejectedReason };
 
 export type ExtractionOutcome =
   | {
       ok: true;
-      result: Stage1ExtractionResult & {
-        candidates?: Array<{ assertions: Array<{ field: string; quote: string }> }>;
-        validationOutcomes?: OfferValidationOutcome[];
-      };
-      rejectedEvidence?: RejectedEvidence[];
+      result: ValidatedExtractionOutcome;
     }
   | { ok: false; failure: ProcessingFailure };
 
@@ -74,59 +60,13 @@ export class ExtractionService {
       throw err;
     }
 
-    // Run Stage 2: Mechanical Validation for structure & source evidence
+    // Stage 2 is the canonical handoff to Listings. Legacy quote assertions never
+    // bypass typed candidate validation on the active processing path.
     const stage2 = validateStage2(message.text, output);
     if (stage2.ok) {
-      const listings: ExtractedOffer[] = stage2.offers.map((o) => ({
-        offer_quote: o.offer_quote,
-        candidates: o.acceptedCandidates,
-        findings: o.semanticFindings,
-      }));
-
-      const legacyCandidates = listings.map((offer) => ({
-        assertions: offer.candidates.map((c) => ({ field: c.field, quote: c.quote })),
-      }));
-
-      const allRejectedCandidates = stage2.offers.flatMap((o) => o.rejectedCandidates);
-      const allRejectedFindings = stage2.offers.flatMap((o) => o.rejectedFindings);
-      const rejectedEvidence: RejectedEvidence[] = [
-        ...allRejectedCandidates.map((r) => ({
-          assertion: { field: r.field ?? 'unknown', quote: r.quote ?? '' },
-          reason: r.reason as any,
-        })),
-        ...allRejectedFindings.map((r) => ({
-          assertion: { field: (r.finding as any)?.field ?? 'finding', quote: (r.finding as any)?.quote ?? '' },
-          reason: r.reason as any,
-        })),
-      ];
-
       return {
         ok: true,
-        result: {
-          classification: stage2.classification,
-          detected_classes: stage2.detected_classes,
-          listings,
-          candidates: legacyCandidates,
-          validationOutcomes: stage2.offers,
-        },
-        rejectedEvidence,
-      };
-    }
-
-    // Fallback: check legacy v1 candidate assertions structure
-    const legacyParsed = gatewayExtractionResponseSchema.safeParse(output);
-    if (legacyParsed.success) {
-      const { accepted, rejectedEvidence } = verifySourceIntegrity(
-        message.text,
-        legacyParsed.data.candidates[0].assertions,
-      );
-      return {
-        ok: true,
-        result: {
-          classification: 'listing',
-          candidates: [{ assertions: accepted }],
-        } as any,
-        rejectedEvidence,
+        result: stage2,
       };
     }
 

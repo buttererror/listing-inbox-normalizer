@@ -1,41 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import type { Assertion } from '../extraction/verify-verbatim-evidence';
-import type { RejectedEvidence } from '../extraction/verify-source-integrity';
-import {
-  normalizeSupportedAssertions,
-  NormalizedAssertion,
-  NormalizationFinding,
-} from './normalize-supported-assertions';
-import { resolveListing, ResolveListingInput, ResolvedListing } from './resolve-listing';
+import type { OfferValidationOutcome } from '../extraction/stage2-mechanical-validation';
+import { resolveOffer, ResolvedOffer } from './resolve-offer';
+import { ReviewDecision, reviewResolvedOffer } from './runtime-reviewer';
 
-export type { ResolveListingInput, ResolvedListing };
+export interface ReviewedOffer {
+  resolved: ResolvedOffer;
+  review: ReviewDecision;
+}
 
 @Injectable()
 export class ListingsService {
-  normalize(assertions: readonly Assertion[]): {
-    values: NormalizedAssertion[];
-    findings: NormalizationFinding[];
-  } {
-    return normalizeSupportedAssertions(assertions);
+  resolve(outcome: OfferValidationOutcome): ResolvedOffer {
+    return resolveOffer(outcome);
   }
 
-  resolve(input: ResolveListingInput): ResolvedListing {
-    return resolveListing(input);
+  review(resolved: ResolvedOffer): ReviewDecision {
+    return reviewResolvedOffer(resolved);
   }
 
-  process(
-    id: string,
-    assertions: readonly Assertion[],
-    rejectedEvidence?: readonly RejectedEvidence[],
-    duplicate_of?: string | null,
-  ): ResolvedListing {
-    const { values, findings } = this.normalize(assertions);
-    return this.resolve({
-      id,
-      values,
-      findings,
-      rejectedEvidence,
-      duplicate_of,
-    });
+  process(outcome: OfferValidationOutcome): ReviewedOffer {
+    const resolved = this.resolve(outcome);
+    return { resolved, review: this.review(resolved) };
   }
 }

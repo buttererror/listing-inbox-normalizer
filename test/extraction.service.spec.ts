@@ -123,7 +123,7 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
       if (outcome.ok) {
         expect(outcome.result.classification).toBe(payload.classification);
         expect(outcome.result.detected_classes).toEqual(payload.detected_classes);
-        expect(outcome.result.listings).toHaveLength(payload.listings.length);
+        expect(outcome.result.offers).toHaveLength(payload.listings.length);
       }
     });
 
@@ -192,9 +192,9 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
       });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
-        expect(outcome.result.listings).toHaveLength(2);
-        expect(outcome.result.listings[0].offer_quote).toBe(validSaleOffer.offer_quote);
-        expect(outcome.result.listings[1].offer_quote).toBe(secondOffer.offer_quote);
+        expect(outcome.result.offers).toHaveLength(2);
+        expect(outcome.result.offers[0].offer_quote).toBe(validSaleOffer.offer_quote);
+        expect(outcome.result.offers[1].offer_quote).toBe(secondOffer.offer_quote);
       }
     });
   });
@@ -221,7 +221,7 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
       });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
-        const candidates = outcome.result.listings[0].candidates;
+        const candidates = outcome.result.offers[0].acceptedCandidates;
         expect(candidates.find((c) => c.field === 'property_type')?.scope).toBe('local');
         expect(candidates.find((c) => c.field === 'contact_phone')?.scope).toBe('shared');
       }
@@ -263,7 +263,7 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
       });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
-        expect(outcome.result.listings[0].candidates).toHaveLength(9);
+        expect(outcome.result.offers[0].acceptedCandidates).toHaveLength(9);
       }
     });
 
@@ -309,7 +309,7 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
       });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
-        const prices = outcome.result.listings[0].candidates.filter((c) => c.field === 'price') as any[];
+        const prices = outcome.result.offers[0].acceptedCandidates.filter((c) => c.field === 'price') as any[];
         expect(prices.map((p) => p.role)).toEqual(['asking_price', 'deposit', 'per_sqm_rate']);
       }
     });
@@ -336,7 +336,7 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
       });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
-        expect(outcome.result.listings[0].candidates).toHaveLength(2);
+        expect(outcome.result.offers[0].acceptedCandidates).toHaveLength(2);
       }
     });
 
@@ -379,7 +379,7 @@ describe('02.1T — Extraction: Stage 1 contract, schema, prompt, and matrix', (
       });
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
-        expect(outcome.result.listings[0].findings).toEqual(offerWithFindings.findings);
+        expect(outcome.result.offers[0].semanticFindings).toEqual(offerWithFindings.findings);
       }
     });
   });

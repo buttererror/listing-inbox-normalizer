@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { createApplicationContext } from './bootstrap';
 import { ExtractionService } from './extraction/extraction.service';
+import { ListingsService } from './listings/listings.service';
 import { LlmGateway } from './llm-gateway/llm-request';
 import { runJsonl } from './messages/jsonl-runner';
 import { ListingMessageProcessor } from './messages/listing-message-processor';
@@ -58,7 +59,7 @@ export async function createCliContext(options?: { gateway?: LlmGateway }): Prom
     : app.get(ExtractionService);
 
   const processor = options?.gateway
-    ? new ListingMessageProcessor(extractionService)
+    ? new ListingMessageProcessor(extractionService, app.get(ListingsService))
     : app.get<MessageProcessor>(MESSAGE_PROCESSOR);
 
   return {

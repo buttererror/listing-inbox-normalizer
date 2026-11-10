@@ -540,7 +540,7 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
   });
 
   describe('6. Integration with ExtractionService', () => {
-    it('routes gateway payload through Stage 2 and populates rejectedEvidence and validationOutcomes', async () => {
+    it('routes gateway payload through Stage 2 as the canonical typed validation outcome', async () => {
       const payload = {
         classification: 'listing',
         detected_classes: ['listing'],
@@ -567,21 +567,20 @@ describe('02.2 / 02.3 — Stage 2: Extraction Structure & Source Evidence Valida
 
       expect(outcome.ok).toBe(true);
       if (outcome.ok) {
-        const offer = outcome.result.listings[0];
+        const offer = outcome.result.offers[0];
         // Critical invariant: only accepted candidates and findings are present!
-        expect(offer.candidates).toHaveLength(1);
-        expect(offer.candidates[0].field).toBe('property_type');
-        expect(offer.findings).toHaveLength(1);
-        expect(offer.findings[0].description).toBe('Approximate');
+        expect(offer.acceptedCandidates).toHaveLength(1);
+        expect(offer.acceptedCandidates[0].field).toBe('property_type');
+        expect(offer.semanticFindings).toHaveLength(1);
+        expect(offer.semanticFindings[0].description).toBe('Approximate');
 
-        // Rejected evidence is captured
-        expect(outcome.rejectedEvidence).toHaveLength(2);
-        expect(outcome.rejectedEvidence?.map((r) => r.reason)).toEqual([
-          'quote_not_in_source',
+        // Rejected candidates and findings remain offer-scoped for downstream review.
+        expect(offer.rejectedCandidates.map((rejection) => rejection.reason)).toEqual([
           'quote_not_in_source',
         ]);
-        expect(outcome.result.validationOutcomes).toBeDefined();
-        expect(outcome.result.validationOutcomes?.[0].acceptedCandidates).toHaveLength(1);
+        expect(offer.rejectedFindings.map((rejection) => rejection.reason)).toEqual([
+          'quote_not_in_source',
+        ]);
       }
     });
   });

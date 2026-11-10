@@ -1,4 +1,4 @@
-import { extractionResultSchema } from '../src/extraction/extraction-result.schema';
+import { stage1ExtractionResultSchema, validateExtractionEnvelope } from '../src/extraction/extraction-result.schema';
 import { LlmGateway, LlmRequest } from '../src/llm-gateway/llm-request';
 import { MessageProcessor } from '../src/messages/message-processor';
 
@@ -6,8 +6,18 @@ const message = {
   id: 'm-001', sender: '+966551234567', received_at: '2026-11-01T09:12:00+03:00',
   text: 'For sale: Villa in Riyadh. Asking 3.2M SAR.',
 };
-const candidate = { assertions: [{ field: 'price', quote: 'Asking 3.2M SAR.' }] };
-const extraction = { classification: 'listing', candidates: [candidate] };
+const candidate = {
+  field: 'price',
+  value: { amount: 3200000, currency: 'SAR', period: 'total' },
+  role: 'asking_price',
+  quote: 'Asking 3.2M SAR.',
+  scope: 'local',
+};
+const extraction = {
+  classification: 'listing',
+  detected_classes: ['listing'],
+  listings: [{ offer_quote: message.text, candidates: [candidate], findings: [] }],
+};
 
 describe('processing boundaries', () => {
   it('accepts success and failure processors through the same interface', async () => {
@@ -21,28 +31,34 @@ describe('processing boundaries', () => {
     expect(await failure.process(message)).toEqual({ message_id: 'm-001', error: { code: 'provider_unavailable', message: 'Unavailable' } });
   });
 
-  it('keeps gateway output unknown until validated and preserves assertions', async () => {
+  it('keeps gateway output unknown until validated and preserves typed candidates', async () => {
     const gateway: LlmGateway = { execute: async () => extraction };
     const request: LlmRequest = { instructions: 'Extract evidence', sourceText: message.text, responseSchema: {} };
     const output: unknown = await gateway.execute(request);
-    expect(extractionResultSchema.parse(output)).toEqual(extraction);
+    expect(stage1ExtractionResultSchema.parse(output)).toEqual(extraction);
   });
 
   it.each([
-    { assertions: [{ field: 'price' }] },
-    { assertions: [{ field: 'price', quote: 1 }] },
-    { assertions: [{ field: 'price', quote: '' }] },
-    { assertions: [{ field: 'price', quote: 'Price', extra: true }] },
-  ])('rejects malformed or non-strict assertions %#', (invalidCandidate) => {
-    expect(extractionResultSchema.safeParse({ ...extraction, candidates: [invalidCandidate] }).success).toBe(false);
+    { field: 'price' },
+    { ...candidate, quote: 1 },
+    { ...candidate, quote: '' },
+    { ...candidate, extra: true },
+  ])('rejects malformed or non-strict typed candidates %#', (invalidCandidate) => {
+    expect(stage1ExtractionResultSchema.safeParse({
+      ...extraction,
+      listings: [{ ...extraction.listings[0], candidates: [invalidCandidate] }],
+    }).success).toBe(false);
   });
 
-  it.each([{ candidates: [] }, { candidates: [candidate, candidate] }])('rejects unsupported candidate counts', ({ candidates }) => {
-    expect(extractionResultSchema.safeParse({ ...extraction, candidates }).success).toBe(false);
+  it('rejects a listing envelope without an offer', () => {
+    expect(validateExtractionEnvelope({ ...extraction, listings: [] }).ok).toBe(false);
   });
 
   it('rejects extra envelope and candidate properties', () => {
-    expect(extractionResultSchema.safeParse({ ...extraction, extra: true }).success).toBe(false);
-    expect(extractionResultSchema.safeParse({ ...extraction, candidates: [{ ...candidate, extra: true }] }).success).toBe(false);
+    expect(stage1ExtractionResultSchema.safeParse({ ...extraction, extra: true }).success).toBe(false);
+    expect(stage1ExtractionResultSchema.safeParse({
+      ...extraction,
+      listings: [{ ...extraction.listings[0], extra: true }],
+    }).success).toBe(false);
   });
 });

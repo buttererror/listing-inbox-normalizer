@@ -912,8 +912,41 @@ Evidence: pnpm 10.28.2 installation and a frozen offline install succeeded. Type
 - **Verification and limits** —
   - Markdown cross-references verified.
   - Typecheck, tests (219/219), and build remain verified and passing.
+## Task 02.5 — Field Resolution and Runtime Reviewer — 2026-11-10
+
+- **Evidence status** — Evidence checked against the supplied task handoff, source, focused tests, typecheck, build, and the full offline suite.
+- **Human review** — Not requested. The user directly requested implementation of this approved task.
+- **Objective** — Implement Stage 3 field resolution and Stage 5 runtime review from Stage 2 `OfferValidationOutcome` inputs, without adding language parsing or model calls.
+- **Important prompt** — Verbatim user prompt: “Implement task 2.5”. The accompanying file was titled “Dwelleo — Task 02.5 Implementation Handoff” and specifies the Stage 3/Stage 5 separation, D-020 area and price policies, retirement of the active legacy quote path, and offline verification cases.
+- **Outcome** —
+  - Replaced the active quote normalizer and single-sale resolver with `resolveOffer` and typed `ResolvedOffer` contracts. The resolver consumes only accepted Stage 2 candidates and records selected, nonselected, rejected, semantic, and validation provenance per field.
+  - Applied D-020: identical candidates collapse; competing values remain null; field-scoped semantic uncertainty and arithmetic discrepancies clear affected values; area projection distinguishes land, built-up, and unspecified measurements; bedrooms and bathrooms are inapplicable for land; price selection considers role plus the complete amount/currency/period tuple and requires explicit SAR plus a supported period.
+  - Added a standalone runtime reviewer. It converts material resolution findings into deterministic reason codes without changing any resolved value. Harmless upstream rejections, duplicate matching candidates, land room fields, and message classification alone produce no review reason.
+  - Made the Extraction-to-Listings handoff canonical: `ExtractionService` returns validated Stage 2 outcomes and no longer falls back to legacy quote assertions. `ListingMessageProcessor` runs every grounded offer through resolver and reviewer while preserving the temporary Stage 1 CLI envelope; public listing assembly remains Task 02.6.
+  - Removed the retired quote-parser source, compatibility schemas, and its obsolete tests. Added resolver/reviewer coverage and updated Stage 2, processor, and extraction tests for the typed handoff.
+- **Verification and limits** —
+  - Focused suites for Stage 2 handoff, processor, resolver, reviewer, extraction, and CLI passed.
+  - `pnpm run typecheck`, `pnpm run build`, and `pnpm test` passed. The complete offline suite has 182 tests across 17 suites and requires no API key.
+  - The full suite's HTTP liveness test was run outside the sandbox because loopback binding is restricted inside it.
+  - No live Gemini check was run in this session. The handoff labels that internal resolution/review inspection optional; live provider evidence remains separate from offline behavior verification.
 - **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks), [D-032](DECISIONS.md#d-032-commit-stage-2-mechanical-validation-to-structural-grounding-and-schedule-regex-retirement).
 
+## Task 02.5 Offline Verification — Two-Offer Arabic Fixture — 2026-11-10
+
+- **Evidence status** — Evidence checked against fixture `test/fixtures/resolver-reviewer.jsonl`, unit tests, full test suite, typecheck, and build.
+- **Human review** — Requested via user prompt.
+- **Objective** — Verify Task 02.5 using the two-offer Arabic message and Stage 1 extraction response: pass through Stage 2 mechanical validation, Field Resolver, and Runtime Reviewer; assert resolved values, price conflict isolation, provenance preservation, rejected candidate exclusion, and D-020 review decisions.
+- **Important prompt** — Verbatim user prompt: “Verify Task 02.5 using the exact two-offer Arabic message and LLM extraction response already tested. at test/fixtures/resolver-reviewer.jsonl\n\nCreate a focused offline integration test that passes the mocked extraction through Stage 2, then through the real Field Resolver and Runtime Reviewer.\n\nAssert:\n- Villa: sale, 4 bedrooms, 3 bathrooms, 300 m², 2,000,000 SAR, correct shared phone.\n- Apartment: sale, 3 bedrooms, 2 bathrooms, 165 m², unresolved asking price (`amount: null`).\n- Apartment requires review for conflicting asking prices of 950,000 and 1,000,000 SAR.\n- Villa does not inherit the apartment's conflict.\n- Preserve provenance and verify no rejected candidates contribute resolved values.\n\nApply D-020 for the exact review reasons and any additional review flags. Do not assume `needs_review: false` for the villa unless D-020 supports it.\n\nShow the actual resolved values and review decisions, along with test results.\n\nDo not change the public CLI output format or implement Task 02.6.\n\nSend me the results here for now”.
+- **Outcome** —
+  - Created `test/resolver-reviewer-integration.spec.ts` testing the complete offline pipeline from `validateStage2` through `ListingsService.process` (`resolveOffer` and `reviewResolvedOffer`).
+  - Verified Villa: resolved all 9 fields (`sale`, `villa`, `الرياض`, `الملقا`, 4 bedrooms, 3 bathrooms, 300 m², 2,000,000 SAR total, shared phone `+966551234567`). Under D-020, `needs_review: false` and `review_reasons: []`.
+  - Verified Apartment: resolved 8 fields (`sale`, `apartment`, `جدة`, `الروضة`, 3 bedrooms, 2 bathrooms, 165 m², shared phone `+966551234567`), with asking price unresolved (`amount: null`, `period: null`, `currency: 'SAR'`). Under D-020, `needs_review: true` and `review_reasons: ['price_conflict']`.
+  - Verified Villa isolation: Villa does not inherit the Apartment's price conflict; its asking price resolves cleanly to 2,000,000 SAR and carries no review flags.
+  - Verified Provenance and Rejection exclusion: full quote and candidate provenance is retained. Conflicting candidates remain in `acceptedCandidates` but are excluded from `selectedCandidates`. Injected rejected candidates (fabricated quotes, wrong-offer quotes, clipped tokens, invalid numeric constraints) are retained in `rejectedCandidates`, excluded from `selectedCandidates`, and never contribute to resolved values. Harmless rejected assertions do not compromise surviving supported fields.
+- **Verification and limits** —
+  - `test/resolver-reviewer-integration.spec.ts` passed 3/3 tests.
+  - `pnpm run typecheck`, `pnpm run build`, and `pnpm test` passed cleanly (182 tests across 17 test suites).
+- **Related decisions** — [D-019](DECISIONS.md#d-019-use-typed-extraction-proposals-and-mixed-intent), [D-020](DECISIONS.md#d-020-apply-conservative-field-selection-and-separate-automated-review), [D-030](DECISIONS.md#d-030-stage-2-extraction-structure-and-source-evidence-validation-merging-task-023-into-022), [D-031](DECISIONS.md#d-031-complete-stage-2-mechanical-validation-with-numerical-constraints-format-checks-and-mechanical-cross-checks).
 
 
 

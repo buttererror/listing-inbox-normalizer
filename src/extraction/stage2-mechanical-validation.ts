@@ -1,12 +1,9 @@
 import {
   BaseClass,
   CandidateScope,
-  ExtractedOffer,
   MessageClassification,
-  PriceRole,
   SemanticFinding,
   semanticFindingSchema,
-  Stage1ExtractionResult,
   TypedFieldCandidate,
   typedFieldCandidateSchema,
   validateExtractionEnvelope,
@@ -103,6 +100,8 @@ export type Stage2ValidationOutcome =
         message: string;
       };
     };
+
+export type ValidatedExtractionOutcome = Extract<Stage2ValidationOutcome, { ok: true }>;
 
 /**
  * Step 1: Independently validate candidate schema against typed candidate union.

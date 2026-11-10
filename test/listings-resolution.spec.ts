@@ -1,301 +1,322 @@
-import { resolveListing } from '../src/listings/resolve-listing';
-import { normalizeSupportedAssertions } from '../src/listings/normalize-supported-assertions';
-import { ListingsService } from '../src/listings/listings.service';
-import type { Assertion } from '../src/extraction/verify-verbatim-evidence';
-import type { RejectedEvidence } from '../src/extraction/verify-source-integrity';
+import type { TypedFieldCandidate } from '../src/extraction/extraction-result.schema';
+import type {
+  OfferValidationOutcome,
+  RejectedCandidate,
+  ValidationFinding,
+} from '../src/extraction/stage2-mechanical-validation';
+import { resolveOffer } from '../src/listings/resolve-offer';
 
-describe('02.5T — Field resolution and review', () => {
-  it('returns a complete supported listing with needs_review: false and empty reasons', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'للبيع' },
-      { field: 'property_type', quote: 'فيلا' },
-      { field: 'city', quote: 'مدينة: الرياض' },
-      { field: 'district', quote: 'حي: الملقا' },
-      { field: 'bedrooms', quote: '5 غرف نوم' },
-      { field: 'bathrooms', quote: '6 حمامات' },
-      { field: 'area_sqm', quote: '380 sqm built-up' },
-      { field: 'price', quote: '3.2M SAR' },
-      { field: 'contact_phone', quote: 'call 0551234567' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing } = resolveListing({ id: 'l-001', values, findings });
+const candidate = <Field extends TypedFieldCandidate['field']>(
+  value: Extract<TypedFieldCandidate, { field: Field }>,
+): Extract<TypedFieldCandidate, { field: Field }> => value;
 
-    expect(listing).toEqual({
-      id: 'l-001',
+function offer(overrides: Partial<OfferValidationOutcome> = {}): OfferValidationOutcome {
+  return {
+    offer_index: 0,
+    offer_quote: 'Offer evidence',
+    acceptedCandidates: [],
+    rejectedCandidates: [],
+    semanticFindings: [],
+    rejectedFindings: [],
+    validationFindings: [],
+    ...overrides,
+  };
+}
+
+function completeCandidates(): TypedFieldCandidate[] {
+  return [
+    candidate({ field: 'purpose', value: 'sale', quote: 'For sale', scope: 'local' }),
+    candidate({ field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' }),
+    candidate({ field: 'city', value: 'Riyadh', quote: 'Riyadh', scope: 'local' }),
+    candidate({ field: 'district', value: 'Al Malqa', quote: 'Al Malqa', scope: 'local' }),
+    candidate({ field: 'bedrooms', value: 5, quote: '5 BR', scope: 'local' }),
+    candidate({ field: 'bathrooms', value: 6, quote: '6 baths', scope: 'local' }),
+    candidate({ field: 'area_sqm', value: 380, kind: 'built_up', quote: '380 sqm built-up', scope: 'local' }),
+    candidate({
+      field: 'price',
+      value: { amount: 3200000, currency: 'SAR', period: 'total' },
+      role: 'asking_price',
+      quote: 'Asking 3.2M SAR',
+      scope: 'local',
+    }),
+    candidate({ field: 'contact_phone', value: '+966551234567', quote: '0551234567', scope: 'local' }),
+  ];
+}
+
+describe('02.5T — Stage 3 field resolution (R01–R14)', () => {
+  it('R01: One supported value per field — selects all values and preserves selected provenance', () => {
+    const resolved = resolveOffer(offer({ acceptedCandidates: completeCandidates() }));
+
+    expect(resolved.fields).toEqual({
       purpose: 'sale',
       property_type: 'villa',
-      city: 'الرياض',
-      district: 'الملقا',
+      city: 'Riyadh',
+      district: 'Al Malqa',
       bedrooms: 5,
       bathrooms: 6,
       area_sqm: 380,
       price: { amount: 3200000, currency: 'SAR', period: 'total' },
       contact_phone: '+966551234567',
-      needs_review: false,
-      review_reasons: [],
-      duplicate_of: null,
     });
+    expect(resolved.findings).toEqual([]);
+    expect(resolved.selectedAreaKind).toBe('built_up');
+    expect(resolved.provenance.price.selectedCandidates).toHaveLength(1);
+    expect(resolved.provenance.bedrooms.selectedCandidates).toHaveLength(1);
   });
 
-  it('leaves missing and unsupported fields null with readable reasons, ignoring sender phone', () => {
-    // Villa has no offered contact quote; sender has phone number but sender is not used
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'city', quote: 'city: Riyadh' },
-      { field: 'district', quote: 'district: Al Malqa' },
-      { field: 'bedrooms', quote: '5 BR' },
-      { field: 'area_sqm', quote: '380 sqm' },
-      { field: 'price', quote: '3.2M SAR' },
-    ];
-    // Bathroom was claimed with quote '5 BR', rejected during extraction
-    const rejectedEvidence: RejectedEvidence[] = [
-      { assertion: { field: 'bathrooms', quote: '5 BR' }, reason: 'field_contradicted' },
+  it('R02: Two identical bedroom values — selects once with no conflict', () => {
+    const br1 = candidate({ field: 'bedrooms', value: 4, quote: '4 BR', scope: 'local' });
+    const br2 = candidate({ field: 'bedrooms', value: 4, quote: '٤ غرف نوم', scope: 'local' });
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [
+        candidate({ field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' }),
+        br1,
+        br2,
+      ],
+    }));
+
+    expect(resolved.fields.bedrooms).toBe(4);
+    expect(resolved.findings).not.toContainEqual({ field: 'bedrooms', issue: 'conflict' });
+    expect(resolved.provenance.bedrooms.selectedCandidates).toHaveLength(2);
+  });
+
+  it('R03: Bedrooms 3 and 4 — leaves bedrooms null and preserves conflict finding', () => {
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [
+        candidate({ field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' }),
+        candidate({ field: 'bedrooms', value: 3, quote: '3 BR', scope: 'local' }),
+        candidate({ field: 'bedrooms', value: 4, quote: '4 BR', scope: 'local' }),
+      ],
+    }));
+
+    expect(resolved.fields.bedrooms).toBeNull();
+    expect(resolved.findings).toContainEqual({ field: 'bedrooms', issue: 'conflict' });
+    expect(resolved.provenance.bedrooms.selectedCandidates).toEqual([]);
+  });
+
+  it('R04: Missing district — leaves district null and records missing finding', () => {
+    const candidatesWithoutDistrict = completeCandidates().filter((c) => c.field !== 'district');
+    const resolved = resolveOffer(offer({ acceptedCandidates: candidatesWithoutDistrict }));
+
+    expect(resolved.fields.district).toBeNull();
+    expect(resolved.findings).toContainEqual({ field: 'district', issue: 'missing' });
+    expect(resolved.provenance.district.selectedCandidates).toEqual([]);
+  });
+
+  it('R05: Land without bedrooms or bathrooms — both null, marked inapplicable', () => {
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [
+        candidate({ field: 'property_type', value: 'land', quote: 'Land', scope: 'local' }),
+        candidate({ field: 'area_sqm', value: 450, kind: 'land', quote: '450 sqm land', scope: 'local' }),
+      ],
+    }));
+
+    expect(resolved.fields.bedrooms).toBeNull();
+    expect(resolved.fields.bathrooms).toBeNull();
+    expect(resolved.applicability.bedrooms).toBe('inapplicable');
+    expect(resolved.applicability.bathrooms).toBe('inapplicable');
+    expect(resolved.findings).not.toContainEqual({ field: 'bedrooms', issue: 'missing' });
+    expect(resolved.findings).not.toContainEqual({ field: 'bathrooms', issue: 'missing' });
+  });
+
+  it('R06: Land area 300 and built-up area 200 — applies D-020 area policy', () => {
+    const areas: TypedFieldCandidate[] = [
+      candidate({ field: 'area_sqm', value: 300, kind: 'land', quote: '300 sqm land', scope: 'local' }),
+      candidate({ field: 'area_sqm', value: 200, kind: 'built_up', quote: '200 sqm built-up', scope: 'local' }),
     ];
 
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing } = resolveListing({
-      id: 'l-002',
-      values,
-      findings,
-      rejectedEvidence,
+    // Under D-020: villa prefers built-up (200), land prefers land (300)
+    const villa = resolveOffer(offer({
+      acceptedCandidates: [
+        candidate({ field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' }),
+        ...areas,
+      ],
+    }));
+    expect(villa.fields.area_sqm).toBe(200);
+    expect(villa.selectedAreaKind).toBe('built_up');
+
+    const land = resolveOffer(offer({
+      acceptedCandidates: [
+        candidate({ field: 'property_type', value: 'land', quote: 'Land', scope: 'local' }),
+        ...areas,
+      ],
+    }));
+    expect(land.fields.area_sqm).toBe(300);
+    expect(land.selectedAreaKind).toBe('land');
+
+    // Under D-020: unresolved/other property type requires land and built projections to agree on value; here 300 != 200 -> conflict
+    const other = resolveOffer(offer({
+      acceptedCandidates: [
+        candidate({ field: 'property_type', value: 'other', quote: 'Property', scope: 'local' }),
+        ...areas,
+      ],
+    }));
+    expect(other.fields.area_sqm).toBeNull();
+    expect(other.findings).toContainEqual({ field: 'area_sqm', issue: 'conflict' });
+  });
+
+  it('R07: Asking price 950000 plus deposit 50000 — selects asking price 950000', () => {
+    const asking = candidate({
+      field: 'price',
+      value: { amount: 950000, currency: 'SAR', period: 'total' },
+      role: 'asking_price',
+      quote: 'Asking 950K SAR',
+      scope: 'local',
     });
-
-    expect(listing.contact_phone).toBeNull();
-    expect(listing.bathrooms).toBeNull();
-    expect(listing.review_reasons).toContain('contact_phone_missing');
-    expect(listing.review_reasons).toContain('bathrooms_unsupported');
-    expect(listing.needs_review).toBe(true);
-  });
-
-  it('leaves bedrooms and bathrooms null for land without missing-field reasons', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'land' },
-      { field: 'city', quote: 'city: Riyadh' },
-      { field: 'district', quote: 'district: Al Malqa' },
-      { field: 'area_sqm', quote: '450 sqm' },
-      { field: 'price', quote: '3.2M SAR' },
-      { field: 'contact_phone', quote: 'call 0551234567' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing } = resolveListing({ id: 'l-003', values, findings });
-
-    expect(listing.property_type).toBe('land');
-    expect(listing.bedrooms).toBeNull();
-    expect(listing.bathrooms).toBeNull();
-    expect(listing.review_reasons).not.toContain('bedrooms_missing');
-    expect(listing.review_reasons).not.toContain('bathrooms_missing');
-    expect(listing.review_reasons).toEqual([]);
-    expect(listing.needs_review).toBe(false);
-  });
-
-  it('leaves price null, retains evidence and sets needs_review: true on conflicting prices', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'price', quote: '3.2M SAR' },
-      { field: 'price', quote: '3,200,001 SAR' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing, evidence } = resolveListing({ id: 'l-004', values, findings });
-
-    expect(listing.price).toEqual({
-      amount: null,
-      currency: 'SAR',
-      period: null,
+    const deposit = candidate({
+      field: 'price',
+      value: { amount: 50000, currency: 'SAR', period: 'total' },
+      role: 'deposit',
+      quote: 'Deposit 50K SAR',
+      scope: 'local',
     });
-    expect(listing.review_reasons).toContain('price_conflict');
-    expect(listing.needs_review).toBe(true);
-    expect(evidence.values.filter((v) => v.field === 'price')).toHaveLength(2);
+    const resolved = resolveOffer(offer({ acceptedCandidates: [asking, deposit] }));
+
+    expect(resolved.fields.price).toEqual({ amount: 950000, currency: 'SAR', period: 'total' });
+    expect(resolved.provenance.price.selectedCandidates).toEqual([asking]);
   });
 
-  it('leaves area_sqm null and records conflict for conflicting area assertions', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'area_sqm', quote: 'built-up area 380 sqm' },
-      { field: 'area_sqm', quote: 'built-up area 390 m2' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing, selectedAreaKind } = resolveListing({ id: 'l-005', values, findings });
-
-    expect(listing.area_sqm).toBeNull();
-    expect(selectedAreaKind).toBeUndefined();
-    expect(listing.review_reasons).toContain('area_sqm_conflict');
-    expect(listing.needs_review).toBe(true);
-  });
-
-  it('selects built-up area over land area for a villa without conflict', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'area_sqm', quote: 'land area 450 sqm' },
-      { field: 'area_sqm', quote: 'built-up area 380 sqm' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing, selectedAreaKind } = resolveListing({ id: 'l-006', values, findings });
-
-    expect(listing.area_sqm).toBe(380);
-    expect(selectedAreaKind).toBe('built_up');
-    expect(listing.review_reasons).not.toContain('area_sqm_conflict');
-  });
-
-  it('records price_unsupported when a price finding cannot be normalized', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'price', quote: '250,000 USD' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing } = resolveListing({ id: 'l-007', values, findings });
-
-    expect(listing.price).toEqual({
-      amount: null,
-      currency: 'SAR',
-      period: null,
+  it('R08: Two asking prices: 950000 and 1000000 — price.amount null, preserves conflict', () => {
+    const p1 = candidate({
+      field: 'price',
+      value: { amount: 950000, currency: 'SAR', period: 'total' },
+      role: 'asking_price',
+      quote: '950K SAR',
+      scope: 'local',
     });
-    expect(listing.review_reasons).toContain('price_unsupported');
-    expect(listing.needs_review).toBe(true);
-  });
-
-  it('does not treat identical normalized values as a conflict', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'city', quote: 'city: Riyadh' },
-      { field: 'city', quote: 'city: Riyadh' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing } = resolveListing({ id: 'l-008', values, findings });
-
-    expect(listing.city).toBe('Riyadh');
-    expect(listing.review_reasons).not.toContain('city_conflict');
-  });
-
-  it('keeps the verified asking price when a deposit is rejected', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'price', quote: '3.2M SAR' },
-    ];
-    const rejectedEvidence: RejectedEvidence[] = [
-      { assertion: { field: 'price', quote: 'Deposit: 50,000 SAR' }, reason: 'field_contradicted' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing, evidence } = resolveListing({
-      id: 'l-009',
-      values,
-      findings,
-      rejectedEvidence,
+    const p2 = candidate({
+      field: 'price',
+      value: { amount: 1000000, currency: 'SAR', period: 'total' },
+      role: 'asking_price',
+      quote: '1M SAR',
+      scope: 'local',
     });
+    const resolved = resolveOffer(offer({ acceptedCandidates: [p1, p2] }));
 
-    expect(listing.price).toEqual({
-      amount: 3200000,
-      currency: 'SAR',
-      period: 'total',
-    });
-    expect(listing.review_reasons).not.toContain('price_conflict');
-    expect(listing.review_reasons).not.toContain('price_uncertain');
-    expect(evidence.rejectedEvidence).toEqual(rejectedEvidence);
+    expect(resolved.fields.price).toEqual({ amount: null, currency: 'SAR', period: null });
+    expect(resolved.findings).toContainEqual({ field: 'price', issue: 'conflict' });
+    expect(resolved.provenance.price.selectedCandidates).toEqual([]);
   });
 
-  it('retains a supported price and flags competing uncertain evidence', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' }, { field: 'property_type', quote: 'villa' },
-      { field: 'city', quote: 'city: Riyadh' }, { field: 'district', quote: 'district: Malqa' },
-      { field: 'bedrooms', quote: '5 BR' }, { field: 'bathrooms', quote: '6 baths' },
-      { field: 'area_sqm', quote: '380 sqm' }, { field: 'price', quote: '3.2M SAR' },
-      { field: 'contact_phone', quote: 'call 0551234567' },
-    ];
-    const rejectedEvidence: RejectedEvidence[] = [
-      { assertion: { field: 'price', quote: '900 ألف' }, reason: 'field_uncertain' },
-    ];
-    const result = resolveListing({ id: 'uncertain', ...normalizeSupportedAssertions(assertions), rejectedEvidence });
-    expect(result.listing.price.amount).toBe(3200000);
-    expect(result.listing.review_reasons).toEqual(['price_uncertain']);
-    expect(result.listing.needs_review).toBe(true);
-    expect(result.evidence.rejectedEvidence).toEqual(rejectedEvidence);
+  it('R09: Rent 85000 SAR/yearly — preserves explicit yearly period', () => {
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [candidate({
+        field: 'price',
+        value: { amount: 85000, currency: 'SAR', period: 'yearly' },
+        role: 'asking_price',
+        quote: '85K SAR/yr',
+        scope: 'local',
+      })],
+    }));
+
+    expect(resolved.fields.price).toEqual({ amount: 85000, currency: 'SAR', period: 'yearly' });
   });
 
-  it('flags uncertainty as the only evidence for a field', () => {
-    const rejectedEvidence: RejectedEvidence[] = [
-      { assertion: { field: 'price', quote: 'maybe 900 ألف' }, reason: 'field_uncertain' },
-    ];
-    const { listing } = resolveListing({ id: 'uncertain-only', values: [], rejectedEvidence });
-    expect(listing.price.amount).toBeNull();
-    expect(listing.review_reasons).toContain('price_uncertain');
-    expect(listing.review_reasons).not.toContain('price_unsupported');
+  it('R10: Rent 85000 SAR, period unknown — does not invent yearly/monthly; leaves amount null with period_unknown finding', () => {
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [candidate({
+        field: 'price',
+        value: { amount: 85000, currency: 'SAR', period: null },
+        role: 'asking_price',
+        quote: '85K SAR rent',
+        scope: 'local',
+      })],
+    }));
+
+    // Under D-020: if rental period is unknown, do not default or invent a period; leave amount and period null
+    expect(resolved.fields.price).toEqual({ amount: null, currency: 'SAR', period: null });
+    expect(resolved.findings).toContainEqual({ field: 'price', issue: 'period_unknown' });
   });
 
-  it('omits the area kind when unresolved property projections have equal values but different kinds', () => {
-    const { values } = normalizeSupportedAssertions([
-      { field: 'area_sqm', quote: 'land area 300 sqm' },
-      { field: 'area_sqm', quote: 'built-up area 300 sqm' },
-    ]);
-    const result = resolveListing({ id: 'equal-areas', values });
-    expect(result.listing.area_sqm).toBe(300);
-    expect(result.selectedAreaKind).toBeUndefined();
-    expect(result.listing.review_reasons).toContain('property_type_missing');
+  it('R11: Price with unknown currency — does not publish amount as confirmed SAR; leaves amount null with currency_unknown finding', () => {
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [candidate({
+        field: 'price',
+        value: { amount: 85000, currency: null, period: 'yearly' },
+        role: 'asking_price',
+        quote: '85,000/yr',
+        scope: 'local',
+      })],
+    }));
+
+    // Under D-020: require explicit SAR evidence; unlabelled currency cannot be confirmed SAR
+    expect(resolved.fields.price).toEqual({ amount: null, currency: 'SAR', period: null });
+    expect(resolved.findings).toContainEqual({ field: 'price', issue: 'currency_unknown' });
   });
 
-  it('keeps supported counts but does not require missing counts when type is unresolved', () => {
-    const { values } = normalizeSupportedAssertions([{ field: 'bedrooms', quote: '5 BR' }]);
-    const rejectedEvidence: RejectedEvidence[] = [
-      { assertion: { field: 'bedrooms', quote: 'maybe 6 BR' }, reason: 'field_uncertain' },
-    ];
-    const { listing } = resolveListing({ id: 'unknown-type', values, rejectedEvidence });
-    expect(listing.bedrooms).toBe(5);
-    expect(listing.bathrooms).toBeNull();
-    expect(listing.review_reasons).toContain('bedrooms_uncertain');
-    expect(listing.review_reasons).not.toContain('bathrooms_missing');
+  it('R12: Rejected bedroom candidate plus valid bedroom candidate — selects valid candidate only', () => {
+    const rejection: RejectedCandidate = {
+      candidate: { field: 'bedrooms', value: 3, quote: '3 BR', scope: 'local' },
+      field: 'bedrooms',
+      quote: '3 BR',
+      scope: 'local',
+      reason: 'quote_value_mismatch',
+    };
+    const validCandidate = candidate({ field: 'bedrooms', value: 4, quote: '4 BR', scope: 'local' });
+
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [
+        candidate({ field: 'property_type', value: 'villa', quote: 'Villa', scope: 'local' }),
+        validCandidate,
+      ],
+      rejectedCandidates: [rejection],
+    }));
+
+    expect(resolved.fields.bedrooms).toBe(4);
+    expect(resolved.findings).not.toContainEqual({ field: 'bedrooms', issue: 'unsupported' });
+    expect(resolved.provenance.bedrooms.selectedCandidates).toEqual([validCandidate]);
+    expect(resolved.provenance.bedrooms.rejectedCandidates).toEqual([rejection]);
   });
 
-  it('leaves area null with review reason when conflicting property types change area selection', () => {
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'sale' },
-      { field: 'property_type', quote: 'villa' },
-      { field: 'property_type', quote: 'land' },
-      { field: 'area_sqm', quote: 'built-up area 380 sqm' },
-      { field: 'area_sqm', quote: 'land area 450 sqm' },
-    ];
-    const { values, findings } = normalizeSupportedAssertions(assertions);
-    const { listing } = resolveListing({ id: 'l-010', values, findings });
+  it('R13: Material semantic uncertainty affecting a field — clears value and records uncertain finding under D-020', () => {
+    const resolved = resolveOffer(offer({
+      acceptedCandidates: [candidate({ field: 'city', value: 'Riyadh', quote: 'Riyadh', scope: 'local' })],
+      semanticFindings: [{
+        category: 'uncertainty',
+        field: 'city',
+        quote: 'Riyadh',
+        description: 'City reference is ambiguous in context',
+      }],
+    }));
 
-    expect(listing.property_type).toBeNull();
-    expect(listing.area_sqm).toBeNull();
-    expect(listing.review_reasons).toContain('property_type_conflict');
-    expect(listing.review_reasons).toContain('area_sqm_conflict');
-    expect(listing.needs_review).toBe(true);
+    // Under D-020: material uncertainty clears the selected value to null and records an uncertain finding
+    expect(resolved.fields.city).toBeNull();
+    expect(resolved.findings).toContainEqual({ field: 'city', issue: 'uncertain' });
+    expect(resolved.provenance.city.selectedCandidates).toEqual([]);
   });
 
-  it('processes normalization and resolution through ListingsService', () => {
-    const service = new ListingsService();
-    const assertions: Assertion[] = [
-      { field: 'purpose', quote: 'للبيع' },
-      { field: 'property_type', quote: 'أرض' },
-      { field: 'city', quote: 'مدينة: جدة' },
-      { field: 'district', quote: 'حي: أبحر' },
-      { field: 'area_sqm', quote: '900 sqm' },
-      { field: 'price', quote: '2.1M SAR' },
-      { field: 'contact_phone', quote: 'تواصل: 0555556666' },
-    ];
-    const { listing } = service.process('listing-jeddah', assertions);
+  it('R14: Two offers with different values — resolves each offer independently without cross-contamination', () => {
+    const offer1 = resolveOffer(offer({
+      offer_index: 0,
+      acceptedCandidates: [
+        candidate({ field: 'city', value: 'Riyadh', quote: 'Riyadh', scope: 'local' }),
+        candidate({
+          field: 'price',
+          value: { amount: 3200000, currency: 'SAR', period: 'total' },
+          role: 'asking_price',
+          quote: '3.2M SAR',
+          scope: 'local',
+        }),
+      ],
+    }));
 
-    expect(listing).toMatchObject({
-      id: 'listing-jeddah',
-      purpose: 'sale',
-      property_type: 'land',
-      city: 'جدة',
-      district: 'أبحر',
-      bedrooms: null,
-      bathrooms: null,
-      area_sqm: 900,
-      price: { amount: 2100000, currency: 'SAR', period: 'total' },
-      contact_phone: '+966555556666',
-      needs_review: false,
-      review_reasons: [],
-      duplicate_of: null,
-    });
+    const offer2 = resolveOffer(offer({
+      offer_index: 1,
+      acceptedCandidates: [
+        candidate({ field: 'city', value: 'Jeddah', quote: 'Jeddah', scope: 'local' }),
+        candidate({
+          field: 'price',
+          value: { amount: 85000, currency: 'SAR', period: 'yearly' },
+          role: 'asking_price',
+          quote: '85K SAR/yr',
+          scope: 'local',
+        }),
+      ],
+    }));
+
+    expect(offer1.fields.city).toBe('Riyadh');
+    expect(offer1.fields.price.amount).toBe(3200000);
+    expect(offer2.fields.city).toBe('Jeddah');
+    expect(offer2.fields.price).toEqual({ amount: 85000, currency: 'SAR', period: 'yearly' });
   });
 });
