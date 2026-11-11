@@ -90,7 +90,7 @@ Approval accepts the current extracted listing without editing its fields or rev
 
 #### Bruno API collection
 
-An offline-ready [Bruno](https://www.usebruno.com/) collection is included in [`bruno/`](bruno/) for interactive HTTP testing against the running server:
+A [Bruno](https://www.usebruno.com/) collection is included in [`bruno/`](bruno/) for interactive HTTP testing against the running server. The health request needs no provider; ingestion requests require a configured provider or authenticated local CLI for successful extraction:
 
 1. Start the HTTP server with `pnpm start`.
 2. In Bruno, open the [`bruno/`](bruno/) directory as a collection and select the [`local`](bruno/environments/local.bru) environment (`baseUrl: http://localhost:3000`).
@@ -100,7 +100,7 @@ An offline-ready [Bruno](https://www.usebruno.com/) collection is included in [`
 
 ### 5. Run the live evaluation (optional)
 
-With an authenticated local `agy` installation, run the frozen 20-case evaluation corpus:
+First run `pnpm run build` to create `dist/cli.js`. With an authenticated local `agy` installation, run the frozen 20-case evaluation corpus:
 
 ```sh
 LLM_PROVIDER=agy LLM_MODEL=gemini-3.8-flash-low \
@@ -221,6 +221,8 @@ The evaluation used `agy` CLI `1.5.3` with `gemini-3.8-flash-low`. A schema-desc
 
 ### Reproduce the evaluation
 
+Run `pnpm run build` first; the evaluator executes `dist/cli.js`. A working, authenticated `agy` installation is also required for fresh model calls.
+
 ```sh
 LLM_PROVIDER=agy LLM_MODEL=gemini-3.8-flash-low \
   pnpm ts-node scripts/evaluate.ts \
@@ -229,7 +231,7 @@ LLM_PROVIDER=agy LLM_MODEL=gemini-3.8-flash-low \
   --output-dir evaluation-results/post-fix
 ```
 
-This command requires a working, authenticated `agy` installation. The evaluator also accepts `--actual <path.jsonl>` to re-score previously saved CLI output **offline without model calls**.
+The evaluator also accepts `--actual <path.jsonl>` to re-score previously saved CLI output **offline without model calls**.
 
 Recorded Phase 03 verification (November 10, 2026): `pnpm test` passed **228/228 tests across 20 suites** without an API key; type checking and build passed; the post-fix evaluation scored 20/20 cases with zero provider failures. The later Phase 04 close-out passed **264/264 offline tests across 24 suites**, type checking, and build; see the [Phase 04 evidence](docs/phase-plans/04-sqlite-http-and-approval.md).
 
